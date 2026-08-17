@@ -1,18 +1,44 @@
 version: '3.8'
 
 services:
-  cv-maker-app:
+  # 1. Build Standalone Desktop Executable inside Docker Container
+  desktop-builder:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cv_maker_app
-    ports:
-      - "1420:1420"
-      - "4173:4173"
+      target: tauri-desktop-builder
+    container_name: cv_maker_desktop_builder
     volumes:
       - .:/app
       - /app/node_modules
+      - /app/src-tauri/target
+    command: npm run tauri build
+
+  # 2. Run Desktop GUI Application inside Docker Container (X11 GUI Forwarding)
+  gui-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: tauri-desktop-builder
+    container_name: cv_maker_gui_app
     environment:
-      - NODE_ENV=development
-      - HOST=0.0.0.0
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - .:/app
+      - /app/node_modules
+    command: npm run tauri dev
+
+  # 3. Web Dev Preview Container
+  web-preview:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: cv_maker_web
+    ports:
+      - "1420:1420"
+    volumes:
+      - .:/app
+      - /app/node_modules
     command: npm run dev -- --host
