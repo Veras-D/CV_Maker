@@ -19,15 +19,17 @@ OUTPUT_DIR="/app/src-tauri/target/release/bundle/appimage"
 mkdir -p "$OUTPUT_DIR"
 APPIMAGE_PATH="$OUTPUT_DIR/CV_Maker_1.0.0_amd64.AppImage"
 
-# 5. Download and extract appimagetool cleanly at runtime
-if [ ! -f /tmp/squashfs-root/AppRun ]; then
-  echo "Downloading latest appimagetool binary..."
-  curl -sL -o /tmp/appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-  chmod +x /tmp/appimagetool.AppImage
-  cd /tmp
-  ./appimagetool.AppImage --appimage-extract
-  cd /app
+# 5. Download appimagetool cleanly if not present
+if [ ! -f /tmp/appimagetool ]; then
+  echo "Downloading standalone appimagetool..."
+  curl -sL -o /tmp/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+  chmod +x /tmp/appimagetool
 fi
+
+# Extract appimagetool
+cd /tmp
+./appimagetool --appimage-extract
+cd /app
 
 # 6. Assemble AppDir structure
 BUILD_DIR="/tmp/AppDir"
@@ -57,12 +59,13 @@ exec "${HERE}/usr/bin/cv-maker" "$@"
 EOF
 chmod +x "$BUILD_DIR/AppRun"
 
-# 7. Generate final .AppImage file
+# 7. Generate final .AppImage file using extracted AppRun
+echo "Running AppImage generator..."
 ARCH=x86_64 /tmp/squashfs-root/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
 
-chmod +x "$APPIMAGE_PATH"
+chmod +x "$APPIMAGE_PATH" 2>/dev/null || true
 
 echo "=========================================="
-echo " SUCCESS! Single AppImage Generated:"
-echo " $APPIMAGE_PATH"
+echo " Checking Generated Files in Output Directory: "
+ls -la "$OUTPUT_DIR"
 echo "=========================================="
