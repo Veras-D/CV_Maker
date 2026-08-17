@@ -67,118 +67,111 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40 w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-12 flex items-center justify-between gap-2">
         
         {/* Brand */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow">
+          <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow">
             CV
           </div>
-          <span className="font-bold text-xs sm:text-sm text-white tracking-tight hidden sm:inline">
+          <span className="font-bold text-xs text-white tracking-tight hidden md:inline">
             CV Studio & Kanban
           </span>
         </div>
 
-        {/* Responsive Tab Switcher */}
-        <nav className="flex items-center gap-1 bg-slate-800/90 p-1 rounded-lg border border-slate-750 overflow-x-auto">
+        {/* Navigation Tabs */}
+        <nav className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-750 shrink-0">
           <button
             onClick={() => setActiveTab('tailor')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'tailor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3 h-3" />
             <span>Role AI Tailor</span>
           </button>
 
           <button
             onClick={() => setActiveTab('editor')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'editor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-3 h-3" />
             <span>Master Resume</span>
           </button>
 
           <button
             onClick={() => setActiveTab('kanban')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'kanban' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Kanban className="w-3.5 h-3.5" />
-            <span>Kanban Board</span>
+            <Kanban className="w-3 h-3" />
+            <span>Kanban</span>
           </button>
 
           <button
             onClick={() => setActiveTab('metadata')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'metadata' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>PDF Settings</span>
+            <Sliders className="w-3 h-3" />
+            <span>Settings</span>
           </button>
         </nav>
 
         {/* Right Tools */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           
-          {/* Custom Styled Language Dropdown with PRO locks */}
-          <div className="flex items-center gap-1">
-            <Globe className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
-            <CustomSelect
-              options={languageOptions}
-              value={activeLanguage}
-              onChange={(val) => setLanguage(val)}
-              onProClick={(val) => {
-                const opt = languageOptions.find(o => o.value === val);
-                setProFeatureName(`Export in ${opt?.label || val}`);
-                setIsProModalOpen(true);
-              }}
-            />
-          </div>
+          <CustomSelect
+            options={languageOptions}
+            value={activeLanguage}
+            onChange={(val) => setLanguage(val)}
+            onProClick={(val) => {
+              const opt = languageOptions.find(o => o.value === val);
+              setProFeatureName(`Export in ${opt?.label || val}`);
+              setIsProModalOpen(true);
+            }}
+          />
 
-          {/* Backup / Restore */}
           <button
             onClick={exportDataJSON}
-            title="Backup JSON Data"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors hidden md:block"
+            title="Backup Data"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors hidden lg:block"
           >
             <DownloadCloud className="w-3.5 h-3.5" />
           </button>
           <label
-            title="Restore JSON Data"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer hidden md:block"
+            title="Restore Data"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer hidden lg:block"
           >
             <UploadCloud className="w-3.5 h-3.5" />
             <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
           </label>
 
-          {/* Export PDF Button */}
           <button
             onClick={handleExportPDF}
             disabled={isExporting}
             className="flex items-center gap-1 bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-sm transition-all"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>
           </button>
 
         </div>
       </div>
 
-      {/* Pro Upgrade Modal */}
       <ProModal
         isOpen={isProModalOpen}
         onClose={() => setIsProModalOpen(false)}
