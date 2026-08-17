@@ -16,7 +16,7 @@ WORKDIR /app
 ENV DEBIAN_FRONTEND=noninteractive
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 
-# Install Tauri GTK, Rust toolchain & system build dependencies
+# Install Tauri GTK, Rust toolchain & AppImage packaging dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -24,12 +24,17 @@ RUN apt-get update && apt-get install -y \
     file \
     libssl-dev \
     libgtk-3-dev \
+    libglib2.0-dev \
     libwebkit2gtk-4.1-dev \
     libayatana-appindicator3-dev \
     librsvg2-dev \
     javascriptcoregtk-4.1 \
     pkg-config \
     squashfs-tools \
+    patchelf \
+    zsync \
+    xdg-utils \
+    fuse \
     libfuse2 \
     dpkg-dev \
     && rm -rf /var/lib/apt/lists/*
