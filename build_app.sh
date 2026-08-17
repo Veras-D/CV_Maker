@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Building Tauri desktop application binary..."
+echo "Compiling Rust desktop binary..."
 npm run tauri build || true
 
 # Ensure AppImage bundle target directory exists
@@ -37,10 +37,12 @@ exec "${HERE}/usr/bin/cv-maker" "$@"
 EOF
 chmod +x "$BUILD_DIR/AppRun"
 
-# Run extracted appimagetool directly
-/root/.cache/tauri/appimagetool-extracted/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
+# Run appimagetool with explicit ARCH=x86_64 environment variable
+ARCH=x86_64 /root/.cache/tauri/appimagetool-extracted/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
+
+chmod +x "$APPIMAGE_PATH"
 
 echo "=========================================="
-echo " Desktop AppImage Successfully Generated!"
-echo " Path: src-tauri/target/release/bundle/appimage/CV_Maker_1.0.0_amd64.AppImage"
+echo " SUCCESS! Standalone AppImage Generated:"
+echo " $APPIMAGE_PATH"
 echo "=========================================="
