@@ -13,7 +13,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 # Clean old bundle folders using Docker container privileges
-$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage
+$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
 
 # Build standalone Desktop App image inside Docker
 $DOCKER_CMD run --build --rm desktop-builder
