@@ -54,5 +54,5 @@ RUN mkdir -p /root/.cache/tauri && \
 
 COPY --from=web-builder /app /app
 
-# Build standalone Desktop App executable via Tauri CLI inside Docker
-CMD ["npm", "run", "tauri", "build"]
+# Build standalone Desktop App executable via Tauri CLI & appimagetool inside Docker
+CMD ["./build_app.sh"]
