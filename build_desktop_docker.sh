@@ -4,7 +4,6 @@ echo "=========================================="
 echo " Building Tauri Desktop App inside Docker "
 echo "=========================================="
 
-export COMPOSE_BAKE=false
 DOCKER_CMD="docker compose"
 
 # Check if current user can access docker socket without sudo
@@ -17,7 +16,7 @@ fi
 $DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
 
 # Build standalone Desktop App image inside Docker
-$DOCKER_CMD run --build --rm desktop-builder
+$DOCKER_CMD run --rm desktop-builder ./build_app.sh
 
 # Fix host permissions on generated files
 $DOCKER_CMD run --rm desktop-builder chmod -R 777 /app/src-tauri/target/ /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
@@ -28,5 +27,5 @@ if [ -f "./CV_Maker_1.0.0_amd64.AppImage" ]; then
     echo " ./CV_Maker_1.0.0_amd64.AppImage"
     echo "=========================================="
 else
-    echo "Build complete. Please check output directory."
+    echo "Build complete. Check root directory for ./CV_Maker_1.0.0_amd64.AppImage"
 fi
