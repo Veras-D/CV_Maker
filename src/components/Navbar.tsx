@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCV } from '../context/CVContext';
-import { Sparkles, FileText, Kanban, Sliders, Download, Globe, DownloadCloud, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { Sparkles, FileText, Kanban, Sliders, Download, DownloadCloud, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { exportCVToPDF } from '../utils/pdfExport';
 import { CustomSelect, SelectOption } from './Common/CustomSelect';
 import { ProModal } from './Common/ProModal';
@@ -76,27 +76,24 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 w-full shadow-md relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-2">
+    <header className="bg-slate-950 border-b border-slate-800/80 text-slate-100 w-full relative z-30">
+      <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between gap-3">
         
-        {/* Brand */}
+        {/* Left: Brand Icon */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow">
+          <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
             CV
           </div>
-          <span className="font-bold text-xs text-white tracking-tight hidden md:inline">
-            CV Studio & Kanban
-          </span>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-750 shrink-0">
+        {/* Center: Unified Workspace Navigation Tabs */}
+        <nav className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 shrink-0">
           <button
             onClick={() => setActiveTab('tailor')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               activeTab === 'tailor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -105,10 +102,10 @@ export const Navbar: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('editor')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               activeTab === 'editor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -117,10 +114,10 @@ export const Navbar: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('kanban')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               activeTab === 'kanban' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Kanban className="w-3.5 h-3.5" />
@@ -129,10 +126,10 @@ export const Navbar: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('metadata')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               activeTab === 'metadata' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -157,14 +154,14 @@ export const Navbar: React.FC = () => {
           <button
             onClick={handleBackup}
             title="Backup Master Data to JSON file"
-            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg transition-colors hidden lg:block"
+            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-900 rounded-lg transition-colors hidden md:block"
           >
             <DownloadCloud className="w-4 h-4" />
           </button>
 
           <label
             title="Restore Master Data from JSON file"
-            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer hidden lg:block"
+            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer hidden md:block"
           >
             <UploadCloud className="w-4 h-4" />
             <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
@@ -173,7 +170,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={handleExportPDF}
             disabled={isExporting}
-            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-all"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>
@@ -184,7 +181,7 @@ export const Navbar: React.FC = () => {
 
       {/* Feedback Banner Notification */}
       {feedbackNotification && (
-        <div className="bg-sky-900/90 border-b border-sky-700 text-sky-200 text-xs px-4 py-1.5 flex items-center justify-between font-medium shadow-inner animate-in fade-in duration-200">
+        <div className="bg-sky-950 border-b border-sky-800 text-sky-200 text-xs px-4 py-1.5 flex items-center justify-between font-medium shadow-inner animate-in fade-in duration-200">
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
             <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
             <span>{feedbackNotification}</span>
