@@ -395,7 +395,6 @@ export const initialCVData: CVData = {
       status: "applied",
       dateApplied: "2026-08-16",
       roleUrl: "https://redhat.jobs",
-      notes: "Application submitted.",
       updatedAt: "2026-08-16T09:15:00.000Z"
     }
   ]
