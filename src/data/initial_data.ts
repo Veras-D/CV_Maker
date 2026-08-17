@@ -8,8 +8,8 @@ export const initialCVData: CVData = {
       cs: "Full-Stack Vývojář a DevOps Specialistá"
     },
     summary: {
-      en: "3+ years of hands-on experience in building scalable web applications using React, TypeScript, Node.js, Python, and DevOps tools such as Docker, AWS and Terraform. Committed to writing clean, maintainable code and improving system reliability through automation and testing.",
-      cs: "3+ roky praktických zkušeností s vývojem škálovatelných webových aplikací pomocí React, TypeScript, Node.js, Python a DevOps nástrojů jako Docker, AWS a Terraform. Zaměření na čistý, udržovatelný kód a zvyšování spolehlivosti systémů pomocí automatizace a testování."
+      en: "Software engineer with 3+ years of hands-on experience in building scalable web applications using React, TypeScript, Node.js, Python, and DevOps tools such as Docker, AWS and Terraform. Committed to writing clean, maintainable code and improving system reliability through automation and testing.",
+      cs: "Softwarový inženýr s 3+ roky praktických zkušeností s vývojem škálovatelných webových aplikací pomocí React, TypeScript, Node.js, Python a DevOps nástrojů jako Docker, AWS a Terraform. Zaměření na čistý, udržovatelný kód a zvyšování spolehlivosti systémů pomocí automatizace a testování."
     },
     email: "dveras2310@gmail.com",
     phone: "+55 (98) 98721-6857",
@@ -23,11 +23,7 @@ export const initialCVData: CVData = {
     githubUrl: "https://github.com/Veras-D",
     linkedinUrl: "https://www.linkedin.com/in/veras-d/",
     websiteUrl: "https://veras-app.netlify.app/",
-    cvPdfName: "temp_cv.pdf",
-    customLinks: [
-      "https://veras-app.netlify.app/pages/projects",
-      "https://veras-app.netlify.app/pages/about"
-    ]
+    cvPdfName: "temp_cv.pdf"
   },
   aiConfig: {
     provider: "ollama",
@@ -36,71 +32,38 @@ export const initialCVData: CVData = {
   },
   presets: [
     {
-      id: "preset-fullstack",
-      name: "Full-Stack Engineer (Default)",
-      description: "Balanced CV highlighting React, Node.js, TypeScript, APIs and DevOps capabilities.",
-      activeTags: ["fullstack", "frontend", "backend", "devops"],
-      activeLanguage: "en",
-      activeLayout: "modern",
-      accentColor: "#0284c7",
-      metadata: {
-        dc_title: "Vivi Veras - Full-Stack Engineer Resume",
-        dc_creator: "Vivi Veras",
-        cp_keywords: "React, TypeScript, Node.js, Python, Full-Stack, Web Applications, PostgreSQL, AWS",
-        cp_description: "Professional Resume for Vivi Veras - Full-Stack Engineer",
-        cp_category: "Resume"
-      }
-    },
-    {
-      id: "preset-devops",
-      name: "DevOps / Infrastructure Engineer",
-      description: "Tailored for DevOps, CI/CD, Cloud Infrastructure (AWS/Terraform) & Linux roles.",
-      activeTags: ["devops", "backend"],
-      activeLanguage: "en",
-      activeLayout: "minimal",
-      accentColor: "#0d9488",
-      metadata: {
-        dc_title: "Vivi Veras - DevOps & Infrastructure Specialist",
-        dc_creator: "Vivi Veras",
-        cp_keywords: "DevOps, Docker, Terraform, AWS, CI/CD, GitHub Actions, Linux, Kubernetes, Automation",
-        cp_description: "Tailored DevOps & Cloud Engineering Resume for Vivi Veras",
-        cp_category: "Resume"
-      }
-    },
-    {
-      id: "preset-czech",
-      name: "Czech Role Preset (Česká Verze)",
-      description: "Localized Czech resume layout tailored for software engineering positions in Czechia.",
-      activeTags: ["fullstack", "backend", "devops"],
+      id: "preset-default",
+      name: "Classic ATS Engineer",
+      description: "Clean ATS-optimized corporate layout for tech roles.",
+      activeTags: ["fullstack", "devops", "backend"],
       activeLanguage: "cs",
       activeLayout: "classic",
-      accentColor: "#2563eb",
       metadata: {
-        dc_title: "Vivi Veras - Životopis (Full-Stack & DevOps)",
+        dc_title: "Vivi Veras - Resume",
         dc_creator: "Vivi Veras",
-        cp_keywords: "React, TypeScript, Node.js, DevOps, Docker, Python, Životopis, CZ",
-        cp_description: "Profesionální životopis - Vivi Veras",
-        cp_category: "Životopis"
+        cp_keywords: "React, TypeScript, Node.js, Python, DevOps, Docker, AWS",
+        cp_description: "Professional Resume - Vivi Veras",
+        cp_category: "Resume"
       }
     }
   ],
-  activePresetId: "preset-fullstack",
+  activePresetId: "preset-default",
   experiences: [
     {
       id: "exp-recent-role",
       roleTitle: {
-        en: "Senior Software Engineer (Latest Role)",
-        cs: "Seniorní Softwarový Inženýr (Nejnovější Pozice)"
+        en: "Senior Software Engineer",
+        cs: "Seniorní Softwarový Inženýr"
       },
       company: "Tech Enterprise / Client",
       location: "Prague / Remote",
       startDate: "Jul 2024",
       endDate: "Present",
       summary: {
-        en: "Leading key development initiatives, microservice architecture, and automated cloud infrastructure deployments.",
-        cs: "Vedení klíčových vývojových iniciativ, mikroservisní architektury a automatizovaných nasazení v cloudu."
+        en: "Leading microservice architecture and automated cloud infrastructure deployments.",
+        cs: "Vedení architektury mikroslužeb a automatizovaných nasazení v cloudu."
       },
-      tags: ["fullstack", "backend", "devops", "management"],
+      tags: ["fullstack", "backend", "devops"],
       enabled: true,
       bullets: [
         {
@@ -124,7 +87,7 @@ export const initialCVData: CVData = {
         {
           id: "b-recent-3",
           text: {
-            en: "Mentored junior engineers and conducted strict code reviews to ensure compliance with security and clean code practices.",
+            en: "Mentored junior engineers and conducted code reviews to ensure compliance with security and clean code practices.",
             cs: "Mentoroval služebně mladší vývojáře a prováděl revize kódu pro dodržování zásad bezpečnosti a čistého kódu."
           },
           tags: ["management"],
@@ -152,8 +115,8 @@ export const initialCVData: CVData = {
         {
           id: "b-gx4-1",
           text: {
-            en: "Developed and maintained scalable web applications using React, I18N, TypeScript, TailwindCSS, and Testing Library.",
-            cs: "Vyvíjel a udržoval škálovatelné webové aplikace s využitím React, I18N, TypeScript, TailwindCSS a Testing Library."
+            en: "Developed and maintained web applications using React, TypeScript, TailwindCSS, and Testing Library.",
+            cs: "Vyvíjel a udržoval webové aplikace s využitím React, TypeScript, TailwindCSS a Testing Library."
           },
           tags: ["frontend", "fullstack"],
           enabled: true
@@ -162,7 +125,7 @@ export const initialCVData: CVData = {
           id: "b-gx4-2",
           text: {
             en: "Built RESTful APIs with ExpressJS and Spring Boot, integrating PostgreSQL and MongoDB for reliable data storage.",
-            cs: "Vytvořil RESTful API s ExpressJS a Spring Boot, včetně integrace PostgreSQL a MongoDB pro spolehlivé ukládání dat."
+            cs: "Vytvořil RESTful API s ExpressJS a Spring Boot, včetně integrace PostgreSQL a MongoDB."
           },
           tags: ["backend"],
           enabled: true
@@ -175,15 +138,6 @@ export const initialCVData: CVData = {
           },
           tags: ["devops"],
           enabled: true
-        },
-        {
-          id: "b-gx4-4",
-          text: {
-            en: "Collaborated with cross-functional teams to deliver new features under agile methodologies, ensuring code quality through unit and integration testing.",
-            cs: "Spolupracoval s mezioborovými týmy na dodávání nových funkcí v agilním prostředí, zajišťoval kvalitu kódu pomocí testů."
-          },
-          tags: ["fullstack"],
-          enabled: true
         }
       ]
     },
@@ -194,20 +148,20 @@ export const initialCVData: CVData = {
         cs: "Vedoucí Týmu Vývojářů"
       },
       company: "APAM (NGO)",
-      location: "Brazil / Remote",
+      location: "Remote",
       startDate: "Aug 2023",
       endDate: "Jul 2024",
       summary: {
-        en: "Non-profit association protecting animals through rescue, medical treatment, and placement in responsible homes.",
-        cs: "Nezisková organizace na ochranu zvířat zajišťující záchranu, léčbu a adopční péči."
+        en: "Non-profit animal protection organization.",
+        cs: "Nezisková organizace na ochranu zvířat."
       },
-      tags: ["management", "fullstack", "devops", "backend"],
+      tags: ["management", "fullstack", "devops"],
       enabled: true,
       bullets: [
         {
           id: "b-apam-1",
           text: {
-            en: "Led a volunteer team of 5 developers to deliver a full-stack application using React, Python, and MySQL.",
+            en: "Led a volunteer team of 5 developers to deliver a full-stack web application using React, Python, and MySQL.",
             cs: "Vedl dobrovolnický tým 5 vývojářů při vývoji full-stack aplikace v Reactu, Pythonu a MySQL."
           },
           tags: ["management", "fullstack"],
@@ -216,28 +170,10 @@ export const initialCVData: CVData = {
         {
           id: "b-apam-2",
           text: {
-            en: "Architected the platform's backend and infrastructure, implementing CI/CD with GitHub Actions, reducing release cycle time by 40%.",
+            en: "Architected platform backend and infrastructure, implementing CI/CD with GitHub Actions, reducing release cycle time by 40%.",
             cs: "Navrhl backend a infrastrukturu platformy s využitím CI/CD v GitHub Actions, čímž zkrátil dobu vydání o 40 %."
           },
           tags: ["devops", "backend"],
-          enabled: true
-        },
-        {
-          id: "b-apam-3",
-          text: {
-            en: "Used GitHub Projects and JIRA to manage agile workflows and ensure team alignment.",
-            cs: "Využíval GitHub Projects a JIRA pro řízení agilního vývoje a koordinaci týmu."
-          },
-          tags: ["management"],
-          enabled: true
-        },
-        {
-          id: "b-apam-4",
-          text: {
-            en: "Facilitated code reviews and mentoring sessions to ensure knowledge sharing and maintain code quality, reducing bug rate in production by 30%.",
-            cs: "Organizoval revize kódu a mentoring pro sdílení znalostí a udržení kvality kódu, což snížilo chybovost o 30 %."
-          },
-          tags: ["management"],
           enabled: true
         }
       ]
@@ -253,8 +189,8 @@ export const initialCVData: CVData = {
       startDate: "Jul 2022",
       endDate: "Sep 2023",
       summary: {
-        en: "Laboratory of Experimentation and Simulation in Heat at State University of Maranhão (UEMA).",
-        cs: "Laboratoř experimentů a simulací tepla na Státní univerzitě v Maranhão (UEMA)."
+        en: "Laboratory of Experimentation and Simulation in Heat at State University of Maranhão.",
+        cs: "Laboratoř experimentů a simulací tepla na Státní univerzitě v Maranhão."
       },
       tags: ["frontend", "backend"],
       enabled: true,
@@ -262,7 +198,7 @@ export const initialCVData: CVData = {
         {
           id: "b-lesc-1",
           text: {
-            en: "Designed and implemented responsive UI components using JavaScript and Figma for academic research tools.",
+            en: "Designed responsive UI components using JavaScript and Figma for academic research tools.",
             cs: "Navrhl a implementoval responzivní UI komponenty v JavaScriptu a Figmě pro akademické nástroje."
           },
           tags: ["frontend"],
@@ -271,17 +207,8 @@ export const initialCVData: CVData = {
         {
           id: "b-lesc-2",
           text: {
-            en: "Automated research workflows with Python, including web scraping and report generation, saving over 6 hours weekly.",
-            cs: "Automatizoval výzkumné postupy v Pythonu včetně web scrapingu a generování zpráv, což ušetřilo 6+ hodin týdně."
-          },
-          tags: ["backend"],
-          enabled: true
-        },
-        {
-          id: "b-lesc-3",
-          text: {
-            en: "Developed machine learning models with scikit-learn and Keras, contributing to two peer-reviewed publications.",
-            cs: "Vyvinul modely strojového učení pomocí scikit-learn a Keras a přispěl ke dvěma odborným publikacím."
+            en: "Automated research workflows with Python, saving over 6 hours weekly.",
+            cs: "Automatizoval výzkumné postupy v Pythonu, což ušetřilo 6+ hodin týdně."
           },
           tags: ["backend"],
           enabled: true
@@ -309,17 +236,15 @@ export const initialCVData: CVData = {
     {
       id: "cat-frontend",
       categoryName: {
-        en: "Frontend Frameworks & Tools",
-        cs: "Frontend Rámce a Nástroje"
+        en: "Frontend & UI",
+        cs: "Frontend a UI"
       },
       skills: [
         { id: "sk-react", name: "React / Vite", tags: ["frontend", "fullstack"], enabled: true },
         { id: "sk-tailwind", name: "TailwindCSS", tags: ["frontend"], enabled: true },
         { id: "sk-next", name: "Next.js", tags: ["frontend", "fullstack"], enabled: true },
         { id: "sk-angular", name: "Angular", tags: ["frontend"], enabled: true },
-        { id: "sk-i18n", name: "I18N / Localization", tags: ["frontend"], enabled: true },
-        { id: "sk-figma", name: "Figma UI/UX", tags: ["frontend"], enabled: true },
-        { id: "sk-jest", name: "Jest / Testing Library", tags: ["frontend"], enabled: true }
+        { id: "sk-figma", name: "Figma UI/UX", tags: ["frontend"], enabled: true }
       ]
     },
     {
@@ -334,15 +259,14 @@ export const initialCVData: CVData = {
         { id: "sk-pg", name: "PostgreSQL", tags: ["backend"], enabled: true },
         { id: "sk-mongo", name: "MongoDB", tags: ["backend"], enabled: true },
         { id: "sk-mysql", name: "MySQL", tags: ["backend"], enabled: true },
-        { id: "sk-redis", name: "Redis", tags: ["backend"], enabled: true },
-        { id: "sk-jwt", name: "JWT / Auth", tags: ["backend"], enabled: true }
+        { id: "sk-redis", name: "Redis", tags: ["backend"], enabled: true }
       ]
     },
     {
       id: "cat-devops",
       categoryName: {
-        en: "DevOps & Cloud Infrastructure",
-        cs: "DevOps a Cloud Infrastruktura"
+        en: "DevOps & Cloud",
+        cs: "DevOps a Cloud"
       },
       skills: [
         { id: "sk-docker", name: "Docker & Compose", tags: ["devops"], enabled: true },
@@ -350,7 +274,6 @@ export const initialCVData: CVData = {
         { id: "sk-terraform", name: "Terraform (IaC)", tags: ["devops"], enabled: true },
         { id: "sk-actions", name: "GitHub Actions CI/CD", tags: ["devops"], enabled: true },
         { id: "sk-k8s", name: "Kubernetes", tags: ["devops"], enabled: true },
-        { id: "sk-qa", name: "QA Automation & Testing", tags: ["frontend", "backend"], enabled: true },
         { id: "sk-linux", name: "Linux Administration", tags: ["devops"], enabled: true }
       ]
     }
@@ -360,11 +283,11 @@ export const initialCVData: CVData = {
       id: "proj-devops",
       title: "Automated AWS & Nginx DevOps Infrastructure",
       description: {
-        en: "Production-ready DevOps deployment pipeline automating Nginx service delivery on AWS EC2 using Terraform, Docker, and GitHub Actions.",
-        cs: "Produkční DevOps pipeline automatizující nasazení Nginx v AWS EC2 pomocí Terraformu, Dockeru a GitHub Actions."
+        en: "DevOps deployment pipeline automating Nginx service delivery on AWS EC2 using Terraform, Docker, and GitHub Actions.",
+        cs: "DevOps pipeline automatizující nasazení Nginx v AWS EC2 pomocí Terraformu, Dockeru a GitHub Actions."
       },
       url: "https://github.com/Veras-D/advanced-devops-project",
-      techStack: ["Docker", "Terraform", "AWS ECR/EC2", "GitHub Actions", "Nginx"],
+      techStack: ["Docker", "Terraform", "AWS ECR/EC2", "GitHub Actions"],
       tags: ["devops", "backend"],
       enabled: true
     },
@@ -372,11 +295,11 @@ export const initialCVData: CVData = {
       id: "proj-auth",
       title: "Auth Lab Microservice",
       description: {
-        en: "Robust TypeScript authentication API supporting JWT rotation, password hashing, unit testing, and isolated Docker container environment.",
-        cs: "Bezpečnostní autentizační API v TypeScriptu s podporou JWT, šifrování hesel, testování a izolací v Dockeru."
+        en: "TypeScript authentication API supporting JWT rotation, testing, and isolated Docker container environment.",
+        cs: "Bezpečnostní autentizační API v TypeScriptu s podporou JWT a Dockeru."
       },
       url: "https://github.com/Veras-D/auth-lab",
-      techStack: ["TypeScript", "Node.js", "Express", "JWT", "Docker", "Jest"],
+      techStack: ["TypeScript", "Node.js", "Express", "JWT", "Docker"],
       tags: ["backend", "fullstack", "devops"],
       enabled: true
     },
@@ -384,24 +307,12 @@ export const initialCVData: CVData = {
       id: "proj-tarot",
       title: "AI Tarot Chat Web Application",
       description: {
-        en: "Modern interactive web app built with Next.js and TypeScript, integrating OpenAI/LLM endpoints for intuitive personalized interpretations.",
-        cs: "Moderní interaktivní webová aplikace v Next.js a TypeScriptu využívající LLM pro personalizovaný výklad."
+        en: "Interactive web app built with Next.js and TypeScript, integrating LLM endpoints.",
+        cs: "Interaktivní webová aplikace v Next.js a TypeScriptu využívající LLM."
       },
       url: "https://github.com/Veras-D/AI_TarotChat",
-      techStack: ["Next.js", "React", "TypeScript", "TailwindCSS", "REST API"],
+      techStack: ["Next.js", "React", "TypeScript", "TailwindCSS"],
       tags: ["frontend", "fullstack"],
-      enabled: true
-    },
-    {
-      id: "proj-web",
-      title: "Personal Portfolio & App Platform",
-      description: {
-        en: "Clean responsive portfolio platform showcasing interactive web applications, skills matrix, and contact routing.",
-        cs: "Portfoliová platforma prezentující interaktivní aplikace, dovednosti a kontakty."
-      },
-      url: "https://veras-app.netlify.app/",
-      techStack: ["HTML5", "CSS3", "JavaScript", "Netlify", "Figma"],
-      tags: ["frontend"],
       enabled: true
     }
   ],
@@ -414,7 +325,7 @@ export const initialCVData: CVData = {
         cs: "Program Vývoje Full-Stack Aplikací"
       },
       dates: "2024 – 2025",
-      technologies: ["React", "Node.js", "TypeScript", "Java", "Spring Boot", "MySQL", "MongoDB", "Docker"],
+      technologies: ["React", "Node.js", "TypeScript", "Java", "Spring Boot", "MySQL", "Docker"],
       enabled: true
     },
     {
@@ -425,93 +336,42 @@ export const initialCVData: CVData = {
         cs: "Program Datové Vědy a Automatizace"
       },
       dates: "2023 – 2024",
-      technologies: ["Python", "Machine Learning", "Pandas", "Scikit-Learn", "Linux", "Bash"],
+      technologies: ["Python", "Machine Learning", "Pandas", "Linux", "Bash"],
       enabled: true
     }
   ],
   languages: [
     {
       id: "lang-pt",
-      language: {
-        en: "Portuguese",
-        cs: "Portugalština"
-      },
-      proficiency: {
-        en: "Native Speaker",
-        cs: "Rodilý Mluvčí"
-      },
+      language: { en: "Portuguese", cs: "Portugalština" },
+      proficiency: { en: "Native", cs: "Rodilý mluvčí" },
       enabled: true
     },
     {
       id: "lang-en",
-      language: {
-        en: "English",
-        cs: "Angličtina"
-      },
-      proficiency: {
-        en: "Full Professional / Advanced (B2-C1)",
-        cs: "Pokročilá Profesionální (B2-C1)"
-      },
+      language: { en: "English", cs: "Angličtina" },
+      proficiency: { en: "Full Professional (B2-C1)", cs: "Pokročilá (B2-C1)" },
       enabled: true
     },
     {
       id: "lang-cs",
-      language: {
-        en: "Czech",
-        cs: "Čeština"
-      },
-      proficiency: {
-        en: "Elementary (Learning)",
-        cs: "Základní (Student)"
-      },
+      language: { en: "Czech", cs: "Čeština" },
+      proficiency: { en: "Elementary", cs: "Základní" },
       enabled: true
     }
   ],
-  coverLetters: [
-    {
-      id: "cl-1",
-      jobTitle: "Senior DevOps Engineer",
-      companyName: "Avast / Gen Digital",
-      date: "2026-08-17",
-      recipientName: "Hiring Manager",
-      language: "en",
-      content: {
-        en: `Dear Hiring Manager,
-
-I am writing to express my strong interest in the Senior DevOps Engineer position at Avast / Gen Digital. With over 3 years of hands-on experience building scalable applications, architecting CI/CD pipelines with Docker and GitHub Actions, and automating cloud infrastructure using Terraform and AWS, I am excited about the opportunity to contribute to your engineering team.
-
-In my recent positions, I have successfully reduced release cycle times by 40% and cut deployment errors by 30% through automated Infrastructure as Code (IaC) and containerization. My background spans both full-stack software development (TypeScript, Node.js, React) and deep DevOps practices, enabling me to bridge the gap between application engineering and system reliability.
-
-I look forward to discussing how my technical skills and enthusiasm for robust infrastructure align with your team's goals.
-
-Sincerely,
-Vivi Veras`,
-        cs: `Vážený pane / Vážená paní,
-
-píši Vám ohledně svého zájmu o pozici Senior DevOps Engineer ve společnosti Avast / Gen Digital. S více než 3 lety praktických zkušeností s vývojem škálovatelných aplikací, tvorbou CI/CD pipelines (Docker, GitHub Actions) a automatizací cloudové infrastruktury (Terraform, AWS) bych rád přispěl k úspěchu Vašeho týmu.
-
-V předchozích rolích se mi podařilo zkrátit dobu vydání o 40 % a snížit chybovost nasazení o 30 % díky automatizaci infrastruktury a kontejnerizaci.
-
-Těším se na možnost osobního setkání a diskuse o mé kvalifikaci.
-
-S pozdravem,
-Vivi Veras`
-      }
-    }
-  ],
+  coverLetters: [],
   kanbanRoles: [
     {
       id: "kanban-1",
       roleTitle: "Senior DevOps & Cloud Engineer",
       company: "Avast / Gen Digital",
-      location: "Prague, CZ (Hybrid)",
-      salary: "120,000 - 150,000 CZK / mo",
-      status: "interview",
+      location: "Prague, CZ",
+      salary: "130,000 CZK / mo",
+      status: "tech_interview",
       dateApplied: "2026-08-10",
       roleUrl: "https://www.linkedin.com/jobs/view/123456789",
-      presetId: "preset-devops",
-      coverLetterId: "cl-1",
-      notes: "First technical screening completed. Next round is system architecture interview.",
+      notes: "Technical architecture interview scheduled.",
       updatedAt: "2026-08-15T10:00:00.000Z"
     },
     {
@@ -519,13 +379,24 @@ Vivi Veras`
       roleTitle: "Full-Stack TypeScript Developer",
       company: "Mews",
       location: "Prague / Remote",
-      salary: "110,000 - 140,000 CZK / mo",
-      status: "applied",
+      salary: "120,000 CZK / mo",
+      status: "hr_call",
       dateApplied: "2026-08-14",
       roleUrl: "https://mews.careers/jobs/fullstack-ts",
-      presetId: "preset-fullstack",
-      notes: "Submitted tailored Full-Stack preset CV with emphasis on React and Node microservices.",
+      notes: "Recruiter screening call completed.",
       updatedAt: "2026-08-14T14:30:00.000Z"
+    },
+    {
+      id: "kanban-3",
+      roleTitle: "Backend Software Engineer",
+      company: "Red Hat",
+      location: "Brno / Remote",
+      salary: "125,000 CZK / mo",
+      status: "applied",
+      dateApplied: "2026-08-16",
+      roleUrl: "https://redhat.jobs",
+      notes: "Application submitted.",
+      updatedAt: "2026-08-16T09:15:00.000Z"
     }
   ]
 };

@@ -11,7 +11,7 @@ interface TemplateProps {
 
 export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, selectedTags, preset }) => {
   const { profile, experiences, skillCategories, projects, education, languages } = data;
-  const accentColor = preset.accentColor || '#0284c7';
+  const accentColor = '#0284c7';
 
   // Filter experiences & bullets by enabled & selectedTags
   const filteredExperiences = experiences

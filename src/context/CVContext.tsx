@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CVData, 
-  LanguageCode, 
   RolePreset, 
   PDFMetadata, 
   KanbanRole, 
@@ -16,27 +15,27 @@ import {
 } from '../types/cv';
 import { initialCVData } from '../data/initial_data';
 
-const STORAGE_KEY = 'cv_maker_data_v1';
+const STORAGE_KEY = 'cv_maker_data_v2';
 
 interface CVContextType {
   cvData: CVData;
   activePreset: RolePreset;
-  activeLanguage: LanguageCode;
+  activeLanguage: string;
   selectedTags: string[];
-  activeLayout: 'modern' | 'minimal' | 'classic';
-  accentColor: string;
-  activeTab: 'editor' | 'preview' | 'kanban' | 'metadata';
+  activeLayout: 'classic' | 'modern' | 'minimal';
+  activeTab: 'tailor' | 'editor' | 'kanban' | 'metadata';
+  showArchivedKanban: boolean;
   
   // Navigation
-  setActiveTab: (tab: 'editor' | 'preview' | 'kanban' | 'metadata') => void;
+  setActiveTab: (tab: 'tailor' | 'editor' | 'kanban' | 'metadata') => void;
+  setShowArchivedKanban: (show: boolean) => void;
 
   // Preset & Filtering
   selectPreset: (presetId: string) => void;
   createPreset: (name: string, description?: string) => void;
   deletePreset: (presetId: string) => void;
-  setLanguage: (lang: LanguageCode) => void;
-  setLayout: (layout: 'modern' | 'minimal' | 'classic') => void;
-  setAccentColor: (color: string) => void;
+  setLanguage: (lang: string) => void;
+  setLayout: (layout: 'classic' | 'modern' | 'minimal') => void;
   toggleTagFilter: (tag: string) => void;
   clearTagFilters: () => void;
 
@@ -107,8 +106,9 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return initialCVData;
   });
 
-  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'kanban' | 'metadata'>('editor');
+  const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showArchivedKanban, setShowArchivedKanban] = useState(false);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -117,9 +117,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   // Active Preset
   const activePreset = cvData.presets.find(p => p.id === cvData.activePresetId) || cvData.presets[0];
-  const activeLanguage = activePreset.activeLanguage;
-  const activeLayout = activePreset.activeLayout;
-  const accentColor = activePreset.accentColor || '#0284c7';
+  const activeLanguage = activePreset.activeLanguage || 'cs';
+  const activeLayout = activePreset.activeLayout || 'classic';
 
   // Preset handlers
   const selectPreset = (presetId: string) => {
@@ -134,7 +133,6 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       activeTags: [...selectedTags],
       activeLanguage: activeLanguage,
       activeLayout: activeLayout,
-      accentColor: accentColor,
       metadata: { ...activePreset.metadata, dc_title: `${cvData.profile.name} - ${name}` }
     };
     setCvData(prev => ({
@@ -145,7 +143,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   const deletePreset = (presetId: string) => {
-    if (cvData.presets.length <= 1) return; // keep at least one preset
+    if (cvData.presets.length <= 1) return;
     setCvData(prev => {
       const filtered = prev.presets.filter(p => p.id !== presetId);
       return {
@@ -156,7 +154,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     });
   };
 
-  const setLanguage = (lang: LanguageCode) => {
+  const setLanguage = (lang: string) => {
     setCvData(prev => ({
       ...prev,
       presets: prev.presets.map(p => 
@@ -165,20 +163,11 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }));
   };
 
-  const setLayout = (layout: 'modern' | 'minimal' | 'classic') => {
+  const setLayout = (layout: 'classic' | 'modern' | 'minimal') => {
     setCvData(prev => ({
       ...prev,
       presets: prev.presets.map(p => 
         p.id === prev.activePresetId ? { ...p, activeLayout: layout } : p
-      )
-    }));
-  };
-
-  const setAccentColor = (color: string) => {
-    setCvData(prev => ({
-      ...prev,
-      presets: prev.presets.map(p => 
-        p.id === prev.activePresetId ? { ...p, accentColor: color } : p
       )
     }));
   };
@@ -205,12 +194,12 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const addExperience = () => {
     const newExp: WorkExperience = {
       id: `exp-${Date.now()}`,
-      roleTitle: { en: "New Role Title", cs: "Název Nové Pozice" },
+      roleTitle: { en: "Role Title", cs: "Název Pozice" },
       company: "Company Name",
       location: "Location / Remote",
       startDate: "2024",
       endDate: "Present",
-      summary: { en: "Brief company or role summary", cs: "Stručné shrnutí pozice" },
+      summary: { en: "Role description", cs: "Popis pozice" },
       tags: ["fullstack"],
       enabled: true,
       bullets: [
@@ -249,7 +238,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const addBullet = (expId: string) => {
     const newBullet: WorkBullet = {
       id: `b-${Date.now()}`,
-      text: { en: "New bullet achievement point", cs: "Nový bod úspěchu" },
+      text: { en: "Achievement bullet point", cs: "Popis dosaženého výsledku" },
       tags: ["fullstack"],
       enabled: true
     };
@@ -299,7 +288,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setCvData(prev => ({
       ...prev,
       skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? { ...c, categoryName: { en: nameEn, cs: nameCs } } : c
+        c.id === catId ? { ...c, categoryName: { ...c.categoryName, en: nameEn, cs: nameCs } } : c
       )
     }));
   };
@@ -354,7 +343,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const addProject = () => {
     const newProj: ProjectItem = {
       id: `proj-${Date.now()}`,
-      title: "New Project Title",
+      title: "Project Title",
       description: { en: "Description of the project", cs: "Popis projektu" },
       techStack: ["React", "TypeScript"],
       tags: ["fullstack"],
@@ -499,7 +488,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cvData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `cv_data_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute("download", `cv_master_backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -530,15 +519,15 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       activeLanguage,
       selectedTags,
       activeLayout,
-      accentColor,
       activeTab,
+      showArchivedKanban,
       setActiveTab,
+      setShowArchivedKanban,
       selectPreset,
       createPreset,
       deletePreset,
       setLanguage,
       setLayout,
-      setAccentColor,
       toggleTagFilter,
       clearTagFilters,
       updateProfile,

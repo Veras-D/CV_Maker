@@ -1,8 +1,7 @@
-export type LanguageCode = 'en' | 'cs';
+export type LanguageCode = string;
 
 export interface LocalizedText {
-  en: string;
-  cs: string;
+  [lang: string]: string;
 }
 
 export interface WorkBullet {
@@ -18,7 +17,7 @@ export interface WorkExperience {
   company: string;
   location?: string;
   startDate: string;
-  endDate: string; // e.g. "Present" or "Jul 2024"
+  endDate: string;
   summary?: LocalizedText;
   bullets: WorkBullet[];
   tags: string[];
@@ -85,18 +84,13 @@ export interface UserProfile {
   whatsappUrl?: string;
 }
 
-export interface RolePreset {
-  id: string;
-  name: string;
-  description?: string;
-  activeTags: string[];
-  activeLanguage: LanguageCode;
-  activeLayout: 'modern' | 'minimal' | 'classic';
-  accentColor: string;
-  metadata: PDFMetadata;
-}
-
-export type KanbanStatus = 'wishlist' | 'applied' | 'screening' | 'interview' | 'offer' | 'rejected';
+export type KanbanStatus = 
+  | 'applied' 
+  | 'hr_call' 
+  | 'tech_interview' 
+  | 'manager_interview' 
+  | 'hired' 
+  | 'archived';
 
 export interface KanbanRole {
   id: string;
@@ -107,7 +101,7 @@ export interface KanbanRole {
   status: KanbanStatus;
   dateApplied: string;
   roleUrl?: string;
-  presetId?: string; // Linked CV preset version
+  presetId?: string;
   coverLetterId?: string;
   notes?: string;
   updatedAt: string;
@@ -119,15 +113,14 @@ export interface CoverLetter {
   companyName: string;
   date: string;
   recipientName?: string;
-  language: LanguageCode;
+  language: string;
   content: LocalizedText;
-  presetId?: string;
 }
 
 export interface AiConfig {
   provider: 'ollama' | 'local' | 'heuristic';
-  endpoint: string; // e.g. http://localhost:11434
-  modelName: string; // e.g. llama3.2, mistral, phi3
+  endpoint: string;
+  modelName: string;
 }
 
 export interface IngestionSources {
@@ -135,7 +128,16 @@ export interface IngestionSources {
   linkedinUrl: string;
   websiteUrl: string;
   cvPdfName?: string;
-  customLinks: string[];
+}
+
+export interface RolePreset {
+  id: string;
+  name: string;
+  description?: string;
+  activeTags: string[];
+  activeLanguage: string;
+  activeLayout: 'classic' | 'modern' | 'minimal';
+  metadata: PDFMetadata;
 }
 
 export interface CVData {

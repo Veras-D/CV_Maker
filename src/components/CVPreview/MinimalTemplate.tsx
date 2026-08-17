@@ -10,7 +10,7 @@ interface TemplateProps {
 
 export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selectedTags, preset }) => {
   const { profile, experiences, skillCategories, projects, education, languages } = data;
-  const accentColor = preset.accentColor || '#0d9488';
+  const accentColor = '#0d9488';
 
   const filteredExperiences = experiences
     .filter(e => e.enabled)

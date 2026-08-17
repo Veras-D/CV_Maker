@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { KanbanStatus, KanbanRole } from '../../types/cv';
-import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, FileText, Search, Sparkles } from 'lucide-react';
+import { KanbanStatus } from '../../types/cv';
+import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore } from 'lucide-react';
 
 export const KanbanBoard: React.FC = () => {
-  const { cvData, addKanbanRole, updateKanbanRoleStatus, deleteKanbanRole, selectPreset, setActiveTab } = useCV();
-  const { kanbanRoles, presets } = cvData;
+  const { cvData, addKanbanRole, updateKanbanRoleStatus, deleteKanbanRole, showArchivedKanban, setShowArchivedKanban } = useCV();
+  const { kanbanRoles } = cvData;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -15,19 +15,17 @@ export const KanbanBoard: React.FC = () => {
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('');
   const [salary, setSalary] = useState('');
-  const [status, setStatus] = useState<KanbanStatus>('wishlist');
+  const [status, setStatus] = useState<KanbanStatus>('applied');
   const [dateApplied, setDateApplied] = useState(new Date().toISOString().slice(0, 10));
   const [roleUrl, setRoleUrl] = useState('');
-  const [presetId, setPresetId] = useState(cvData.activePresetId);
   const [notes, setNotes] = useState('');
 
-  const columns: { id: KanbanStatus; title: string; color: string; badge: string }[] = [
-    { id: 'wishlist', title: 'Wishlist / Backlog', color: 'border-t-slate-500', badge: 'bg-slate-800 text-slate-300' },
-    { id: 'applied', title: 'Applied', color: 'border-t-sky-500', badge: 'bg-sky-500/20 text-sky-300' },
-    { id: 'screening', title: 'Screening / HR', color: 'border-t-purple-500', badge: 'bg-purple-500/20 text-purple-300' },
-    { id: 'interview', title: 'Technical Interview', color: 'border-t-amber-500', badge: 'bg-amber-500/20 text-amber-300' },
-    { id: 'offer', title: 'Offer Received', color: 'border-t-emerald-500', badge: 'bg-emerald-500/20 text-emerald-300' },
-    { id: 'rejected', title: 'Archived', color: 'border-t-rose-500', badge: 'bg-rose-500/20 text-rose-300' }
+  const activeColumns: { id: KanbanStatus; title: string }[] = [
+    { id: 'applied', title: 'Applied' },
+    { id: 'hr_call', title: 'HR / Screening Call' },
+    { id: 'tech_interview', title: 'Technical Interview' },
+    { id: 'manager_interview', title: 'Manager / Final Round' },
+    { id: 'hired', title: 'Offer / Hired' }
   ];
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -41,7 +39,6 @@ export const KanbanBoard: React.FC = () => {
         status,
         dateApplied,
         roleUrl: roleUrl.trim() || undefined,
-        presetId,
         notes: notes.trim() || undefined
       });
       setRoleTitle('');
@@ -58,18 +55,16 @@ export const KanbanBoard: React.FC = () => {
     r.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const archivedCount = filteredRoles.filter(r => r.status === 'archived').length;
+
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
       
-      {/* Kanban Top Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Top Controls */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>Job Application Kanban Tracker</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            Track active role submissions, application dates, target salary ranges, and linked CV versions.
-          </p>
+          <h2 className="text-base font-bold text-white">Application Pipeline</h2>
+          <p className="text-xs text-slate-400">Track interviews, tech assessments, and hiring status</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -78,149 +73,180 @@ export const KanbanBoard: React.FC = () => {
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search company or role..."
+              placeholder="Search roles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 w-48"
+              className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 w-40 sm:w-48"
             />
           </div>
 
+          {/* Toggle Archive */}
+          <button
+            onClick={() => setShowArchivedKanban(!showArchivedKanban)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              showArchivedKanban 
+                ? 'bg-slate-700 text-white border-slate-600' 
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            {showArchivedKanban ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+            <span>{showArchivedKanban ? 'Hide Archive' : `Archive (${archivedCount})`}</span>
+          </button>
+
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-sky-500/20"
+            className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Track New Application</span>
+            <span>Add Role</span>
           </button>
         </div>
       </div>
 
-      {/* Kanban Board Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-start">
-        {columns.map((col) => {
+      {/* Main Kanban Board Columns */}
+      <div className={`grid gap-4 items-start ${
+        showArchivedKanban ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-6' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
+      }`}>
+        
+        {activeColumns.map((col) => {
           const colRoles = filteredRoles.filter(r => r.status === col.id);
           return (
-            <div key={col.id} className={`bg-slate-900/90 border border-slate-800 rounded-2xl border-t-4 ${col.color} p-3 min-h-[500px]`}>
+            <div key={col.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px]">
               
-              {/* Column Title */}
-              <div className="flex items-center justify-between mb-3 px-1">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <span className="text-xs font-bold text-slate-200">{col.title}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${col.badge}`}>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">
                   {colRoles.length}
                 </span>
               </div>
 
               {/* Cards list */}
-              <div className="space-y-3">
-                {colRoles.map((role) => {
-                  const linkedPreset = presets.find(p => p.id === role.presetId);
-                  return (
-                    <div 
-                      key={role.id}
-                      className="bg-slate-850 border border-slate-750 hover:border-slate-650 rounded-xl p-3 shadow-md space-y-2 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <div>
-                          <h4 className="text-xs font-bold text-white leading-tight">{role.roleTitle}</h4>
-                          <div className="flex items-center gap-1 text-[11px] font-semibold text-sky-400 mt-0.5">
-                            <Building className="w-3 h-3 text-slate-500" />
-                            <span>{role.company}</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => deleteKanbanRole(role.id)}
-                          className="text-slate-500 hover:text-red-400 p-1"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-
-                      <div className="text-[10px] text-slate-400 space-y-1">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-500" />
-                          <span>{role.location}</span>
-                        </div>
-
-                        {role.salary && (
-                          <div className="flex items-center gap-1 text-emerald-400 font-mono">
-                            <DollarSign className="w-3 h-3 text-emerald-500" />
-                            <span>{role.salary}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-500" />
-                          <span>{role.dateApplied}</span>
+              <div className="space-y-2.5">
+                {colRoles.map((role) => (
+                  <div 
+                    key={role.id}
+                    className="bg-slate-850 border border-slate-750 hover:border-slate-650 rounded-lg p-3 space-y-2 transition-all shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <div>
+                        <h4 className="text-xs font-bold text-white leading-snug">{role.roleTitle}</h4>
+                        <div className="text-[11px] font-semibold text-sky-400 mt-0.5 flex items-center gap-1">
+                          <Building className="w-3 h-3 text-slate-500" />
+                          <span>{role.company}</span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => deleteKanbanRole(role.id)}
+                        className="text-slate-500 hover:text-red-400 p-1"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
 
-                      {role.notes && (
-                        <p className="text-[10px] text-slate-300 bg-slate-800 p-2 rounded border border-slate-750 line-clamp-2">
-                          {role.notes}
-                        </p>
+                    <div className="text-[10.5px] text-slate-400 space-y-0.5">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-500" />
+                        <span>{role.location}</span>
+                      </div>
+
+                      {role.salary && (
+                        <div className="flex items-center gap-1 text-emerald-400 font-mono">
+                          <DollarSign className="w-3 h-3 text-emerald-500" />
+                          <span>{role.salary}</span>
+                        </div>
                       )}
 
-                      {/* Linked Preset Badge & Role URL */}
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                        {linkedPreset ? (
-                          <button
-                            onClick={() => {
-                              selectPreset(linkedPreset.id);
-                              setActiveTab('preview');
-                            }}
-                            className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono hover:underline"
-                            title="Click to load this linked CV preset"
-                          >
-                            CV: {linkedPreset.name.split(' ')[0]}
-                          </button>
-                        ) : <span />}
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500 font-mono">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{role.dateApplied}</span>
+                        </div>
 
                         {role.roleUrl && (
-                          <a
-                            href={role.roleUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-slate-400 hover:text-sky-400 p-1"
-                          >
-                            <ExternalLink className="w-3 h-3" />
+                          <a href={role.roleUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
+                            Link ↗
                           </a>
                         )}
                       </div>
+                    </div>
 
-                      {/* Move status select */}
+                    {role.notes && (
+                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded border border-slate-750 font-sans line-clamp-2">
+                        {role.notes}
+                      </p>
+                    )}
+
+                    {/* Move Stage Selector */}
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-1">
                       <select
                         value={role.status}
                         onChange={(e) => updateKanbanRoleStatus(role.id, e.target.value as KanbanStatus)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none"
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none cursor-pointer"
                       >
-                        {columns.map(c => (
-                          <option key={c.id} value={c.id}>
-                            Move to: {c.title}
-                          </option>
-                        ))}
+                        <option value="applied">Stage: Applied</option>
+                        <option value="hr_call">Stage: HR Call</option>
+                        <option value="tech_interview">Stage: Tech Interview</option>
+                        <option value="manager_interview">Stage: Manager Interview</option>
+                        <option value="hired">Stage: Offer / Hired</option>
+                        <option value="archived">Archive Application</option>
                       </select>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
 
             </div>
           );
         })}
+
+        {/* Optional Hidden Archive Column */}
+        {showArchivedKanban && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] bg-slate-950/40">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800 text-rose-400">
+              <span className="text-xs font-bold">Archived / Dismissed</span>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
+                {archivedCount}
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {filteredRoles.filter(r => r.status === 'archived').map((role) => (
+                <div key={role.id} className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-300">{role.roleTitle}</span>
+                    <button onClick={() => deleteKanbanRole(role.id)} className="text-slate-500 hover:text-red-400">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-slate-500 block">{role.company}</span>
+                  <button
+                    onClick={() => updateKanbanRoleStatus(role.id, 'applied')}
+                    className="mt-2 text-[10px] text-sky-400 hover:underline"
+                  >
+                    Restore to Applied
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* Modal Add Role */}
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Track New Job Application</h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl">
+            <h3 className="text-base font-bold text-white mb-3">Add Application</h3>
             <form onSubmit={handleAddSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Role Title</label>
+                <label className="block text-xs text-slate-300 mb-1 font-medium">Role Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Full-Stack Developer"
+                  placeholder="e.g. Senior Full-Stack Engineer"
                   value={roleTitle}
                   onChange={(e) => setRoleTitle(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none"
@@ -228,7 +254,7 @@ export const KanbanBoard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Company Name</label>
+                <label className="block text-xs text-slate-300 mb-1 font-medium">Company</label>
                 <input
                   type="text"
                   required
@@ -241,7 +267,7 @@ export const KanbanBoard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Location</label>
+                  <label className="block text-xs text-slate-300 mb-1 font-medium">Location</label>
                   <input
                     type="text"
                     placeholder="Prague / Remote"
@@ -252,10 +278,10 @@ export const KanbanBoard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Salary Range</label>
+                  <label className="block text-xs text-slate-300 mb-1 font-medium">Salary</label>
                   <input
                     type="text"
-                    placeholder="e.g. 120k CZK / mo"
+                    placeholder="120,000 CZK / mo"
                     value={salary}
                     onChange={(e) => setSalary(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none"
@@ -265,20 +291,20 @@ export const KanbanBoard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
+                  <label className="block text-xs text-slate-300 mb-1 font-medium">Pipeline Stage</label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as KanbanStatus)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none"
                   >
-                    {columns.map(c => (
+                    {activeColumns.map(c => (
                       <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Date Applied</label>
+                  <label className="block text-xs text-slate-300 mb-1 font-medium">Date Applied</label>
                   <input
                     type="date"
                     value={dateApplied}
@@ -289,7 +315,7 @@ export const KanbanBoard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Job Link</label>
+                <label className="block text-xs text-slate-300 mb-1 font-medium">Role Link (Optional)</label>
                 <input
                   type="url"
                   placeholder="https://..."
@@ -300,23 +326,10 @@ export const KanbanBoard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Linked CV Preset</label>
-                <select
-                  value={presetId}
-                  onChange={(e) => setPresetId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none"
-                >
-                  {presets.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notes</label>
+                <label className="block text-xs text-slate-300 mb-1 font-medium">Notes</label>
                 <textarea
                   rows={2}
-                  placeholder="Interview notes, contacts, or steps..."
+                  placeholder="Notes..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none resize-none"
@@ -327,15 +340,15 @@ export const KanbanBoard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white"
                 >
-                  Track Application
+                  Save Card
                 </button>
               </div>
             </form>
