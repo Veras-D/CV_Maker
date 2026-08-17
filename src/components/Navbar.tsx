@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCV } from '../context/CVContext';
-import { Sparkles, FileText, Kanban, Sliders, Download, Globe, DownloadCloud, UploadCloud, RotateCcw } from 'lucide-react';
+import { Sparkles, FileText, Kanban, Sliders, Download, Globe, DownloadCloud, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { exportCVToPDF } from '../utils/pdfExport';
 import { CustomSelect, SelectOption } from './Common/CustomSelect';
 import { ProModal } from './Common/ProModal';
@@ -14,13 +14,13 @@ export const Navbar: React.FC = () => {
     setActiveTab, 
     setLanguage,
     exportDataJSON,
-    importDataJSON,
-    resetToDefaultData
+    importDataJSON
   } = useCV();
 
   const [isExporting, setIsExporting] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [proFeatureName, setProFeatureName] = useState('');
+  const [feedbackNotification, setFeedbackNotification] = useState<string | null>(null);
 
   const languageOptions: SelectOption[] = [
     { value: 'en', label: 'English (EN)' },
@@ -39,12 +39,20 @@ export const Navbar: React.FC = () => {
         `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
         activePreset.metadata
       );
+      setFeedbackNotification("PDF generated successfully!");
+      setTimeout(() => setFeedbackNotification(null), 3500);
     } catch (e) {
       console.error("PDF Export error:", e);
       alert("Error generating PDF.");
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleBackup = () => {
+    const filename = exportDataJSON();
+    setFeedbackNotification(`Backup downloaded: "${filename}" saved to your Downloads folder.`);
+    setTimeout(() => setFeedbackNotification(null), 5000);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,9 +64,10 @@ export const Navbar: React.FC = () => {
         if (content) {
           const success = importDataJSON(content);
           if (success) {
-            alert("Data imported successfully!");
+            setFeedbackNotification(`Database restored successfully from "${file.name}"!`);
+            setTimeout(() => setFeedbackNotification(null), 5000);
           } else {
-            alert("Invalid JSON format.");
+            alert("Invalid JSON backup file format.");
           }
         }
       };
@@ -67,7 +76,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 w-full shadow-md">
+    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 w-full shadow-md relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-2">
         
         {/* Brand */}
@@ -146,17 +155,18 @@ export const Navbar: React.FC = () => {
           />
 
           <button
-            onClick={exportDataJSON}
-            title="Backup Data"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors hidden lg:block"
+            onClick={handleBackup}
+            title="Backup Master Data to JSON file"
+            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg transition-colors hidden lg:block"
           >
-            <DownloadCloud className="w-3.5 h-3.5" />
+            <DownloadCloud className="w-4 h-4" />
           </button>
+
           <label
-            title="Restore Data"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer hidden lg:block"
+            title="Restore Master Data from JSON file"
+            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer hidden lg:block"
           >
-            <UploadCloud className="w-3.5 h-3.5" />
+            <UploadCloud className="w-4 h-4" />
             <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
           </label>
 
@@ -171,6 +181,19 @@ export const Navbar: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Feedback Banner Notification */}
+      {feedbackNotification && (
+        <div className="bg-sky-900/90 border-b border-sky-700 text-sky-200 text-xs px-4 py-1.5 flex items-center justify-between font-medium shadow-inner animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
+            <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+            <span>{feedbackNotification}</span>
+          </div>
+          <button onClick={() => setFeedbackNotification(null)} className="text-sky-300 hover:text-white text-xs">
+            ✕
+          </button>
+        </div>
+      )}
 
       <ProModal
         isOpen={isProModalOpen}

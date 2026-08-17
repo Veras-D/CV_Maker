@@ -86,7 +86,7 @@ interface CVContextType {
   deleteKanbanRole: (id: string) => void;
 
   // Data Persistence & Reset
-  exportDataJSON: () => void;
+  exportDataJSON: () => string;
   importDataJSON: (jsonString: string) => boolean;
   resetToDefaultData: () => void;
 }
@@ -485,13 +485,15 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   // Export / Import / Reset
   const exportDataJSON = () => {
+    const filename = `cv_master_backup_${new Date().toISOString().slice(0, 10)}.json`;
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cvData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `cv_master_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute("download", filename);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    return filename;
   };
 
   const importDataJSON = (jsonString: string): boolean => {
