@@ -23,27 +23,36 @@ ROOT_APPIMAGE_PATH="/app/CV_Maker_1.0.0_amd64.AppImage"
 # 5. Assemble AppDir structure
 BUILD_DIR="/tmp/AppDir"
 rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR/usr/bin" "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps"
+mkdir -p "$BUILD_DIR/usr/bin" \
+         "$BUILD_DIR/usr/lib" \
+         "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps" \
+         "$BUILD_DIR/usr/share/applications"
 
 # Copy compiled executable binary & icons
 cp /app/src-tauri/target/release/cv-maker "$BUILD_DIR/usr/bin/cv-maker"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps/cv-maker.png"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/cv-maker.png"
+cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/.DirIcon"
 
-# Write desktop launcher file
+# Write desktop launcher file at root of AppDir AND inside usr/share/applications/
 cat << 'EOF' > "$BUILD_DIR/cv-maker.desktop"
 [Desktop Entry]
 Name=CV Maker & Role Tracker
 Exec=cv-maker
 Icon=cv-maker
 Type=Application
+Terminal=false
 Categories=Utility;
 EOF
 
-# Write AppRun entrypoint
+cp "$BUILD_DIR/cv-maker.desktop" "$BUILD_DIR/usr/share/applications/cv-maker.desktop"
+
+# Write standard AppRun launcher script
 cat << 'EOF' > "$BUILD_DIR/AppRun"
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "${0}")")"
+export PATH="${HERE}/usr/bin:${PATH}"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
 exec "${HERE}/usr/bin/cv-maker" "$@"
 EOF
 chmod +x "$BUILD_DIR/AppRun"
