@@ -1,5 +1,5 @@
 services:
-  # 1. Build Standalone Desktop Executable inside Docker Container
+  # Build Standalone Desktop Executable inside Docker Container
   desktop-builder:
     build:
       context: .
@@ -12,13 +12,13 @@ services:
       - /app/src-tauri/target
     command: npm run tauri build
 
-  # 2. Run Desktop GUI Application inside Docker Container (X11 GUI Forwarding)
-  gui-app:
+  # Launch Tauri Desktop App Window in Docker (X11 Display)
+  desktop-app-gui:
     build:
       context: .
       dockerfile: Dockerfile
       target: tauri-desktop-builder
-    container_name: cv_maker_gui_app
+    container_name: cv_maker_desktop_gui
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
@@ -26,17 +26,3 @@ services:
       - .:/app
       - /app/node_modules
     command: npm run tauri dev
-
-  # 3. Web Dev Preview Container
-  web-preview:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
-    container_name: cv_maker_web
-    ports:
-      - "1420:1420"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run dev -- --host
