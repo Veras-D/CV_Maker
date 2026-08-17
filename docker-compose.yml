@@ -9,7 +9,6 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/src-tauri/target
     command: npm run tauri build
 
   # Launch Tauri Desktop App Window in Docker (X11 Display)
