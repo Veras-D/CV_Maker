@@ -15,6 +15,10 @@ dist-isolation/
 build/
 .output/
 
+# Personal CV PDFs & Documents
+*.pdf
+temp_cv.pdf
+
 # Logs & temp
 *.log
 .env
