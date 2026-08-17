@@ -14,6 +14,7 @@ FROM ubuntu:22.04 AS tauri-desktop-builder
 WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV APPIMAGE_EXTRACT_AND_RUN=1
 
 # Install Tauri GTK, Rust toolchain & system build dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,6 +30,7 @@ RUN apt-get update && apt-get install -y \
     javascriptcoregtk-4.1 \
     pkg-config \
     squashfs-tools \
+    libfuse2 \
     dpkg-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,13 +42,14 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Pre-cache ALL Tauri AppImage & linuxdeploy bundler plugins in /root/.cache/tauri to bypass GitHub HTTP 429 rate limit
+# Pre-cache ALL Tauri AppImage & linuxdeploy bundler binaries in /root/.cache/tauri to bypass GitHub rate limits
 RUN mkdir -p /root/.cache/tauri && \
     curl -L -o /root/.cache/tauri/appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage || true && \
     curl -L -o /root/.cache/tauri/AppRun-x86_64 https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 || true && \
     curl -L -o /root/.cache/tauri/linuxdeploy-x86_64.AppImage https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage || true && \
     curl -L -o /root/.cache/tauri/linuxdeploy-plugin-gtk.sh https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh || true && \
     curl -L -o /root/.cache/tauri/linuxdeploy-plugin-gstreamer.sh https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh || true && \
+    curl -L -o /root/.cache/tauri/linuxdeploy-plugin-appimage-x86_64.AppImage https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage || true && \
     chmod -R +x /root/.cache/tauri/
 
 COPY --from=web-builder /app /app
