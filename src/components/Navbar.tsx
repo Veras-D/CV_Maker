@@ -67,12 +67,12 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40 w-full overflow-hidden">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-12 flex items-center justify-between gap-2">
+    <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40 w-full shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-2">
         
         {/* Brand */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow">
+          <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center text-white font-bold text-xs shadow">
             CV
           </div>
           <span className="font-bold text-xs text-white tracking-tight hidden md:inline">
@@ -81,58 +81,58 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-750 shrink-0">
+        <nav className="flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-750 shrink-0">
           <button
             onClick={() => setActiveTab('tailor')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'tailor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Sparkles className="w-3 h-3" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Role AI Tailor</span>
           </button>
 
           <button
             onClick={() => setActiveTab('editor')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'editor' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <FileText className="w-3 h-3" />
+            <FileText className="w-3.5 h-3.5" />
             <span>Master Resume</span>
           </button>
 
           <button
             onClick={() => setActiveTab('kanban')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'kanban' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Kanban className="w-3 h-3" />
+            <Kanban className="w-3.5 h-3.5" />
             <span>Kanban</span>
           </button>
 
           <button
             onClick={() => setActiveTab('metadata')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all ${
               activeTab === 'metadata' 
                 ? 'bg-sky-600 text-white shadow-sm font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
           >
-            <Sliders className="w-3 h-3" />
+            <Sliders className="w-3.5 h-3.5" />
             <span>Settings</span>
           </button>
         </nav>
 
         {/* Right Tools */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           
           <CustomSelect
             options={languageOptions}
@@ -163,7 +163,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={handleExportPDF}
             disabled={isExporting}
-            className="flex items-center gap-1 bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition-all"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
 import { KanbanStatus, KanbanRole } from '../../types/cv';
-import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3 } from 'lucide-react';
+import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 
 export const KanbanBoard: React.FC = () => {
@@ -11,6 +11,7 @@ export const KanbanBoard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingRole, setEditingRole] = useState<KanbanRole | null>(null);
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
 
   // Form state
   const [roleTitle, setRoleTitle] = useState('');
@@ -92,6 +93,25 @@ export const KanbanBoard: React.FC = () => {
     setShowAddModal(false);
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedCardId(id);
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: KanbanStatus) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain') || draggedCardId;
+    if (id) {
+      updateKanbanRoleStatus(id, targetStatus);
+      setDraggedCardId(null);
+    }
+  };
+
   const filteredRoles = kanbanRoles.filter(r => 
     r.roleTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.company.toLowerCase().includes(searchTerm.toLowerCase())
@@ -102,15 +122,14 @@ export const KanbanBoard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
       
-      {/* Top Header */}
+      {/* Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div>
           <h2 className="text-base font-bold text-white">Application Pipeline</h2>
-          <p className="text-xs text-slate-400">Track application stages, salary expectations, and notes</p>
+          <p className="text-xs text-slate-400">Drag & drop cards or select stage to move applications</p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Search */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
             <input
@@ -122,7 +141,6 @@ export const KanbanBoard: React.FC = () => {
             />
           </div>
 
-          {/* Archive toggle */}
           <button
             onClick={() => setShowArchivedKanban(!showArchivedKanban)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
@@ -156,7 +174,12 @@ export const KanbanBoard: React.FC = () => {
         {activeColumns.map((col) => {
           const colRoles = filteredRoles.filter(r => r.status === col.id);
           return (
-            <div key={col.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px]">
+            <div 
+              key={col.id} 
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col.id)}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] transition-colors hover:border-slate-700"
+            >
               
               {/* Header */}
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
@@ -171,17 +194,22 @@ export const KanbanBoard: React.FC = () => {
                 {colRoles.map((role) => (
                   <div 
                     key={role.id}
-                    className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, role.id)}
+                    className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group cursor-grab active:cursor-grabbing"
                   >
                     <div className="flex items-start justify-between gap-1">
-                      <div>
-                        <h4 className="text-xs font-bold text-white leading-snug">{role.roleTitle}</h4>
-                        <div className="text-[11px] font-semibold text-sky-400 mt-0.5 flex items-center gap-1">
-                          <Building className="w-3 h-3 text-slate-500" />
-                          <span>{role.company}</span>
+                      <div className="flex items-start gap-1">
+                        <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 mt-0.5 shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold text-white leading-snug">{role.roleTitle}</h4>
+                          <div className="text-[11px] font-semibold text-sky-400 mt-0.5 flex items-center gap-1">
+                            <Building className="w-3 h-3 text-slate-500" />
+                            <span>{role.company}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity shrink-0">
                         <button
                           onClick={() => openEditModal(role)}
                           className="text-slate-400 hover:text-sky-400 p-1"
@@ -232,7 +260,7 @@ export const KanbanBoard: React.FC = () => {
                       </p>
                     )}
 
-                    {/* Move Stage Custom Dark Select */}
+                    {/* Move Stage Select */}
                     <div className="pt-2 border-t border-slate-800">
                       <CustomSelect
                         className="w-full text-[10px]"
@@ -251,7 +279,11 @@ export const KanbanBoard: React.FC = () => {
 
         {/* Hidden Archive Column */}
         {showArchivedKanban && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] bg-slate-950/40">
+          <div 
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, 'archived')}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] bg-slate-950/40"
+          >
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800 text-rose-400">
               <span className="text-xs font-bold">Archived / Dismissed</span>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
@@ -261,7 +293,12 @@ export const KanbanBoard: React.FC = () => {
 
             <div className="space-y-2.5">
               {filteredRoles.filter(r => r.status === 'archived').map((role) => (
-                <div key={role.id} className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75 space-y-1">
+                <div 
+                  key={role.id} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, role.id)}
+                  className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75 space-y-1 cursor-grab"
+                >
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-300">{role.roleTitle}</span>
                     <button onClick={() => deleteKanbanRole(role.id)} className="text-slate-500 hover:text-red-400">

@@ -36,7 +36,7 @@ export const initialCVData: CVData = {
       name: "Classic ATS Engineer",
       description: "Clean ATS-optimized corporate layout for tech roles.",
       activeTags: ["fullstack", "devops", "backend"],
-      activeLanguage: "cs",
+      activeLanguage: "en",
       activeLayout: "classic",
       metadata: {
         dc_title: "Vivi Veras - Resume",

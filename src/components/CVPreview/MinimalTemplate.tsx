@@ -23,7 +23,7 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
     .filter(e => e.activeBullets.length > 0 || selectedTags.length === 0);
 
   return (
-    <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 p-10 font-mono shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed">
+    <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-6 sm:p-10 font-mono shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed overflow-hidden">
       
       {/* Header */}
       <header className="mb-6">

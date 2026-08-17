@@ -29,7 +29,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
   );
 
   return (
-    <div className="w-[210mm] min-h-[297mm] bg-white text-slate-800 p-8 font-sans shadow-2xl mx-auto box-border text-[11px] leading-relaxed">
+    <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 p-6 sm:p-8 font-sans shadow-2xl mx-auto box-border text-[11px] leading-relaxed overflow-hidden">
       
       {/* Header */}
       <header className="border-b-2 pb-5 mb-5 flex justify-between items-start" style={{ borderColor: accentColor }}>
