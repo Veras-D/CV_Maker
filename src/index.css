@@ -9,6 +9,20 @@
   }
 }
 
+/* Force dark native select styling across WebKit2GTK engines */
+select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;

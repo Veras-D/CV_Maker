@@ -36,7 +36,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     <select
       value={value}
       onChange={handleChange}
-      className={`w-full bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-sky-500 cursor-pointer shadow-sm transition-colors ${className}`}
+      style={{
+        WebkitAppearance: 'none',
+        MozAppearance: 'none',
+        appearance: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 0.65rem center',
+        backgroundSize: '0.85em 0.85em',
+        paddingRight: '2rem'
+      }}
+      className={`w-full bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-sky-500 cursor-pointer shadow-sm transition-colors ${className}`}
     >
       {options.map((option) => (
         <option 
