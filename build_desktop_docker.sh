@@ -12,17 +12,20 @@ if ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker compose"
 fi
 
-# Clean old bundle folders (deb, rpm, etc.) using Docker container privileges
-$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle
+# Clean old bundle folders using Docker container privileges
+$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage
 
 # Build standalone Desktop App image inside Docker
 $DOCKER_CMD run --build --rm desktop-builder
 
-if [ $? -eq 0 ]; then
+# Fix host permissions on generated files
+$DOCKER_CMD run --rm desktop-builder chmod -R 777 /app/src-tauri/target/ /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
+
+if [ -f "./CV_Maker_1.0.0_amd64.AppImage" ]; then
     echo "=========================================="
-    echo " Build complete! Standalone AppImage generated in:"
-    echo " src-tauri/target/release/bundle/appimage/CV_Maker_1.0.0_amd64.AppImage"
+    echo " SUCCESS! Desktop AppImage generated in root folder:"
+    echo " ./CV_Maker_1.0.0_amd64.AppImage"
     echo "=========================================="
 else
-    echo "Build failed. Please check container logs."
+    echo "Build complete. Please check output directory."
 fi

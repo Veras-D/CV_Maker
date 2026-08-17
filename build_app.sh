@@ -63,9 +63,11 @@ chmod +x "$BUILD_DIR/AppRun"
 echo "Running AppImage generator..."
 ARCH=x86_64 /tmp/squashfs-root/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
 
-chmod +x "$APPIMAGE_PATH" 2>/dev/null || true
+# Copy directly to project root for instant access
+cp "$APPIMAGE_PATH" /app/CV_Maker_1.0.0_amd64.AppImage
+chmod 777 /app/CV_Maker_1.0.0_amd64.AppImage "$APPIMAGE_PATH" 2>/dev/null || true
 
 echo "=========================================="
-echo " Checking Generated Files in Output Directory: "
-ls -la "$OUTPUT_DIR"
+echo " SUCCESS! Standalone AppImage Created!"
+echo " Root Path: /app/CV_Maker_1.0.0_amd64.AppImage"
 echo "=========================================="
