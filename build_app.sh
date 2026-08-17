@@ -5,21 +5,31 @@ echo "=========================================="
 echo " Building Clean Standalone AppImage... "
 echo "=========================================="
 
-# Clean up any old build bundle directories
+# 1. Clean up old bundle directory
 rm -rf /app/src-tauri/target/release/bundle
 
-# 1. Build React web application assets
+# 2. Build React web application assets
 npm run build
 
-# 2. Compile Tauri Rust executable binary directly
+# 3. Compile Tauri Rust executable binary directly
 cargo build --release --manifest-path /app/src-tauri/Cargo.toml
 
-# 3. Create target AppImage directory
+# 4. Prepare target AppImage directory
 OUTPUT_DIR="/app/src-tauri/target/release/bundle/appimage"
 mkdir -p "$OUTPUT_DIR"
 APPIMAGE_PATH="$OUTPUT_DIR/CV_Maker_1.0.0_amd64.AppImage"
 
-# 4. Assemble AppDir structure
+# 5. Download and extract appimagetool cleanly at runtime
+if [ ! -f /tmp/squashfs-root/AppRun ]; then
+  echo "Downloading latest appimagetool binary..."
+  curl -sL -o /tmp/appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+  chmod +x /tmp/appimagetool.AppImage
+  cd /tmp
+  ./appimagetool.AppImage --appimage-extract
+  cd /app
+fi
+
+# 6. Assemble AppDir structure
 BUILD_DIR="/tmp/AppDir"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/usr/bin" "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps"
@@ -47,8 +57,8 @@ exec "${HERE}/usr/bin/cv-maker" "$@"
 EOF
 chmod +x "$BUILD_DIR/AppRun"
 
-# 5. Build final .AppImage file via appimagetool
-ARCH=x86_64 /root/.cache/tauri/appimagetool-extracted/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
+# 7. Generate final .AppImage file
+ARCH=x86_64 /tmp/squashfs-root/AppRun "$BUILD_DIR" "$APPIMAGE_PATH"
 
 chmod +x "$APPIMAGE_PATH"
 

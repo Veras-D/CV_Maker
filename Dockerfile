@@ -42,15 +42,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Extract appimagetool into native binary directory so it runs 100% reliably inside Docker
-RUN mkdir -p /root/.cache/tauri && \
-    curl -L -o /tmp/appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage && \
-    chmod +x /tmp/appimagetool.AppImage && \
-    cd /tmp && ./appimagetool.AppImage --appimage-extract && \
-    mv /tmp/squashfs-root /root/.cache/tauri/appimagetool-extracted && \
-    rm -rf /tmp/appimagetool.AppImage
-
 COPY --from=web-builder /app /app
 
-# Build standalone Desktop App executable via Tauri CLI & appimagetool inside Docker
+# Build standalone Desktop App executable via build_app.sh inside Docker
 CMD ["./build_app.sh"]
