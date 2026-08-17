@@ -26,7 +26,7 @@ export async function processAiJobTailoring(
   };
 
   // Score each tag based on keyword frequency in JD
-  const tagScores: { [tag: string]: number } = {};
+  const tagScores: Record<string, number> = {};
   Object.keys(keywordMap).forEach(tag => {
     let score = 0;
     keywordMap[tag].forEach(kw => {
@@ -40,7 +40,7 @@ export async function processAiJobTailoring(
   // Sort tags by relevance
   const sortedTags = Object.keys(tagScores)
     .filter(tag => tagScores[tag] > 0)
-    .sort((a, b) => tagScores[b] - a[b]);
+    .sort((a, b) => (tagScores[b] || 0) - (tagScores[a] || 0));
 
   const matchedTags = sortedTags.length > 0 ? sortedTags : ['fullstack'];
 

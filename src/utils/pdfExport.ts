@@ -77,7 +77,7 @@ export async function exportCVToPDF(
   const finalPdfBytes = await pdfDoc.save();
 
   // 4. Download file in browser / webview environment
-  const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+  const blob = new Blob([finalPdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
