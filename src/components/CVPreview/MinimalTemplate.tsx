@@ -1,5 +1,6 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset } from '../../types/cv';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 interface TemplateProps {
   data: CVData;
@@ -22,6 +23,8 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
     })
     .filter(e => e.activeBullets.length > 0 || selectedTags.length === 0);
 
+  const activeProjects = projects.filter(p => p.enabled);
+
   return (
     <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-6 sm:p-10 font-mono shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed overflow-hidden">
       
@@ -38,8 +41,16 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
           <span>EMAIL: {profile.email}</span>
           <span>TEL: {profile.phone}</span>
           <span>LOC: {profile.location}</span>
-          <span>WEB: {profile.portfolioUrl}</span>
-          <span>GH: github.com/Veras-D</span>
+          {profile.portfolioUrl && (
+            <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.portfolioUrl!); }} className="hover:underline cursor-pointer">
+              WEB: {profile.portfolioUrl}
+            </button>
+          )}
+          {profile.githubUrl && (
+            <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.githubUrl!); }} className="hover:underline cursor-pointer">
+              GH: github.com/Veras-D
+            </button>
+          )}
         </div>
       </header>
 
@@ -75,10 +86,44 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
         </div>
       </section>
 
+      {/* Technical Projects */}
+      {activeProjects.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-900 border-b-2 pb-1 mb-3" style={{ borderColor: accentColor }}>
+            [02] KEY PROJECTS
+          </h2>
+
+          <div className="space-y-3 font-sans">
+            {activeProjects.map(p => (
+              <div key={p.id}>
+                <div className="flex justify-between items-baseline font-bold">
+                  <span className="text-[11px] text-slate-900">{p.title}</span>
+                  {p.url && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); openExternalUrl(p.url!); }}
+                      className="text-[9.5px] text-sky-700 font-mono hover:underline cursor-pointer"
+                    >
+                      LINK ↗
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-600 mt-0.5">{p.description[language] || p.description.en}</p>
+                {p.techStack && p.techStack.length > 0 && (
+                  <span className="text-[9.5px] font-mono text-slate-500 block mt-0.5">
+                    STACK: {p.techStack.join(', ')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Skills Matrix */}
       <section className="mb-6">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-900 border-b-2 pb-1 mb-3" style={{ borderColor: accentColor }}>
-          [02] TECHNICAL SKILLS
+          [03] TECHNICAL SKILLS
         </h2>
 
         <div className="grid grid-cols-2 gap-4">
@@ -99,7 +144,7 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
       <section className="grid grid-cols-2 gap-6">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-900 border-b-2 pb-1 mb-2" style={{ borderColor: accentColor }}>
-            [03] EDUCATION
+            [04] EDUCATION
           </h2>
           {education.filter(e => e.enabled).map(edu => (
             <div key={edu.id} className="text-[10px] mb-2">
@@ -111,7 +156,7 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ data, language, selec
 
         <div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-900 border-b-2 pb-1 mb-2" style={{ borderColor: accentColor }}>
-            [04] LANGUAGES
+            [05] LANGUAGES
           </h2>
           {languages.filter(l => l.enabled).map(lang => (
             <div key={lang.id} className="text-[10px] flex justify-between">

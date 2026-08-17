@@ -1,6 +1,7 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset } from '../../types/cv';
 import { Mail, Phone, MapPin, Globe, Github, Linkedin } from 'lucide-react';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 interface TemplateProps {
   data: CVData;
@@ -13,7 +14,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
   const { profile, experiences, skillCategories, projects, education, languages } = data;
   const accentColor = '#0284c7';
 
-  // Filter experiences & bullets by enabled & selectedTags
+  // Filter experiences & bullets by enabled
   const filteredExperiences = experiences
     .filter(e => e.enabled)
     .map(e => {
@@ -24,9 +25,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
     })
     .filter(e => e.activeBullets.length > 0 || selectedTags.length === 0);
 
-  const filteredProjects = projects.filter(p => 
-    p.enabled && (selectedTags.length === 0 || p.tags.some(t => selectedTags.includes(t)))
-  );
+  const activeProjects = projects.filter(p => p.enabled);
 
   return (
     <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 p-6 sm:p-8 font-sans shadow-2xl mx-auto box-border text-[11px] leading-relaxed overflow-hidden">
@@ -59,14 +58,22 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
             <span>{profile.location}</span>
             <MapPin className="w-3 h-3 text-slate-400" />
           </div>
-          <div className="flex items-center justify-end gap-1.5 text-sky-700">
-            <a href={profile.githubUrl} target="_blank" rel="noreferrer">github.com/Veras-D</a>
-            <Github className="w-3 h-3 text-slate-400" />
-          </div>
-          <div className="flex items-center justify-end gap-1.5 text-sky-700">
-            <a href={profile.linkedinUrl} target="_blank" rel="noreferrer">linkedin.com/in/veras-d</a>
-            <Linkedin className="w-3 h-3 text-slate-400" />
-          </div>
+          {profile.githubUrl && (
+            <div className="flex items-center justify-end gap-1.5 text-sky-700">
+              <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.githubUrl!); }} className="hover:underline cursor-pointer">
+                github.com/Veras-D
+              </button>
+              <Github className="w-3 h-3 text-slate-400" />
+            </div>
+          )}
+          {profile.linkedinUrl && (
+            <div className="flex items-center justify-end gap-1.5 text-sky-700">
+              <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.linkedinUrl!); }} className="hover:underline cursor-pointer">
+                linkedin.com/in/veras-d
+              </button>
+              <Linkedin className="w-3 h-3 text-slate-400" />
+            </div>
+          )}
         </div>
       </header>
 
@@ -118,31 +125,37 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
           </section>
 
           {/* Featured Projects */}
-          {filteredProjects.length > 0 && (
+          {activeProjects.length > 0 && (
             <section>
               <h2 className="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b text-slate-900" style={{ borderColor: accentColor }}>
                 {language === 'en' ? 'Key Technical Projects' : 'Klíčové Projekty'}
               </h2>
 
               <div className="space-y-3">
-                {filteredProjects.map(p => (
+                {activeProjects.map(p => (
                   <div key={p.id}>
                     <div className="flex justify-between items-baseline">
                       <span className="font-bold text-slate-900">{p.title}</span>
                       {p.url && (
-                        <a href={p.url} target="_blank" rel="noreferrer" className="text-[9.5px] text-sky-700 font-mono">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); openExternalUrl(p.url!); }}
+                          className="text-[9.5px] text-sky-700 font-mono hover:underline cursor-pointer"
+                        >
                           Link ↗
-                        </a>
+                        </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-600 mt-0.5">{p.description[language]}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {p.techStack.map((tech, i) => (
-                        <span key={i} className="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-[10px] text-slate-600 mt-0.5">{p.description[language] || p.description.en}</p>
+                    {p.techStack && p.techStack.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {p.techStack.map((tech, i) => (
+                          <span key={i} className="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -162,9 +175,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
 
             <div className="space-y-3">
               {skillCategories.map(cat => {
-                const activeSkills = cat.skills.filter(s => 
-                  s.enabled && (selectedTags.length === 0 || s.tags.some(t => selectedTags.includes(t)))
-                );
+                const activeSkills = cat.skills.filter(s => s.enabled);
                 if (activeSkills.length === 0) return null;
 
                 return (

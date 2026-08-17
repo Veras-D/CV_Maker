@@ -1,5 +1,6 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset } from '../../types/cv';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 interface TemplateProps {
   data: CVData;
@@ -21,6 +22,8 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
     })
     .filter(e => e.activeBullets.length > 0 || selectedTags.length === 0);
 
+  const activeProjects = projects.filter(p => p.enabled);
+
   return (
     <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-6 sm:p-10 font-serif shadow-2xl mx-auto box-border text-[11px] leading-relaxed overflow-hidden">
       
@@ -39,12 +42,22 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
           <span>{profile.phone}</span>
           <span>•</span>
           <span>{profile.location}</span>
-          <span>•</span>
-          <span>{profile.portfolioUrl}</span>
+          {profile.portfolioUrl && (
+            <>
+              <span>•</span>
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); openExternalUrl(profile.portfolioUrl!); }} 
+                className="text-sky-700 hover:underline cursor-pointer"
+              >
+                {profile.portfolioUrl}
+              </button>
+            </>
+          )}
         </div>
       </header>
 
-      {/* Summary */}
+      {/* Executive Summary */}
       <section className="mb-6 font-sans">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-400 mb-2 pb-0.5">
           {language === 'en' ? 'Executive Profile' : 'Profil'}
@@ -82,6 +95,44 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
           ))}
         </div>
       </section>
+
+      {/* Technical Projects */}
+      {activeProjects.length > 0 && (
+        <section className="mb-6 font-sans">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-400 mb-3 pb-0.5">
+            {language === 'en' ? 'Featured Portfolio Projects' : 'Projekty'}
+          </h2>
+
+          <div className="space-y-3">
+            {activeProjects.map(p => (
+              <div key={p.id}>
+                <div className="flex justify-between items-baseline font-bold text-slate-900">
+                  <span className="text-[11px]">{p.title}</span>
+                  {p.url && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); openExternalUrl(p.url!); }}
+                      className="text-[9.5px] text-sky-700 font-mono hover:underline cursor-pointer"
+                    >
+                      {p.url} ↗
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-700 mt-0.5">{p.description[language] || p.description.en}</p>
+                {p.techStack && p.techStack.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {p.techStack.map((tech, idx) => (
+                      <span key={idx} className="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Skills */}
       <section className="mb-6 font-sans">

@@ -3,6 +3,7 @@ import { useCV } from '../../context/CVContext';
 import { KanbanStatus, KanbanRole } from '../../types/cv';
 import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 export const KanbanBoard: React.FC = () => {
   const { cvData, addKanbanRole, updateKanbanRoleStatus, updateKanbanRole, deleteKanbanRole, showArchivedKanban, setShowArchivedKanban } = useCV();
@@ -247,9 +248,14 @@ export const KanbanBoard: React.FC = () => {
                         </div>
 
                         {role.roleUrl && (
-                          <a href={role.roleUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-                            Link ↗
-                          </a>
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); openExternalUrl(role.roleUrl!); }}
+                            className="text-sky-400 hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
+                            <span>Link</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </button>
                         )}
                       </div>
                     </div>
