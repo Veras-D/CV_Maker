@@ -259,16 +259,6 @@ export const KanbanBoard: React.FC = () => {
                         {role.notes}
                       </p>
                     )}
-
-                    {/* Move Stage Select */}
-                    <div className="pt-2 border-t border-slate-800">
-                      <CustomSelect
-                        className="w-full text-[10px]"
-                        options={stageOptions}
-                        value={role.status}
-                        onChange={(val) => updateKanbanRoleStatus(role.id, val as KanbanStatus)}
-                      />
-                    </div>
                   </div>
                 ))}
               </div>
