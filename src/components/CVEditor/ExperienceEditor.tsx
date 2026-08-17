@@ -148,7 +148,7 @@ export const ExperienceEditor: React.FC = () => {
                             : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
                         }`}
                       >
-                        #{t}
+                        {t}
                       </button>
                     );
                   })}
@@ -232,7 +232,7 @@ export const ExperienceEditor: React.FC = () => {
                                 isTagged ? 'bg-sky-500/30 text-sky-300 font-semibold' : 'text-slate-500 hover:text-slate-300'
                               }`}
                             >
-                              #{t}
+                              {t}
                             </button>
                           );
                         })}
