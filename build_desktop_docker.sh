@@ -13,7 +13,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 # Force Docker to build the image layer with latest Rust image
-$DOCKER_CMD run --privileged --build --rm desktop-builder
+$DOCKER_CMD run --build --rm desktop-builder
 
 if [ $? -eq 0 ]; then
     echo "=========================================="
