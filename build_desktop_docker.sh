@@ -12,13 +12,16 @@ if ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker compose"
 fi
 
-# Force Docker to build the image layer with latest Rust image
+# Clean old bundle folders (deb, rpm, etc.) using Docker container privileges
+$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle
+
+# Build standalone Desktop App image inside Docker
 $DOCKER_CMD run --build --rm desktop-builder
 
 if [ $? -eq 0 ]; then
     echo "=========================================="
-    echo " Build complete! Desktop app generated in:"
-    echo " src-tauri/target/release/bundle/"
+    echo " Build complete! Standalone AppImage generated in:"
+    echo " src-tauri/target/release/bundle/appimage/CV_Maker_1.0.0_amd64.AppImage"
     echo "=========================================="
 else
     echo "Build failed. Please check container logs."
