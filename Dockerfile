@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     librsvg2-dev \
     javascriptcoregtk-4.1 \
     pkg-config \
+    squashfs-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust toolchain via rustup
@@ -37,6 +38,11 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Install Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
+
+# Pre-cache AppImage bundler tool in /root/.cache/tauri to bypass GitHub HTTP 429 rate limit
+RUN mkdir -p /root/.cache/tauri && \
+    curl -L -o /root/.cache/tauri/appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage && \
+    chmod +x /root/.cache/tauri/appimagetool-x86_64.AppImage
 
 COPY --from=web-builder /app /app
 
