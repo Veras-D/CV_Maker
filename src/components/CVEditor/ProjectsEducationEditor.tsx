@@ -65,22 +65,23 @@ export const ProjectsEducationEditor: React.FC = () => {
                 p.enabled ? 'bg-slate-850 border-slate-750' : 'bg-slate-900/40 border-slate-800 opacity-60'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <button 
                     onClick={() => toggleProjectEnabled(p.id)}
-                    className={p.enabled ? 'text-sky-400' : 'text-slate-600'}
+                    className={p.enabled ? 'text-sky-400 shrink-0' : 'text-slate-600 shrink-0'}
                   >
                     {p.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </button>
                   <input
                     type="text"
+                    placeholder="Project Title..."
                     value={p.title}
                     onChange={(e) => updateProject(p.id, { title: e.target.value })}
-                    className="bg-transparent font-bold text-xs text-slate-100 focus:outline-none focus:border-b border-sky-500"
+                    className="flex-1 min-w-0 bg-transparent font-bold text-xs text-slate-100 focus:outline-none focus:border-b border-sky-500"
                   />
                 </div>
-                <button onClick={() => deleteProject(p.id)} className="text-slate-500 hover:text-red-400 p-1">
+                <button onClick={() => deleteProject(p.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -148,9 +149,9 @@ export const ProjectsEducationEditor: React.FC = () => {
 
               return (
                 <div key={edu.id} className="bg-slate-850 border border-slate-750 p-3 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => toggleEducationEnabled(edu.id)} className={edu.enabled ? 'text-sky-400' : 'text-slate-600'}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <button onClick={() => toggleEducationEnabled(edu.id)} className={edu.enabled ? 'text-sky-400 shrink-0' : 'text-slate-600 shrink-0'}>
                         {edu.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                       </button>
                       <input
@@ -158,10 +159,10 @@ export const ProjectsEducationEditor: React.FC = () => {
                         placeholder="Institution / Academy"
                         value={edu.institution}
                         onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
-                        className="bg-transparent text-xs font-bold text-slate-100 focus:outline-none focus:border-b border-sky-500"
+                        className="flex-1 min-w-0 bg-transparent text-xs font-bold text-slate-100 focus:outline-none focus:border-b border-sky-500"
                       />
                     </div>
-                    <button onClick={() => deleteEducation(edu.id)} className="text-slate-500 hover:text-red-400 p-1">
+                    <button onClick={() => deleteEducation(edu.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0">
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
