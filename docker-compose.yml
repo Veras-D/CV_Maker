@@ -6,6 +6,9 @@ services:
       dockerfile: Dockerfile
       target: tauri-desktop-builder
     container_name: cv_maker_desktop_builder
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
     volumes:
       - .:/app
       - /app/node_modules
