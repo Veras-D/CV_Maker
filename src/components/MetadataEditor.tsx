@@ -34,7 +34,7 @@ export const MetadataEditor: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
-              <span>dc:title (Document Title)</span>
+              <span>dc:title (Target Role Title)</span>
               <span className="font-mono text-[10px] text-sky-400">Dublin Core Title</span>
             </label>
             <input

@@ -39,7 +39,7 @@ export const initialCVData: CVData = {
       activeLanguage: "en",
       activeLayout: "classic",
       metadata: {
-        dc_title: "Vivi Veras - Resume",
+        dc_title: "Full-Stack Engineer & DevOps Specialist",
         dc_creator: "Vivi Veras",
         cp_keywords: "React, TypeScript, Node.js, Python, DevOps, Docker, AWS",
         cp_description: "Professional Resume - Vivi Veras",
