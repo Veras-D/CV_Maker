@@ -42,15 +42,13 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Pre-cache ALL Tauri AppImage & linuxdeploy bundler binaries in /root/.cache/tauri to bypass GitHub rate limits
+# Extract appimagetool into native binary directory so it runs 100% reliably inside Docker
 RUN mkdir -p /root/.cache/tauri && \
-    curl -L -o /root/.cache/tauri/appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage || true && \
-    curl -L -o /root/.cache/tauri/AppRun-x86_64 https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 || true && \
-    curl -L -o /root/.cache/tauri/linuxdeploy-x86_64.AppImage https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage || true && \
-    curl -L -o /root/.cache/tauri/linuxdeploy-plugin-gtk.sh https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh || true && \
-    curl -L -o /root/.cache/tauri/linuxdeploy-plugin-gstreamer.sh https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh || true && \
-    curl -L -o /root/.cache/tauri/linuxdeploy-plugin-appimage-x86_64.AppImage https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage || true && \
-    chmod -R +x /root/.cache/tauri/
+    curl -L -o /tmp/appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage && \
+    chmod +x /tmp/appimagetool.AppImage && \
+    cd /tmp && ./appimagetool.AppImage --appimage-extract && \
+    mv /tmp/squashfs-root /root/.cache/tauri/appimagetool-extracted && \
+    rm -rf /tmp/appimagetool.AppImage
 
 COPY --from=web-builder /app /app
 
