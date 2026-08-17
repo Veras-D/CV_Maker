@@ -9,8 +9,8 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: Tauri Desktop Linux Binary Builder (Rust 1.85+ with WebKit GTK)
-FROM rust:1.85-bookworm AS tauri-desktop-builder
+# Stage 2: Tauri Desktop Linux Binary Builder (Latest Rust compiler for edition2024 crates)
+FROM rust:latest AS tauri-desktop-builder
 WORKDIR /app
 
 # Install Tauri GTK & system build dependencies

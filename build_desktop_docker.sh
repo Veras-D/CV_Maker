@@ -12,7 +12,8 @@ if ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker compose"
 fi
 
-$DOCKER_CMD run --rm desktop-builder
+# Force Docker to build the image layer with latest Rust image
+$DOCKER_CMD run --build --rm desktop-builder
 
 if [ $? -eq 0 ]; then
     echo "=========================================="
