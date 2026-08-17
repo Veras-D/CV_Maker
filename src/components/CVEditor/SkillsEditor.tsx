@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { Cpu, Plus, Trash2, Eye, EyeOff, Tag } from 'lucide-react';
+import { Cpu, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 
 export const SkillsEditor: React.FC = () => {
   const { 
@@ -15,16 +15,14 @@ export const SkillsEditor: React.FC = () => {
   } = useCV();
 
   const { skillCategories } = cvData;
-  const [newCatNameEn, setNewCatNameEn] = useState('');
-  const [newCatNameCs, setNewCatNameCs] = useState('');
+  const [newCatName, setNewCatName] = useState('');
   const [newSkillName, setNewSkillName] = useState<{ [catId: string]: string }>({});
 
   const handleAddCat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newCatNameEn.trim()) {
-      addSkillCategory(newCatNameEn.trim(), newCatNameCs.trim() || newCatNameEn.trim());
-      setNewCatNameEn('');
-      setNewCatNameCs('');
+    if (newCatName.trim()) {
+      addSkillCategory(newCatName.trim(), newCatName.trim());
+      setNewCatName('');
     }
   };
 
@@ -37,9 +35,9 @@ export const SkillsEditor: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg mb-6">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+        <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
           <Cpu className="w-4 h-4 text-sky-400" />
           <span>Core Skills & Technologies Matrix</span>
         </h3>
@@ -47,17 +45,13 @@ export const SkillsEditor: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {skillCategories.map((cat) => (
-          <div key={cat.id} className="bg-slate-850 border border-slate-750 p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
+          <div key={cat.id} className="bg-slate-850 border border-slate-750 p-4 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
               <input
                 type="text"
-                value={cat.categoryName[activeLanguage]}
-                onChange={(e) => updateSkillCategory(
-                  cat.id, 
-                  activeLanguage === 'en' ? e.target.value : cat.categoryName.en,
-                  activeLanguage === 'cs' ? e.target.value : cat.categoryName.cs
-                )}
-                className="bg-transparent text-sm font-bold text-sky-400 focus:outline-none focus:border-b border-sky-500"
+                value={cat.categoryName[activeLanguage] || cat.categoryName.en || ''}
+                onChange={(e) => updateSkillCategory(cat.id, e.target.value, e.target.value)}
+                className="bg-transparent text-xs font-bold text-sky-400 focus:outline-none focus:border-b border-sky-500"
               />
               <button
                 onClick={() => deleteSkillCategory(cat.id)}
@@ -68,11 +62,11 @@ export const SkillsEditor: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            <div className="flex flex-wrap gap-1.5">
               {cat.skills.map((s) => (
                 <div 
                   key={s.id} 
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border transition-all ${
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs border transition-all ${
                     s.enabled 
                       ? 'bg-slate-800 border-slate-700 text-slate-200' 
                       : 'bg-slate-900/50 border-slate-800 text-slate-500 line-through'
@@ -96,7 +90,7 @@ export const SkillsEditor: React.FC = () => {
             </div>
 
             {/* Quick Add Skill Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <input
                 type="text"
                 placeholder="Add skill (e.g. Terraform)..."
@@ -125,21 +119,14 @@ export const SkillsEditor: React.FC = () => {
       <form onSubmit={handleAddCat} className="mt-4 pt-4 border-t border-slate-800 flex gap-2 items-center">
         <input
           type="text"
-          placeholder="New Category Name (EN)..."
-          value={newCatNameEn}
-          onChange={(e) => setNewCatNameEn(e.target.value)}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-        />
-        <input
-          type="text"
-          placeholder="New Category Name (CS)..."
-          value={newCatNameCs}
-          onChange={(e) => setNewCatNameCs(e.target.value)}
+          placeholder="New Category Name (e.g. Cloud & DevOps)..."
+          value={newCatName}
+          onChange={(e) => setNewCatName(e.target.value)}
           className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
         />
         <button
           type="submit"
-          className="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
+          className="bg-sky-600 hover:bg-sky-500 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Category</span>
