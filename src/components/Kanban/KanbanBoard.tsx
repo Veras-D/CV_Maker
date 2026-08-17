@@ -33,11 +33,11 @@ export const KanbanBoard: React.FC = () => {
   ];
 
   const stageOptions: SelectOption[] = [
-    { value: 'applied', label: 'Stage: Applied' },
-    { value: 'hr_call', label: 'Stage: HR Screening' },
-    { value: 'tech_interview', label: 'Stage: Tech Interview' },
-    { value: 'manager_interview', label: 'Stage: Manager Round' },
-    { value: 'hired', label: 'Stage: Offer / Hired' },
+    { value: 'applied', label: 'Applied' },
+    { value: 'hr_call', label: 'HR Screening' },
+    { value: 'tech_interview', label: 'Tech Interview' },
+    { value: 'manager_interview', label: 'Manager Round' },
+    { value: 'hired', label: 'Offer / Hired' },
     { value: 'archived', label: 'Archive Application' }
   ];
 
