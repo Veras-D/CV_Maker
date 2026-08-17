@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { KanbanStatus } from '../../types/cv';
-import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore } from 'lucide-react';
+import { KanbanStatus, KanbanRole } from '../../types/cv';
+import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3 } from 'lucide-react';
+import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 
 export const KanbanBoard: React.FC = () => {
-  const { cvData, addKanbanRole, updateKanbanRoleStatus, deleteKanbanRole, showArchivedKanban, setShowArchivedKanban } = useCV();
+  const { cvData, addKanbanRole, updateKanbanRoleStatus, updateKanbanRole, deleteKanbanRole, showArchivedKanban, setShowArchivedKanban } = useCV();
   const { kanbanRoles } = cvData;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<KanbanRole | null>(null);
 
   // Form state
   const [roleTitle, setRoleTitle] = useState('');
@@ -22,32 +24,72 @@ export const KanbanBoard: React.FC = () => {
 
   const activeColumns: { id: KanbanStatus; title: string }[] = [
     { id: 'applied', title: 'Applied' },
-    { id: 'hr_call', title: 'HR / Screening Call' },
+    { id: 'hr_call', title: 'HR / Screening' },
     { id: 'tech_interview', title: 'Technical Interview' },
-    { id: 'manager_interview', title: 'Manager / Final Round' },
+    { id: 'manager_interview', title: 'Manager Round' },
     { id: 'hired', title: 'Offer / Hired' }
+  ];
+
+  const stageOptions: SelectOption[] = [
+    { value: 'applied', label: 'Stage: Applied' },
+    { value: 'hr_call', label: 'Stage: HR Screening' },
+    { value: 'tech_interview', label: 'Stage: Tech Interview' },
+    { value: 'manager_interview', label: 'Stage: Manager Round' },
+    { value: 'hired', label: 'Stage: Offer / Hired' },
+    { value: 'archived', label: 'Archive Application' }
   ];
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (roleTitle.trim() && company.trim()) {
-      addKanbanRole({
-        roleTitle: roleTitle.trim(),
-        company: company.trim(),
-        location: location.trim() || 'Remote',
-        salary: salary.trim() || undefined,
-        status,
-        dateApplied,
-        roleUrl: roleUrl.trim() || undefined,
-        notes: notes.trim() || undefined
-      });
-      setRoleTitle('');
-      setCompany('');
-      setLocation('');
-      setSalary('');
-      setNotes('');
-      setShowAddModal(false);
+      if (editingRole) {
+        updateKanbanRole(editingRole.id, {
+          roleTitle: roleTitle.trim(),
+          company: company.trim(),
+          location: location.trim() || 'Remote',
+          salary: salary.trim() || undefined,
+          status,
+          dateApplied,
+          roleUrl: roleUrl.trim() || undefined,
+          notes: notes.trim() || undefined
+        });
+      } else {
+        addKanbanRole({
+          roleTitle: roleTitle.trim(),
+          company: company.trim(),
+          location: location.trim() || 'Remote',
+          salary: salary.trim() || undefined,
+          status,
+          dateApplied,
+          roleUrl: roleUrl.trim() || undefined,
+          notes: notes.trim() || undefined
+        });
+      }
+      closeModal();
     }
+  };
+
+  const openEditModal = (role: KanbanRole) => {
+    setEditingRole(role);
+    setRoleTitle(role.roleTitle);
+    setCompany(role.company);
+    setLocation(role.location);
+    setSalary(role.salary || '');
+    setStatus(role.status);
+    setDateApplied(role.dateApplied);
+    setRoleUrl(role.roleUrl || '');
+    setNotes(role.notes || '');
+    setShowAddModal(true);
+  };
+
+  const closeModal = () => {
+    setEditingRole(null);
+    setRoleTitle('');
+    setCompany('');
+    setLocation('');
+    setSalary('');
+    setNotes('');
+    setShowAddModal(false);
   };
 
   const filteredRoles = kanbanRoles.filter(r => 
@@ -60,11 +102,11 @@ export const KanbanBoard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
       
-      {/* Top Controls */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+      {/* Top Header */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div>
           <h2 className="text-base font-bold text-white">Application Pipeline</h2>
-          <p className="text-xs text-slate-400">Track interviews, tech assessments, and hiring status</p>
+          <p className="text-xs text-slate-400">Track application stages, salary expectations, and notes</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -76,11 +118,11 @@ export const KanbanBoard: React.FC = () => {
               placeholder="Search roles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 w-40 sm:w-48"
+              className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 w-36 sm:w-48"
             />
           </div>
 
-          {/* Toggle Archive */}
+          {/* Archive toggle */}
           <button
             onClick={() => setShowArchivedKanban(!showArchivedKanban)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
@@ -94,7 +136,10 @@ export const KanbanBoard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setEditingRole(null);
+              setShowAddModal(true);
+            }}
             className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -103,7 +148,7 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Kanban Board Columns */}
+      {/* Main Board Columns */}
       <div className={`grid gap-4 items-start ${
         showArchivedKanban ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-6' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
       }`}>
@@ -126,7 +171,7 @@ export const KanbanBoard: React.FC = () => {
                 {colRoles.map((role) => (
                   <div 
                     key={role.id}
-                    className="bg-slate-850 border border-slate-750 hover:border-slate-650 rounded-lg p-3 space-y-2 transition-all shadow-sm"
+                    className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group"
                   >
                     <div className="flex items-start justify-between gap-1">
                       <div>
@@ -136,13 +181,22 @@ export const KanbanBoard: React.FC = () => {
                           <span>{role.company}</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteKanbanRole(role.id)}
-                        className="text-slate-500 hover:text-red-400 p-1"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(role)}
+                          className="text-slate-400 hover:text-sky-400 p-1"
+                          title="Edit Card"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => deleteKanbanRole(role.id)}
+                          className="text-slate-400 hover:text-red-400 p-1"
+                          title="Delete Card"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="text-[10.5px] text-slate-400 space-y-0.5">
@@ -173,25 +227,19 @@ export const KanbanBoard: React.FC = () => {
                     </div>
 
                     {role.notes && (
-                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded border border-slate-750 font-sans line-clamp-2">
+                      <p className="text-[10px] text-slate-300 bg-slate-800 p-1.5 rounded border border-slate-750 font-sans line-clamp-2">
                         {role.notes}
                       </p>
                     )}
 
-                    {/* Move Stage Selector */}
-                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-1">
-                      <select
+                    {/* Move Stage Custom Dark Select */}
+                    <div className="pt-2 border-t border-slate-800">
+                      <CustomSelect
+                        className="w-full text-[10px]"
+                        options={stageOptions}
                         value={role.status}
-                        onChange={(e) => updateKanbanRoleStatus(role.id, e.target.value as KanbanStatus)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-300 focus:outline-none cursor-pointer"
-                      >
-                        <option value="applied">Stage: Applied</option>
-                        <option value="hr_call">Stage: HR Call</option>
-                        <option value="tech_interview">Stage: Tech Interview</option>
-                        <option value="manager_interview">Stage: Manager Interview</option>
-                        <option value="hired">Stage: Offer / Hired</option>
-                        <option value="archived">Archive Application</option>
-                      </select>
+                        onChange={(val) => updateKanbanRoleStatus(role.id, val as KanbanStatus)}
+                      />
                     </div>
                   </div>
                 ))}
@@ -201,7 +249,7 @@ export const KanbanBoard: React.FC = () => {
           );
         })}
 
-        {/* Optional Hidden Archive Column */}
+        {/* Hidden Archive Column */}
         {showArchivedKanban && (
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] bg-slate-950/40">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800 text-rose-400">
@@ -213,7 +261,7 @@ export const KanbanBoard: React.FC = () => {
 
             <div className="space-y-2.5">
               {filteredRoles.filter(r => r.status === 'archived').map((role) => (
-                <div key={role.id} className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75">
+                <div key={role.id} className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75 space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-300">{role.roleTitle}</span>
                     <button onClick={() => deleteKanbanRole(role.id)} className="text-slate-500 hover:text-red-400">
@@ -223,7 +271,7 @@ export const KanbanBoard: React.FC = () => {
                   <span className="text-[10px] text-slate-500 block">{role.company}</span>
                   <button
                     onClick={() => updateKanbanRoleStatus(role.id, 'applied')}
-                    className="mt-2 text-[10px] text-sky-400 hover:underline"
+                    className="mt-1 text-[10px] text-sky-400 hover:underline block"
                   >
                     Restore to Applied
                   </button>
@@ -235,11 +283,13 @@ export const KanbanBoard: React.FC = () => {
 
       </div>
 
-      {/* Add Modal */}
+      {/* Add / Edit Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-3">Add Application</h3>
+            <h3 className="text-base font-bold text-white mb-3">
+              {editingRole ? 'Edit Application' : 'Add Application'}
+            </h3>
             <form onSubmit={handleAddSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs text-slate-300 mb-1 font-medium">Role Title</label>
@@ -292,15 +342,12 @@ export const KanbanBoard: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-slate-300 mb-1 font-medium">Pipeline Stage</label>
-                  <select
+                  <CustomSelect
+                    className="w-full"
+                    options={stageOptions}
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as KanbanStatus)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none"
-                  >
-                    {activeColumns.map(c => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setStatus(val as KanbanStatus)}
+                  />
                 </div>
 
                 <div>
@@ -339,7 +386,7 @@ export const KanbanBoard: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={closeModal}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800"
                 >
                   Cancel
@@ -348,7 +395,7 @@ export const KanbanBoard: React.FC = () => {
                   type="submit"
                   className="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white"
                 >
-                  Save Card
+                  {editingRole ? 'Update Card' : 'Save Card'}
                 </button>
               </div>
             </form>
