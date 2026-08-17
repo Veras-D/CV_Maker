@@ -4,6 +4,7 @@ echo "=========================================="
 echo " Building Tauri Desktop App inside Docker "
 echo "=========================================="
 
+export COMPOSE_BAKE=false
 DOCKER_CMD="docker compose"
 
 # Check if current user can access docker socket without sudo
