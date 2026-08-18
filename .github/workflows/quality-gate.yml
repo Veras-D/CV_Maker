@@ -8,12 +8,14 @@ on:
 
 jobs:
   quality-gate:
-    name: Code Quality, Complexity & Build Gate
+    name: Code Quality, Complexity & Security Gate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
@@ -27,11 +29,16 @@ jobs:
       - name: 'Gate 1: TypeScript Strict Typecheck'
         run: npm run typecheck
 
-      - name: 'Gate 2: Static Analysis & Cyclomatic Complexity'
+      - name: 'Gate 2: Static Analysis, Complexity & AST Security'
         run: npm run lint
 
       - name: 'Gate 3: Code Duplication & Clone Detection'
         run: npm run quality:duplication
 
-      - name: 'Gate 4: Production Build Verification'
+      - name: 'Gate 4: Secret & Token Leak Detection (Gitleaks)'
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Gate 5: Production Build Verification'
         run: npm run build
