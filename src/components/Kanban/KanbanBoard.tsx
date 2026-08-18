@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useCV } from '../../context/CVContext';
 import { KanbanStatus, KanbanRole } from '../../types/cv';
-import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical, X } from 'lucide-react';
+import { Plus, Building, MapPin, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical, X } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { CustomDatePicker } from '../Common/CustomDatePicker';
 import { CustomCurrencyInput } from '../Common/CustomCurrencyInput';

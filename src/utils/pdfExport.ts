@@ -13,6 +13,12 @@ import {
   LanguageItem 
 } from '../types/cv';
 
+interface GlobalCVWindow extends Window {
+  __CV_DATA__?: CVData;
+  __CV_LANGUAGE__?: LanguageCode;
+  __CV_TAGS__?: string[];
+}
+
 export async function exportCVToPDF(
   _elementId: string,
   filename: string,
@@ -21,9 +27,10 @@ export async function exportCVToPDF(
   language: LanguageCode = 'en',
   selectedTags: string[] = []
 ): Promise<void> {
-  const cv: CVData = data || (window as any).__CV_DATA__;
-  const lang: LanguageCode = language || (window as any).__CV_LANGUAGE__ || 'en';
-  const tags: string[] = selectedTags || (window as any).__CV_TAGS__ || [];
+  const win = window as unknown as GlobalCVWindow;
+  const cv: CVData = data || win.__CV_DATA__ || {} as CVData;
+  const lang: LanguageCode = language || win.__CV_LANGUAGE__ || 'en';
+  const tags: string[] = selectedTags || win.__CV_TAGS__ || [];
 
   if (!cv) {
     throw new Error('CV Data not found for vector PDF generation');
@@ -88,7 +95,12 @@ export async function exportCVToPDF(
   contactItems.forEach((item, idx) => {
     if (item.url) {
       doc.setTextColor(3, 105, 161); // sky-700 (Only Portfolio URL is a link)
-      (doc as any).textWithLink(item.text, startX, y, { url: item.url });
+      const linkedDoc = doc as jsPDF & { textWithLink?: (text: string, x: number, y: number, options: { url: string }) => void };
+      if (linkedDoc.textWithLink) {
+        linkedDoc.textWithLink(item.text, startX, y, { url: item.url });
+      } else {
+        doc.text(item.text, startX, y);
+      }
     } else {
       doc.setTextColor(71, 85, 105); // slate-600 (Email, Phone, Location are plain text)
       doc.text(item.text, startX, y);
@@ -206,7 +218,12 @@ export async function exportCVToPDF(
         doc.setTextColor(3, 105, 161); // sky-700
         const linkW = doc.getTextWidth(p.url) + 3.5;
         const linkX = MARGIN_RIGHT - linkW;
-        (doc as any).textWithLink(p.url, linkX, y, { url: p.url });
+        const linkedDoc = doc as jsPDF & { textWithLink?: (text: string, x: number, y: number, options: { url: string }) => void };
+        if (linkedDoc.textWithLink) {
+          linkedDoc.textWithLink(p.url, linkX, y, { url: p.url });
+        } else {
+          doc.text(p.url, linkX, y);
+        }
 
         // Draw crisp diagonal arrow ↗ next to link
         const arrowX = MARGIN_RIGHT - 1.2;

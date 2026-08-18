@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCV } from '../context/CVContext';
-import { FileCheck, ShieldCheck, Tag, Info, Sparkles } from 'lucide-react';
+import { FileCheck, ShieldCheck, Info } from 'lucide-react';
 
 export const MetadataEditor: React.FC = () => {
   const { activePreset, updateMetadata } = useCV();

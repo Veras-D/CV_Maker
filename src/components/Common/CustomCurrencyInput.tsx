@@ -8,42 +8,40 @@ interface CurrencyInputProps {
   className?: string;
 }
 
+const CURRENCY_OPTIONS: SelectOption[] = [
+  { value: 'USD / yr', label: 'USD / yr' },
+  { value: 'USD / mo', label: 'USD / mo' },
+  { value: 'EUR / yr', label: 'EUR / yr' },
+  { value: 'EUR / mo', label: 'EUR / mo' },
+  { value: 'GBP / yr', label: 'GBP / yr' },
+  { value: 'CZK / mo', label: 'CZK / mo' }
+];
+
+// Parse value into formatted amount and currency unit
+const parseCurrencyValue = (val: string) => {
+  if (!val) return { amount: '', currency: 'USD / yr' };
+  const clean = val.trim();
+  const digitsOnly = clean.replace(/[^\d]/g, '');
+  const numPart = digitsOnly ? Number(digitsOnly.slice(0, 9)).toLocaleString('en-US') : '';
+  
+  const matchedCurr = CURRENCY_OPTIONS.find(opt => clean.toLowerCase().includes(opt.value.toLowerCase()));
+  return {
+    amount: numPart,
+    currency: matchedCurr ? matchedCurr.value : 'USD / yr'
+  };
+};
+
 export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
   value,
   onChange,
   className = ''
 }) => {
-  const currencyOptions: SelectOption[] = [
-    { value: 'USD / yr', label: 'USD / yr' },
-    { value: 'USD / mo', label: 'USD / mo' },
-    { value: 'EUR / yr', label: 'EUR / yr' },
-    { value: 'EUR / mo', label: 'EUR / mo' },
-    { value: 'GBP / yr', label: 'GBP / yr' },
-    { value: 'CZK / mo', label: 'CZK / mo' }
-  ];
-
-  // Parse value into formatted amount and currency unit
-  const parseValue = (val: string) => {
-    if (!val) return { amount: '', currency: 'USD / yr' };
-    const clean = val.trim();
-    // Match numeric digits and extract currency suffix
-    const digitsOnly = clean.replace(/[^\d]/g, '');
-    const numPart = digitsOnly ? Number(digitsOnly.slice(0, 9)).toLocaleString('en-US') : '';
-    
-    // Find matching currency or default to USD / yr
-    const matchedCurr = currencyOptions.find(opt => clean.toLowerCase().includes(opt.value.toLowerCase()));
-    return {
-      amount: numPart,
-      currency: matchedCurr ? matchedCurr.value : 'USD / yr'
-    };
-  };
-
-  const initial = parseValue(value);
+  const initial = parseCurrencyValue(value);
   const [amount, setAmount] = useState(initial.amount);
   const [currency, setCurrency] = useState(initial.currency);
 
   useEffect(() => {
-    const parsed = parseValue(value);
+    const parsed = parseCurrencyValue(value);
     setAmount(parsed.amount);
     if (parsed.currency) setCurrency(parsed.currency);
   }, [value]);
@@ -85,7 +83,7 @@ export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
       {/* Currency Selector */}
       <div className="w-[108px] shrink-0">
         <CustomSelect
-          options={currencyOptions}
+          options={CURRENCY_OPTIONS}
           value={currency}
           onChange={handleCurrencyChange}
           className="w-full text-xs"

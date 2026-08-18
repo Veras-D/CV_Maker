@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useCV } from '../context/CVContext';
 import { Sparkles, FileText, Kanban, Sliders, Download, DownloadCloud, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { exportCVToPDF } from '../utils/pdfExport';
-import { CustomSelect, SelectOption } from './Common/CustomSelect';
+import { SelectOption } from './Common/CustomSelect';
 import { ProModal } from './Common/ProModal';
 
 export const Navbar: React.FC = () => {

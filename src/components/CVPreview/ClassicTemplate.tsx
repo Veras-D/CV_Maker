@@ -9,7 +9,7 @@ interface TemplateProps {
   preset: RolePreset;
 }
 
-export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selectedTags, preset }) => {
+export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selectedTags, preset: _preset }) => {
   const { profile, experiences, skillCategories, projects, education, languages } = data;
 
   const filteredExperiences = experiences

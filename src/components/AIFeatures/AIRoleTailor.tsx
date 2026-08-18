@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { processAiJobTailoring } from '../../utils/aiService';
+import { processAiJobTailoring, AITailorResult } from '../../utils/aiService';
 import { Sparkles, Download, FileText, CheckCircle, Globe, Building } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
 import { ClassicTemplate } from '../CVPreview/ClassicTemplate';
@@ -15,7 +15,7 @@ export const AIRoleTailor: React.FC = () => {
   const [roleUrl, setRoleUrl] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tailoredResult, setTailoredResult] = useState<any | null>(null);
+  const [tailoredResult, setTailoredResult] = useState<AITailorResult | null>(null);
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);

@@ -3,7 +3,7 @@ import { ProfileEditor } from './ProfileEditor';
 import { ExperienceEditor } from './ExperienceEditor';
 import { SkillsEditor } from './SkillsEditor';
 import { ProjectsEducationEditor } from './ProjectsEducationEditor';
-import { DownloadCloud, Sparkles } from 'lucide-react';
+import { DownloadCloud } from 'lucide-react';
 import { AIIngestionModal } from '../AIFeatures/AIIngestionModal';
 
 export const CVEditor: React.FC = () => {

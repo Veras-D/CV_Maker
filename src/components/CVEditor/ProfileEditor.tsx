@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCV } from '../../context/CVContext';
-import { User, Mail, Phone, MapPin, Globe, Github, Linkedin, Languages } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Github, Linkedin } from 'lucide-react';
 
 export const ProfileEditor: React.FC = () => {
   const { cvData, updateProfile, activeLanguage } = useCV();
