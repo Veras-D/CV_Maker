@@ -15,28 +15,34 @@
 
 ---
 
-A modern, high-performance desktop application and career management hub. Features an **Applicant Tracking System (ATS) compliant pure-vector PDF engine**, an **AI-powered role tailoring suite**, a **drag-and-drop job application Kanban tracker**, and an **obsidian dark theme** built for speed and privacy.
+A modern, high-performance desktop application and career management hub. Features an **Applicant Tracking System (ATS) compliant pure-vector PDF engine**, a **100% local client-side RAG & semantic role-tailoring suite**, a **multi-source profile ingestion engine**, a **drag-and-drop job application Kanban tracker**, and an **obsidian dark theme** built for speed and complete data privacy.
 
 ---
 
 ## ✨ Features
 
 - 🎯 **100% Pure Vector PDF Engine**: Crisp vector text generation (`jsPDF` + `pdf-lib`) with embedded Dublin Core metadata, zero raster artifacts, and full ATS parseability.
-- 📋 **Job Application Kanban Board**: Visual application pipeline with native HTML5 drag-and-drop, custom dark calendar date picker, currency auto-masking, and permanent delete guards.
-- 🤖 **AI Role Tailoring & Cover Letter Generator**: Match job descriptions against your experience bullets in real-time, generate tailored resumes, and draft customized cover letters instantly.
+- 🤖 **100% Local Semantic RAG & ATS Matcher**: Zero cloud API dependencies. Client-side BM25 inverted index, vector cosine term-frequency scoring, 2,500+ tech lexicon, and instant tailored cover letter synthesis.
+- 📥 **Multi-Source Profile Ingestion**:
+  - **File Upload**: Import & parse `.pdf`, `.txt`, `.md`, and `.json` CV files via drag-and-drop.
+  - **GitHub Repos**: Scrapes public repositories, top languages, and bio directly.
+  - **Portfolio / Web**: DOM readability extraction for personal websites.
+  - **Resume Text**: Automatic section, skill, and contact detection.
+- 📋 **Job Application Kanban Pipeline**: Visual application pipeline with native HTML5 drag-and-drop, custom dark calendar date picker, currency auto-masking, and permanent delete confirmation guards.
 - 🌐 **Multi-Language Architecture**: Seamless document switching between English and Czech with centralized state synchronization.
 - 🎨 **Obsidian Dark Design System**: High-density, keyboard-friendly UI with tailored color tokens, layered optical depth, and zero UI clutter.
 - 🖥️ **Cross-Platform Desktop App**: Lightweight Rust backend powered by Tauri v2 with standalone Linux AppImage, macOS DMG, and Windows installer binaries.
-- 🛡️ **Automated Quality Gate**: Strict cyclomatic complexity limits (< 12), duplication detection (< 3%), and strict TypeScript validation.
+- 🛡️ **5-Stage Automated Quality & Security Gate**: Strict cyclomatic complexity limits ($\le 12$), maximum function lines ($\le 150$), file limits ($\le 350$), strict zero-`any` enforcement, AST security checks (banned `dangerouslySetInnerHTML` / unsafe URLs), Gitleaks secret scanning, and clone detection ($\le 3\%$).
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend & UI
-- **Framework**: React 18 with TypeScript
+- **Framework**: React 18 with TypeScript (Strict mode, zero `any`)
 - **Styling**: Tailwind CSS with custom Obsidian Design System
 - **PDF Generation**: jsPDF (Native Vector Drawing) + pdf-lib (Dublin Core Metadata Injection)
+- **Local AI & RAG**: Native TypeScript BM25 index & TF-IDF vector cosine matching (<5ms latency)
 - **Icons**: Lucide React
 - **Build Tool**: Vite 5
 
@@ -45,10 +51,11 @@ A modern, high-performance desktop application and career management hub. Featur
 - **Language**: Rust (Edition 2021)
 - **Packaging**: AppImage (`appimagetool`), DMG, MSI, NSIS
 
-### DevOps & Tooling
-- **Quality Gates**: ESLint (`complexity`, `@typescript-eslint`), `jscpd` (Copy/Paste Detector)
+### DevOps & Automated Security
+- **Quality Gates**: ESLint (`complexity`, `max-lines`, `max-lines-per-function`, `@typescript-eslint/no-explicit-any`), `jscpd` (Copy/Paste Detector)
+- **Security Scanners**: **Gitleaks** (secret/credential scanning) + React AST security linters
 - **Containerization**: Multi-stage Docker build for zero-host-dependency binary packaging
-- **CI/CD**: GitHub Actions (Multi-platform release matrix & Quality Gate)
+- **CI/CD**: GitHub Actions (5-Stage Quality & Security Gate + Multi-Platform Release Matrix)
 
 ---
 
@@ -58,14 +65,16 @@ A modern, high-performance desktop application and career management hub. Featur
 graph TD
     Client[🖥️ React UI / Tailwind CSS]
     Context[State Management / CVContext]
-    AIEngine[🤖 AI Role Tailor & Parser]
+    LocalRAG[🤖 100% Local RAG & ATS Engine]
+    Ingestion[📥 Multi-Source Ingestion Engine\nPDF / JSON / GitHub / Web]
     Kanban[📋 Application Kanban Board]
     PDFEngine[📄 Vector PDF Engine / jsPDF + pdf-lib]
     RustBackend[🦀 Tauri v2 Core / Rust]
     DesktopBinary[📦 Standalone AppImage / DMG / MSI]
 
     Client -->|User Interactions| Context
-    Context -->|Role Requirements| AIEngine
+    Context -->|Role Requirements| LocalRAG
+    Context -->|Import External Profile| Ingestion
     Context -->|Pipeline State| Kanban
     Context -->|Render ATS Template| PDFEngine
     Client -->|Native OS APIs| RustBackend
@@ -74,7 +83,8 @@ graph TD
 
     style Client fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
     style Context fill:#1e293b,stroke:#0284c7,stroke-width:2px,color:#fff
-    style AIEngine fill:#0369a1,stroke:#38bdf8,color:#fff
+    style LocalRAG fill:#0369a1,stroke:#38bdf8,color:#fff
+    style Ingestion fill:#047857,stroke:#10b981,color:#fff
     style Kanban fill:#065f46,stroke:#34d399,color:#fff
     style PDFEngine fill:#1e1b4b,stroke:#818cf8,color:#fff
     style RustBackend fill:#b45309,stroke:#f59e0b,color:#fff
@@ -89,25 +99,67 @@ graph TD
 CV_Maker/
 ├── .github/
 │   └── workflows/
-│       ├── quality-gate.yml      # Automated 4-stage Quality Gate CI
+│       ├── quality-gate.yml      # Automated 5-stage Quality & Security Gate CI
 │       └── release.yml           # Multi-platform Linux/macOS/Windows release CI
 ├── src/
 │   ├── components/
-│   │   ├── AIFeatures/           # AI Role Tailor, Cover Letter & Ingestion modals
+│   │   ├── AIFeatures/           # AI Role Tailor, ATS Scorecard & Multi-Source Ingestion
+│   │   │   ├── AIIngestionModal.tsx
+│   │   │   ├── AIRoleTailor.tsx
+│   │   │   ├── AIRoleTailorHeader.tsx
+│   │   │   ├── ATSScoreCard.tsx
+│   │   │   ├── IngestionSourceTabs.tsx
+│   │   │   ├── IngestionTabPanels.tsx
+│   │   │   ├── TailoredOutputView.tsx
+│   │   │   └── VacancyDetailsForm.tsx
 │   │   ├── Common/               # CustomSelect, CustomDatePicker, CustomCurrencyInput, ProModal
-│   │   ├── CVEditor/             # Experience, Skills, Education & Profile editors
+│   │   │   ├── CustomCurrencyInput.tsx
+│   │   │   ├── CustomDatePicker.tsx
+│   │   │   ├── CustomSelect.tsx
+│   │   │   ├── DatePickerCalendarDropdown.tsx
+│   │   │   └── ProModal.tsx
+│   │   ├── CVEditor/             # Modularized Resume Section Editors
+│   │   │   ├── BulletListEditor.tsx
+│   │   │   ├── CVEditor.tsx
+│   │   │   ├── EducationSection.tsx
+│   │   │   ├── ExperienceEditor.tsx
+│   │   │   ├── ExperienceItemCard.tsx
+│   │   │   ├── LanguagesSection.tsx
+│   │   │   ├── ProfileContactInputs.tsx
+│   │   │   ├── ProfileEditor.tsx
+│   │   │   ├── ProjectsEducationEditor.tsx
+│   │   │   ├── ProjectsSection.tsx
+│   │   │   ├── SkillCategoryCard.tsx
+│   │   │   └── SkillsEditor.tsx
 │   │   ├── CVPreview/            # Classic ATS Resume preview template
+│   │   │   ├── CVPreview.tsx
+│   │   │   └── ClassicTemplate.tsx
 │   │   ├── Kanban/               # Drag-and-drop application pipeline board
-│   │   ├── Navbar.tsx            # Global navigation, presets & PDF export triggers
+│   │   │   ├── ActiveColumn.tsx
+│   │   │   ├── ArchivedColumn.tsx
+│   │   │   ├── DeleteConfirmationModal.tsx
+│   │   │   ├── KanbanBoard.tsx
+│   │   │   ├── KanbanCardItem.tsx
+│   │   │   ├── KanbanColumn.tsx
+│   │   │   ├── KanbanHeader.tsx
+│   │   │   ├── KanbanRoleFormFields.tsx
+│   │   │   └── KanbanRoleModal.tsx
+│   │   ├── Navbar.tsx            # Global navigation & PDF export triggers
+│   │   ├── NavWorkspaceTabs.tsx  # Top-level workspace tab switcher
 │   │   └── MetadataEditor.tsx    # Dublin Core PDF metadata editor
 │   ├── context/
-│   │   └── CVContext.tsx         # Central React Context state provider
-│   ├── data/
-│   │   └── initial_data.ts       # Seed data & default presets
+│   │   ├── CVContext.tsx         # Central React Context state provider
+│   │   └── cvStateUpdaters.ts    # Pure state updaters & persistence logic
 │   ├── types/
 │   │   └── cv.ts                 # TypeScript data contracts & interfaces
 │   ├── utils/
-│   │   ├── pdfExport.ts          # 100% Vector PDF generator with jsPDF
+│   │   ├── aiService.ts          # Baseline AI interface types
+│   │   ├── ingestionService.ts   # Multi-source scraper (Files, GitHub, Web, Text)
+│   │   ├── localAiEngine.ts      # 100% local cover letter & summary synthesis
+│   │   ├── pdfDrawSections.ts    # Modularized jsPDF canvas section drawers
+│   │   ├── pdfExport.ts          # Pure vector PDF export orchestrator
+│   │   ├── pdfMetadata.ts        # pdf-lib Dublin Core / XMP metadata injector
+│   │   ├── semanticSearch.ts     # Client-side BM25 & cosine vector search engine
 │   │   └── urlHelper.ts          # Desktop WebView safe external URL handler
 │   ├── App.tsx                   # Main layout container
 │   ├── main.tsx                  # React DOM entry point
@@ -117,7 +169,7 @@ CV_Maker/
 │   │   └── main.rs               # Tauri Rust application entry point
 │   ├── Cargo.toml                # Rust dependencies & metadata
 │   └── tauri.conf.json           # Window & bundle configuration
-├── .eslintrc.cjs                 # Strict linting & cyclomatic complexity rules
+├── .eslintrc.json                # Strict linting, complexity & security rules
 ├── .jscpd.json                   # Copy/paste clone detection configuration
 ├── build_app.sh                  # Internal Docker AppImage packaging script
 ├── build_desktop_docker.sh       # Zero-dependency host build script
@@ -140,7 +192,8 @@ Build a standalone `.AppImage` with zero host library dependencies:
 chmod +x ./build_desktop_docker.sh
 ./build_desktop_docker.sh
 ```
-The compiled AppImage will be generated in the root directory:
+
+The script automatically cleans previous test caches and generates the executable in the root folder:
 ```bash
 ./CV_Maker_1.0.0_amd64.AppImage
 ```
@@ -160,18 +213,19 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-### 3. Automated Code Quality & Linting
+### 3. Automated Code Quality & Security Gates
 
-Run the strict 4-stage Quality Gate checks locally:
+The repository enforces a strict **5-Stage Quality & Security Gate** on every commit and pull request:
 
 ```bash
-# Run all quality checks (Typecheck + Lint + Complexity + Duplication)
+# Run all quality checks locally (Typecheck + Lint/Security + Duplication)
 npm run quality:check
 
-# Individual audit commands:
-npm run typecheck            # TypeScript compiler check
-npm run lint                 # ESLint with cyclomatic complexity <= 12
-npm run quality:duplication  # Clone & copy/paste detector
+# Individual verification commands:
+npm run typecheck            # Gate 1: TypeScript strict compiler check
+npm run lint                 # Gate 2: ESLint (complexity <= 12, max-lines <= 350, security rules)
+npm run quality:duplication  # Gate 3: Clone & copy/paste detector (jscpd <= 3%)
+npm run build                # Gate 5: Production build bundle verification
 ```
 
 ---
@@ -209,8 +263,8 @@ git checkout -b feature/issue-number-short-description
 
 ### 5. Develop Your Changes
 - Write clean, maintainable code following [DESIGN_GUIDE.md](DESIGN_GUIDE.md).
-- Keep cyclomatic complexity $\le 12$ per function.
-- Ensure all quality gates pass:
+- Keep cyclomatic complexity $\le 12$ and function size $\le 150$ lines.
+- Ensure all quality and security gates pass:
   ```bash
   npm run quality:check
   ```
@@ -224,24 +278,10 @@ git commit -m "fix: resolve date picker popover alignment"
 git commit -m "docs: update architecture diagram in README"
 ```
 
-**Commit types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `test`: Adding or updating tests
-- `refactor`: Code refactoring
-- `style`: Code style changes (formatting, etc.)
-- `chore`: Maintenance tasks
-
 ### 7. Push and Create Pull Request
 ```bash
 git push origin feature/issue-number-short-description
 ```
-
-1. Go to the repository on GitHub.
-2. Click **New Pull Request**.
-3. Select your branch and fill in the PR template.
-4. Wait for automated CI Quality Gates to pass and maintainer review.
 
 ---
 
