@@ -34,7 +34,7 @@ function hasAnyContent(data: CVData, language: LanguageCode): boolean {
 }
 
 const EmptyResumePlaceholder: React.FC = () => (
-  <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-center text-center">
+  <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 pt-16 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-start text-center">
     <div className="max-w-sm space-y-4 p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
       <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center mx-auto shadow-sm">
         <FileText className="w-6 h-6" />
