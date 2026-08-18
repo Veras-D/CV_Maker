@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useCV } from '../../context/CVContext';
 import { Globe, Github, Linkedin, FileText, CheckCircle2, Upload, File } from 'lucide-react';
 
@@ -34,7 +35,6 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
     e.preventDefault();
     setErrorMessage('');
 
-    // Check if at least one input field is filled
     const hasAtLeastOne = 
       uploadedFileName || 
       githubUrl.trim() || 
@@ -65,8 +65,8 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
     }, 600);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-4">
         <div>
           <h3 className="text-sm font-bold text-white">Import Profile Data</h3>
@@ -81,7 +81,6 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
 
         <form onSubmit={handleRunIngestion} className="space-y-3">
           
-          {/* Upload PDF CV Button */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
               <Upload className="w-3.5 h-3.5 text-slate-400" />
@@ -205,6 +204,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
