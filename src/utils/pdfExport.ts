@@ -1,6 +1,17 @@
 import jsPDF from 'jspdf';
 import { PDFDocument } from 'pdf-lib';
-import { CVData, LanguageCode, PDFMetadata } from '../types/cv';
+import { 
+  CVData, 
+  LanguageCode, 
+  PDFMetadata, 
+  ExperienceItem, 
+  BulletPoint, 
+  ProjectItem, 
+  SkillCategory, 
+  SkillItem, 
+  EducationItem, 
+  LanguageItem 
+} from '../types/cv';
 
 export async function exportCVToPDF(
   _elementId: string,
@@ -10,11 +21,9 @@ export async function exportCVToPDF(
   language: LanguageCode = 'en',
   selectedTags: string[] = []
 ): Promise<void> {
-  // If data is provided, use the 100% Native Vector PDF Generator for perfect text selection and clickable links
-  // Otherwise, fallback or load from window context
-  const cv = data || (window as any).__CV_DATA__;
-  const lang = language || (window as any).__CV_LANGUAGE__ || 'en';
-  const tags = selectedTags || (window as any).__CV_TAGS__ || [];
+  const cv: CVData = data || (window as any).__CV_DATA__;
+  const lang: LanguageCode = language || (window as any).__CV_LANGUAGE__ || 'en';
+  const tags: string[] = selectedTags || (window as any).__CV_TAGS__ || [];
 
   if (!cv) {
     throw new Error('CV Data not found for vector PDF generation');
@@ -123,19 +132,19 @@ export async function exportCVToPDF(
 
   // 3. Professional Experience
   const filteredExperiences = experiences
-    .filter(e => e.enabled)
-    .map(e => {
-      const activeBullets = e.bullets.filter(b => 
-        b.enabled && (tags.length === 0 || b.tags.some(t => tags.includes(t)))
+    .filter((e: ExperienceItem) => e.enabled)
+    .map((e: ExperienceItem) => {
+      const activeBullets = e.bullets.filter((b: BulletPoint) => 
+        b.enabled && (tags.length === 0 || b.tags.some((t: string) => tags.includes(t)))
       );
       return { ...e, activeBullets };
     })
-    .filter(e => e.activeBullets.length > 0 || tags.length === 0);
+    .filter((e: ExperienceItem & { activeBullets: BulletPoint[] }) => e.activeBullets.length > 0 || tags.length === 0);
 
   if (filteredExperiences.length > 0) {
     drawSectionHeader(lang === 'en' ? 'Professional Experience' : 'Pracovní Zkušenosti');
 
-    filteredExperiences.forEach(exp => {
+    filteredExperiences.forEach((exp: ExperienceItem & { activeBullets: BulletPoint[] }) => {
       // Role Title (left) & Dates (right)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.8);
@@ -156,7 +165,7 @@ export async function exportCVToPDF(
       y += 3.2;
 
       // Bullets
-      exp.activeBullets.forEach(b => {
+      exp.activeBullets.forEach((b: BulletPoint) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(15, 23, 42);
@@ -178,11 +187,11 @@ export async function exportCVToPDF(
   }
 
   // 4. Featured Portfolio Projects
-  const activeProjects = projects.filter(p => p.enabled);
+  const activeProjects = projects.filter((p: ProjectItem) => p.enabled);
   if (activeProjects.length > 0) {
     drawSectionHeader(lang === 'en' ? 'Featured Portfolio Projects' : 'Projekty');
 
-    activeProjects.forEach(p => {
+    activeProjects.forEach((p: ProjectItem) => {
       // Project Title (left) & Project URL (right with clickable link)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
@@ -213,7 +222,7 @@ export async function exportCVToPDF(
       // Tech Stack Badges
       if (p.techStack && p.techStack.length > 0) {
         let techX = MARGIN_LEFT;
-        p.techStack.forEach(tech => {
+        p.techStack.forEach((tech: string) => {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(6.8);
           const tWidth = doc.getTextWidth(tech) + 3;
@@ -243,8 +252,8 @@ export async function exportCVToPDF(
   if (skillCategories.length > 0) {
     drawSectionHeader(lang === 'en' ? 'Technical Competencies' : 'Technické Kompetence');
 
-    skillCategories.forEach(cat => {
-      const activeSkills = cat.skills.filter(s => s.enabled);
+    skillCategories.forEach((cat: SkillCategory) => {
+      const activeSkills = cat.skills.filter((s: SkillItem) => s.enabled);
       if (activeSkills.length === 0) return;
 
       doc.setFont('helvetica', 'bold');
@@ -256,7 +265,7 @@ export async function exportCVToPDF(
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.8);
       doc.setTextColor(30, 41, 59);
-      const skillsString = activeSkills.map(s => s.name).join(', ');
+      const skillsString = activeSkills.map((s: SkillItem) => s.name).join(', ');
       const skillLines = doc.splitTextToSize(skillsString, CONTENT_WIDTH - 42);
       doc.text(skillLines, MARGIN_LEFT + 42, y);
       y += (skillLines.length * 3.2) + 0.5;
@@ -266,8 +275,8 @@ export async function exportCVToPDF(
   }
 
   // 6. Education & Languages (2 Columns)
-  const activeEdu = education.filter(e => e.enabled);
-  const activeLang = languages.filter(l => l.enabled);
+  const activeEdu = education.filter((e: EducationItem) => e.enabled);
+  const activeLang = languages.filter((l: LanguageItem) => l.enabled);
 
   if (activeEdu.length > 0 || activeLang.length > 0) {
     const COL1_X = MARGIN_LEFT;
@@ -288,7 +297,7 @@ export async function exportCVToPDF(
       doc.line(COL1_X, y, COL1_X + COL_WIDTH, y);
       y += 3.2;
 
-      activeEdu.forEach(edu => {
+      activeEdu.forEach((edu: EducationItem) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.8);
         doc.setTextColor(15, 23, 42);
@@ -324,7 +333,7 @@ export async function exportCVToPDF(
       doc.line(COL2_X, y, MARGIN_RIGHT, y);
       y += 3.2;
 
-      activeLang.forEach(l => {
+      activeLang.forEach((l: LanguageItem) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.8);
         doc.setTextColor(15, 23, 42);

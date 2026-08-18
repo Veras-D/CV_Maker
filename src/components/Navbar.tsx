@@ -10,6 +10,7 @@ export const Navbar: React.FC = () => {
     cvData, 
     activePreset, 
     activeLanguage, 
+    selectedTags,
     activeTab, 
     setActiveTab, 
     setLanguage,
