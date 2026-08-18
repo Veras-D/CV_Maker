@@ -69,21 +69,21 @@ export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-1.5 ${className}`}>
       {/* Number Amount Input with Auto-formatting */}
-      <div className="relative flex-1">
-        <DollarSign className="w-3.5 h-3.5 text-emerald-400 absolute left-2.5 top-2.5 pointer-events-none" />
+      <div className="relative flex-1 min-w-[90px]">
+        <DollarSign className="w-3.5 h-3.5 text-emerald-400 absolute left-2 top-2 pointer-events-none" />
         <input
           type="text"
           placeholder="120,000"
           value={amount}
           onChange={handleAmountChange}
-          className="w-full bg-slate-800 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none placeholder:text-slate-500 transition-colors"
+          className="w-full bg-slate-800 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg pl-6 pr-1.5 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none placeholder:text-slate-500 transition-colors"
         />
       </div>
 
       {/* Currency Selector */}
-      <div className="w-28 shrink-0">
+      <div className="w-[95px] shrink-0">
         <CustomSelect
           options={currencyOptions}
           value={currency}
