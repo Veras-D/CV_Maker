@@ -1,7 +1,8 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset, UserProfile, WorkExperience, ProjectItem, SkillCategory, EducationItem, LanguageItem } from '../../types/cv';
 import { openExternalUrl } from '../../utils/urlHelper';
-import { FileText } from 'lucide-react';
+import { Sparkles, FileText } from 'lucide-react';
+import { useCV } from '../../context/CVContext';
 
 interface TemplateProps {
   data: CVData;
@@ -33,21 +34,44 @@ function hasAnyContent(data: CVData, language: LanguageCode): boolean {
   return education.some(e => e.enabled) || languages.some(l => l.enabled);
 }
 
-const EmptyResumePlaceholder: React.FC = () => (
-  <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 pt-16 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-start text-center">
-    <div className="max-w-sm space-y-4 p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
-      <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center mx-auto shadow-sm">
-        <FileText className="w-6 h-6" />
-      </div>
-      <div>
-        <h3 className="text-sm font-bold text-slate-800">Resume Preview</h3>
-        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-          No details added yet. Go to the <strong className="text-slate-700">CV Editor</strong> tab to add your profile, work experiences, and skills.
-        </p>
+const EmptyResumePlaceholder: React.FC = () => {
+  const { setActiveTab } = useCV();
+
+  return (
+    <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 pt-16 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-start text-center">
+      <div className="max-w-md space-y-4 p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/80">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center mx-auto shadow-md shadow-sky-500/20">
+          <Sparkles className="w-6 h-6" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">Build Your Resume with AI</h3>
+          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            Let AI extract and organize your data automatically from your GitHub, LinkedIn, portfolio link, or existing resume file — or add your details manually.
+          </p>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('editor')}
+            className="w-full sm:w-auto bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Import Profile with AI</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('editor')}
+            className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Add Manually</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> = ({ profile, language }) => {
   const name = profile.name?.trim();

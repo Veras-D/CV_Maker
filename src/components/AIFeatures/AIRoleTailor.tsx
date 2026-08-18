@@ -8,7 +8,7 @@ import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { ProModal } from '../Common/ProModal';
 
 export const AIRoleTailor: React.FC = () => {
-  const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset } = useCV();
+  const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, setActiveTab } = useCV();
   
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -114,6 +114,29 @@ export const AIRoleTailor: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* AI Import Recommendation Banner when empty */}
+      {!cvData.profile.name?.trim() && cvData.experiences.length === 0 && (
+        <div className="bg-gradient-to-r from-sky-950/80 to-slate-900 border border-sky-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-white text-xs">Fast Track: Import Your Profile with AI</p>
+              <p className="text-slate-400 text-[11px]">Let AI automatically scrape and organize your experiences from LinkedIn, GitHub, or an existing CV.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('editor')}
+            className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Open AI Importer</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Responsive Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
