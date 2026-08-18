@@ -3,13 +3,14 @@ import { useCV } from '../../context/CVContext';
 import { ModernTemplate } from './ModernTemplate';
 import { MinimalTemplate } from './MinimalTemplate';
 import { ClassicTemplate } from './ClassicTemplate';
-import { Layout, ZoomIn, ZoomOut, Download, Sparkles } from 'lucide-react';
+import { Layout, ZoomIn, ZoomOut, Download } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
 
 export const CVPreview: React.FC = () => {
-  const { cvData, activePreset, activeLanguage, selectedTags, activeLayout, setLayout, setFeedbackNotification } = useCV();
+  const { cvData, activePreset, activeLanguage, selectedTags, activeLayout, setLayout } = useCV();
   const [zoom, setZoom] = useState(100);
   const [isExporting, setIsExporting] = useState(false);
+  const [feedbackNotification, setFeedbackNotification] = useState<string | null>(null);
 
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -102,6 +103,13 @@ export const CVPreview: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Feedback Banner */}
+      {feedbackNotification && (
+        <div className="bg-sky-950 border border-sky-800 text-sky-200 text-xs p-3 rounded-xl flex items-center justify-between font-medium shadow-md">
+          <span>💾 {feedbackNotification}</span>
+        </div>
+      )}
 
       {/* Live PDF Paper View */}
       <div className="overflow-x-auto pb-12 pt-2 flex justify-center">
