@@ -13,23 +13,45 @@ export async function exportCVToPDF(
     throw new Error(`Element with id ${elementId} not found`);
   }
 
-  // 1. Clone target element into unconstrained offscreen container to capture 100% of document height
+  // 1. Clone target element into a fixed-width A4 container (794px = 210mm at 96 DPI)
+  // Matching width identically between DOM measurement and html2canvas guarantees 1:1 pixel alignment
+  const A4_WIDTH_PX = 794;
+  const PDF_WIDTH_MM = 210;
+  const PDF_PAGE_HEIGHT_MM = 297;
+
   const clone = element.cloneNode(true) as HTMLElement;
-  clone.style.position = 'absolute';
+  clone.style.position = 'fixed';
   clone.style.left = '-9999px';
   clone.style.top = '0';
-  clone.style.width = '210mm';
+  clone.style.width = `${A4_WIDTH_PX}px`;
+  clone.style.maxWidth = `${A4_WIDTH_PX}px`;
   clone.style.height = 'auto';
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
+  clone.style.boxSizing = 'border-box';
   document.body.appendChild(clone);
 
-  // Measure clone dimensions for link and text layer calculation
+  // Measure exact clone dimensions
   const cloneRect = clone.getBoundingClientRect();
-  const pdfWidth = 210;
-  const pdfHeight = 297;
+  const cloneWidth = clone.offsetWidth || A4_WIDTH_PX;
+  const cloneHeight = clone.offsetHeight || cloneRect.height;
 
-  // Extract clickable links (<a>, <button>, or elements with URL text)
+  // 2. Render high-res canvas (scale 2 for crisp 192 DPI output) with matching viewport width
+  const canvas = await html2canvas(clone, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    width: cloneWidth,
+    height: cloneHeight,
+    windowWidth: cloneWidth,
+    windowHeight: cloneHeight
+  });
+
+  // Calculate exact millimeter height of the rendered canvas on A4 width (210mm)
+  const imgHeightInMm = (cloneHeight / cloneWidth) * PDF_WIDTH_MM;
+
+  // Extract clickable links (<a>, <button>, or elements with URL text) with exact scale
   const linkElements = clone.querySelectorAll('a, button, [data-url]');
   const linksToInject: { x: number; y: number; w: number; h: number; url: string }[] = [];
 
@@ -48,16 +70,16 @@ export async function exportCVToPDF(
       const rect = htmlEl.getBoundingClientRect();
       const targetUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
       
-      const x = ((rect.left - cloneRect.left) / cloneRect.width) * pdfWidth;
-      const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight;
-      const w = Math.max(2, (rect.width / cloneRect.width) * pdfWidth);
-      const h = Math.max(2, (rect.height / cloneRect.height) * pdfHeight);
+      const x = ((rect.left - cloneRect.left) / cloneWidth) * PDF_WIDTH_MM;
+      const y = ((rect.top - cloneRect.top) / cloneHeight) * imgHeightInMm;
+      const w = Math.max(2, (rect.width / cloneWidth) * PDF_WIDTH_MM);
+      const h = Math.max(2, (rect.height / cloneHeight) * imgHeightInMm);
 
       linksToInject.push({ x, y, w, h, url: targetUrl });
     }
   });
 
-  // Extract word-level text items via Range API for 100% precise text selection bounds
+  // Extract word-level text items via Range API with exact scale
   const textLayerItems: { x: number; y: number; text: string; fontSize: number }[] = [];
   const walk = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null);
   let textNode: Node | null;
@@ -69,6 +91,7 @@ export async function exportCVToPDF(
     const pEl = textNode.parentElement;
     const computedStyle = window.getComputedStyle(pEl);
     const rawFontSize = parseFloat(computedStyle.fontSize) || 10;
+    // 1 CSS px = 0.75 pt in PDF
     const fontSizeInPt = Math.max(5, Math.min(18, rawFontSize * 0.75));
 
     let charIndex = 0;
@@ -89,8 +112,8 @@ export async function exportCVToPDF(
 
         const rect = range.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          const x = ((rect.left - cloneRect.left) / cloneRect.width) * pdfWidth;
-          const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight;
+          const x = ((rect.left - cloneRect.left) / cloneWidth) * PDF_WIDTH_MM;
+          const y = ((rect.top - cloneRect.top) / cloneHeight) * imgHeightInMm;
 
           textLayerItems.push({
             x,
@@ -100,45 +123,36 @@ export async function exportCVToPDF(
           });
         }
       } catch {
-        // Safe fallback
+        // Safe fallback for unselectable nodes
       }
     }
   }
 
-  // 2. Render unconstrained clone to high-res canvas (scale 2 for sharpness)
-  const canvas = await html2canvas(clone, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    backgroundColor: '#ffffff',
-    windowWidth: 1200
-  });
-
   document.body.removeChild(clone);
 
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
-  const canvasWidth = canvas.width;
-  const canvasHeight = canvas.height;
-  const imgHeightInMm = (canvasHeight * pdfWidth) / canvasWidth;
 
   // 3. Generate jsPDF document
   const pdf = new jsPDF('p', 'mm', 'a4');
 
-  if (imgHeightInMm <= 330) {
-    // Single page ATS Resume
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  if (imgHeightInMm <= 315) {
+    // Single page document: Fit perfectly on 1 A4 page (297mm)
+    const scaleFactor = imgHeightInMm > PDF_PAGE_HEIGHT_MM ? (PDF_PAGE_HEIGHT_MM / imgHeightInMm) : 1;
+    const finalRenderHeightMm = imgHeightInMm * scaleFactor;
 
-    // Inject selectable text layer with baseline: top alignment for exact 1:1 text bounds
+    pdf.addImage(imgData, 'JPEG', 0, 0, PDF_WIDTH_MM, finalRenderHeightMm);
+
+    // Inject selectable text layer with baseline: top alignment
     pdf.setTextColor(255, 255, 255);
     (pdf as any).setRenderingMode?.('invisible');
     textLayerItems.forEach(item => {
-      pdf.setFontSize(item.fontSize);
-      pdf.text(item.text, item.x, item.y, { baseline: 'top' });
+      pdf.setFontSize(item.fontSize * scaleFactor);
+      pdf.text(item.text, item.x, item.y * scaleFactor, { baseline: 'top' });
     });
 
     // Inject clickable links
     linksToInject.forEach(l => {
-      pdf.link(l.x, l.y, l.w, l.h, { url: l.url });
+      pdf.link(l.x, l.y * scaleFactor, l.w, l.h * scaleFactor, { url: l.url });
     });
   } else {
     // Multi-page document
@@ -146,8 +160,8 @@ export async function exportCVToPDF(
     let pageIndex = 0;
 
     const renderPageLayers = (pIdx: number) => {
-      const pageTopMm = pIdx * pdfHeight;
-      const pageBottomMm = pageTopMm + pdfHeight;
+      const pageTopMm = pIdx * PDF_PAGE_HEIGHT_MM;
+      const pageBottomMm = pageTopMm + PDF_PAGE_HEIGHT_MM;
 
       pdf.setTextColor(255, 255, 255);
       (pdf as any).setRenderingMode?.('invisible');
@@ -167,17 +181,17 @@ export async function exportCVToPDF(
     };
 
     // Page 1
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeightInMm);
+    pdf.addImage(imgData, 'JPEG', 0, 0, PDF_WIDTH_MM, imgHeightInMm);
     renderPageLayers(0);
-    heightLeft -= pdfHeight;
+    heightLeft -= PDF_PAGE_HEIGHT_MM;
 
     while (heightLeft > 5) {
       pageIndex++;
-      const position = -pageIndex * pdfHeight;
+      const position = -pageIndex * PDF_PAGE_HEIGHT_MM;
       pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
+      pdf.addImage(imgData, 'JPEG', 0, position, PDF_WIDTH_MM, imgHeightInMm);
       renderPageLayers(pageIndex);
-      heightLeft -= pdfHeight;
+      heightLeft -= PDF_PAGE_HEIGHT_MM;
     }
   }
 

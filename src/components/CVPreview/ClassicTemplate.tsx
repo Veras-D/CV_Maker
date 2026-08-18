@@ -25,7 +25,7 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
   const activeProjects = projects.filter(p => p.enabled);
 
   return (
-    <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-6 sm:p-8 font-serif shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed overflow-hidden">
+    <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 font-serif shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed overflow-hidden">
       
       {/* Header */}
       <header className="text-center border-b-2 border-slate-900 pb-3 mb-4">
