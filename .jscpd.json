@@ -1,0 +1,17 @@
+{
+  "threshold": 3,
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/src-tauri/**",
+    "**/*.d.ts"
+  ],
+  "format": [
+    "typescript",
+    "javascript"
+  ],
+  "minLines": 5,
+  "minTokens": 40,
+  "mode": "mild"
+}
