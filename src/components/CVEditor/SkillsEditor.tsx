@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { Cpu, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Cpu, Plus } from 'lucide-react';
+import { LanguageCode } from '../../types/cv';
+import { SkillCategoryCard } from './SkillCategoryCard';
 
 export const SkillsEditor: React.FC = () => {
   const { 
@@ -16,21 +18,12 @@ export const SkillsEditor: React.FC = () => {
 
   const { skillCategories } = cvData;
   const [newCatName, setNewCatName] = useState('');
-  const [newSkillName, setNewSkillName] = useState<{ [catId: string]: string }>({});
 
   const handleAddCat = (e: React.FormEvent) => {
     e.preventDefault();
     if (newCatName.trim()) {
       addSkillCategory(newCatName.trim(), newCatName.trim());
       setNewCatName('');
-    }
-  };
-
-  const handleAddSkill = (catId: string) => {
-    const name = newSkillName[catId];
-    if (name && name.trim()) {
-      addSkill(catId, name.trim(), ["fullstack"]);
-      setNewSkillName({ ...newSkillName, [catId]: '' });
     }
   };
 
@@ -45,89 +38,30 @@ export const SkillsEditor: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {skillCategories.map((cat) => (
-          <div key={cat.id} className="bg-slate-850 border border-slate-750 p-4 rounded-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <input
-                type="text"
-                placeholder="Category Name (e.g. Frontend)..."
-                value={cat.categoryName[activeLanguage] || cat.categoryName.en || ''}
-                onChange={(e) => updateSkillCategory(cat.id, e.target.value, e.target.value)}
-                className="bg-transparent text-xs font-bold text-sky-400 placeholder:text-sky-400/50 focus:outline-none focus:border-b border-sky-500"
-              />
-              <button
-                onClick={() => deleteSkillCategory(cat.id)}
-                className="text-slate-500 hover:text-red-400 p-1"
-                title="Delete Skill Category"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {cat.skills.map((s) => (
-                <div 
-                  key={s.id} 
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs border transition-all ${
-                    s.enabled 
-                      ? 'bg-slate-800 border-slate-700 text-slate-200' 
-                      : 'bg-slate-900/50 border-slate-800 text-slate-500 line-through'
-                  }`}
-                >
-                  <button 
-                    onClick={() => toggleSkillEnabled(cat.id, s.id)}
-                    className={s.enabled ? 'text-sky-400' : 'text-slate-600'}
-                  >
-                    {s.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  </button>
-                  <span>{s.name}</span>
-                  <button 
-                    onClick={() => deleteSkill(cat.id, s.id)}
-                    className="text-slate-500 hover:text-red-400"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Quick Add Skill Input */}
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                placeholder="Add skill (e.g. Terraform)..."
-                value={newSkillName[cat.id] || ''}
-                onChange={(e) => setNewSkillName({ ...newSkillName, [cat.id]: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSkill(cat.id);
-                  }
-                }}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-              />
-              <button
-                onClick={() => handleAddSkill(cat.id)}
-                className="bg-slate-800 hover:bg-slate-750 text-sky-400 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+          <SkillCategoryCard
+            key={cat.id}
+            cat={cat}
+            activeLanguage={activeLanguage as LanguageCode}
+            onUpdateCategoryName={(id, name) => updateSkillCategory(id, name, name)}
+            onDeleteCategory={deleteSkillCategory}
+            onToggleSkillEnabled={toggleSkillEnabled}
+            onDeleteSkill={deleteSkill}
+            onAddSkill={(catId, name) => addSkill(catId, name, ['fullstack'])}
+          />
         ))}
       </div>
 
-      {/* Add New Category */}
       <form onSubmit={handleAddCat} className="mt-4 pt-4 border-t border-slate-800 flex gap-2 items-center">
         <input
           type="text"
           placeholder="New Category Name (e.g. Cloud & DevOps)..."
           value={newCatName}
           onChange={(e) => setNewCatName(e.target.value)}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
         />
         <button
           type="submit"
-          className="bg-sky-600 hover:bg-sky-500 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all"
+          className="bg-sky-600 hover:bg-sky-500 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Category</span>

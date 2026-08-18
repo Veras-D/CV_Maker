@@ -3,6 +3,7 @@ import { useCV } from '../../context/CVContext';
 import { KanbanStatus, KanbanRole } from '../../types/cv';
 import { Plus, Search, Archive, ArchiveRestore } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
+import { ArchivedColumn } from './ArchivedColumn';
 import { KanbanRoleModal } from './KanbanRoleModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
@@ -140,21 +141,18 @@ export const KanbanBoard: React.FC = () => {
         ))}
 
         {showArchivedKanban && (
-          <KanbanColumn
-            colId="archived"
+          <ArchivedColumn
             title="Archived / Dismissed"
             roles={archivedRoles}
             draggedCardId={draggedCardId}
             dragOverColumn={dragOverColumn}
-            onDragOver={handleDragOver}
+            onDragOver={(e) => handleDragOver(e, 'archived')}
             onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
+            onDrop={(e) => handleDrop(e, 'archived')}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            onEdit={(r) => { setEditingRole(r); setShowAddModal(true); }}
             onDelete={(r) => setRoleToDelete(r)}
             onRestore={(id) => updateKanbanRoleStatus(id, 'applied')}
-            isArchived
           />
         )}
       </div>
