@@ -35,10 +35,13 @@ jobs:
       - name: 'Gate 3: Code Duplication & Clone Detection'
         run: npm run quality:duplication
 
-      - name: 'Gate 4: Secret & Token Leak Detection (Gitleaks)'
+      - name: 'Gate 4: Dependency Vulnerability Audit'
+        run: npm run quality:audit
+
+      - name: 'Gate 5: Secret & Token Leak Detection (Gitleaks)'
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Gate 5: Production Build Verification'
+      - name: 'Gate 6: Production Build Verification'
         run: npm run build

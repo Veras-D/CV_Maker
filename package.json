@@ -12,7 +12,8 @@
     "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "quality:duplication": "jscpd src --config .jscpd.json",
-    "quality:check": "npm run typecheck && npm run lint && npm run quality:duplication"
+    "quality:audit": "npm audit --audit-level=high",
+    "quality:check": "npm run typecheck && npm run lint && npm run quality:duplication && npm run quality:audit"
   },
   "dependencies": {
     "jspdf": "^2.5.1",
@@ -38,5 +39,9 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "vite": "^5.1.4"
+  },
+  "overrides": {
+    "dompurify": ">=3.2.4",
+    "esbuild": ">=0.25.0"
   }
 }
