@@ -318,7 +318,7 @@ export const KanbanBoard: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl">
             <h3 className="text-base font-bold text-white mb-3">
               {editingRole ? 'Edit Application' : 'Add Application'}

@@ -66,7 +66,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-4">
         <div>
           <h3 className="text-sm font-bold text-white">Import Profile Data</h3>

@@ -76,7 +76,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-slate-950 border-b border-slate-800/80 text-slate-100 w-full relative z-30">
+    <header className="bg-slate-950 border-b border-slate-800/80 text-slate-100 w-full relative">
       <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between gap-3">
         
         {/* Left: Brand Icon */}
