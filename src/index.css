@@ -23,6 +23,12 @@ select option {
   color: #f8fafc !important;
 }
 
+/* Force dark native calendar picker indicator styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
