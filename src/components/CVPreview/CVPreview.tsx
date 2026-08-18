@@ -7,18 +7,20 @@ import { Layout, ZoomIn, ZoomOut, Download, Sparkles } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
 
 export const CVPreview: React.FC = () => {
-  const { cvData, activePreset, activeLanguage, selectedTags, activeLayout, setLayout } = useCV();
+  const { cvData, activePreset, activeLanguage, selectedTags, activeLayout, setLayout, setFeedbackNotification } = useCV();
   const [zoom, setZoom] = useState(100);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportPDF = async () => {
     setIsExporting(true);
-    try {
+      const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
       await exportCVToPDF(
         'cv-preview-container',
-        `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
+        filename,
         activePreset.metadata
       );
+      setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
+      setTimeout(() => setFeedbackNotification(null), 5000);
     } catch (e) {
       console.error("Export PDF failed:", e);
       alert("Error generating PDF.");

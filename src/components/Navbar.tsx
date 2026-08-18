@@ -39,8 +39,9 @@ export const Navbar: React.FC = () => {
         `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
         activePreset.metadata
       );
-      setFeedbackNotification("PDF generated successfully!");
-      setTimeout(() => setFeedbackNotification(null), 3500);
+      const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
+      setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
+      setTimeout(() => setFeedbackNotification(null), 5000);
     } catch (e) {
       console.error("PDF Export error:", e);
       alert("Error generating PDF.");
