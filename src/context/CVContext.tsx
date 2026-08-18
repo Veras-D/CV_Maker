@@ -11,9 +11,9 @@ import {
   ProjectItem,
   EducationItem,
   LanguageItem,
-  UserProfile
+  UserProfile,
+  createEmptyCVData
 } from '../types/cv';
-import { initialCVData } from '../data/initial_data';
 
 const STORAGE_KEY = 'cv_maker_data_v2';
 
@@ -52,8 +52,8 @@ interface CVContextType {
   deleteBullet: (expId: string, bulletId: string) => void;
 
   // Skills Editor
-  addSkillCategory: (categoryNameEn: string, categoryNameCs: string) => void;
-  updateSkillCategory: (catId: string, nameEn: string, nameCs: string) => void;
+  addSkillCategory: (categoryNameEn: string, categoryNameCs?: string) => void;
+  updateSkillCategory: (catId: string, nameEn: string, nameCs?: string) => void;
   deleteSkillCategory: (catId: string) => void;
   addSkill: (catId: string, name: string, tags: string[]) => void;
   toggleSkillEnabled: (catId: string, skillId: string) => void;
@@ -103,7 +103,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         console.error("Failed to parse saved CV data:", e);
       }
     }
-    return initialCVData;
+    return createEmptyCVData();
   });
 
   const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
@@ -117,8 +117,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   // Active Preset
   const activePreset = cvData.presets.find(p => p.id === cvData.activePresetId) || cvData.presets[0];
-  const activeLanguage = activePreset.activeLanguage || 'cs';
-  const activeLayout = activePreset.activeLayout || 'classic';
+  const activeLanguage = activePreset?.activeLanguage || 'en';
+  const activeLayout = activePreset?.activeLayout || 'classic';
 
   // Preset handlers
   const selectPreset = (presetId: string) => {
@@ -275,20 +275,20 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   // Skills
-  const addSkillCategory = (categoryNameEn: string, categoryNameCs: string) => {
+  const addSkillCategory = (categoryNameEn: string, categoryNameCs?: string) => {
     const newCat: SkillCategory = {
       id: `cat-${Date.now()}`,
-      categoryName: { en: categoryNameEn, cs: categoryNameCs },
+      categoryName: { en: categoryNameEn, ...(categoryNameCs ? { cs: categoryNameCs } : {}) },
       skills: []
     };
     setCvData(prev => ({ ...prev, skillCategories: [...prev.skillCategories, newCat] }));
   };
 
-  const updateSkillCategory = (catId: string, nameEn: string, nameCs: string) => {
+  const updateSkillCategory = (catId: string, nameEn: string, nameCs?: string) => {
     setCvData(prev => ({
       ...prev,
       skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? { ...c, categoryName: { ...c.categoryName, en: nameEn, cs: nameCs } } : c
+        c.id === catId ? { ...c, categoryName: { ...c.categoryName, en: nameEn, ...(nameCs ? { cs: nameCs } : {}) } } : c
       )
     }));
   };
@@ -510,7 +510,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   const resetToDefaultData = () => {
-    setCvData(initialCVData);
+    setCvData(createEmptyCVData());
     localStorage.removeItem(STORAGE_KEY);
   };
 

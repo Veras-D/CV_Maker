@@ -154,3 +154,54 @@ export interface CVData {
   aiConfig: AiConfig;
   ingestionSources: IngestionSources;
 }
+
+export const createEmptyCVData = (): CVData => ({
+  profile: {
+    name: '',
+    headline: { en: '' },
+    summary: { en: '' },
+    email: '',
+    phone: '',
+    location: '',
+    portfolioUrl: '',
+    githubUrl: '',
+    linkedinUrl: '',
+    whatsappUrl: ''
+  },
+  ingestionSources: {
+    githubUrl: '',
+    linkedinUrl: '',
+    websiteUrl: '',
+    cvPdfName: ''
+  },
+  aiConfig: {
+    provider: 'ollama',
+    endpoint: 'http://localhost:11434',
+    modelName: 'llama3.2'
+  },
+  presets: [
+    {
+      id: 'preset-default',
+      name: 'Default ATS Resume',
+      description: 'Primary ATS-optimized layout.',
+      activeTags: [],
+      activeLanguage: 'en',
+      activeLayout: 'classic',
+      metadata: {
+        dc_title: 'Resume',
+        dc_creator: '',
+        cp_keywords: '',
+        cp_description: '',
+        cp_category: 'Resume'
+      }
+    }
+  ],
+  activePresetId: 'preset-default',
+  experiences: [],
+  skillCategories: [],
+  projects: [],
+  education: [],
+  languages: [],
+  coverLetters: [],
+  kanbanRoles: []
+});

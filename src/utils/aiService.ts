@@ -118,7 +118,8 @@ export async function processAiJobTailoring(params: TailorJobParams): Promise<AI
   let coverLetters = buildCoverLetterText(companyName, jobTitle, matchedTags, cvData.profile.name);
 
   if (cvData.aiConfig.provider === 'ollama') {
-    const prompt = `Write a professional 3-paragraph cover letter for Vivi Veras applying for ${jobTitle} at ${companyName}. Highlight skills in ${matchedTags.join(', ')}. Keep it concise.`;
+    const candidateName = cvData.profile.name || 'the candidate';
+    const prompt = `Write a professional 3-paragraph cover letter for ${candidateName} applying for ${jobTitle} at ${companyName}. Highlight skills in ${matchedTags.join(', ')}. Keep it concise.`;
     const ollamaResponse = await requestLocalOllama(cvData.aiConfig.endpoint, cvData.aiConfig.modelName, prompt);
     if (ollamaResponse) {
       coverLetters = { en: ollamaResponse, cs: ollamaResponse };
