@@ -8,10 +8,7 @@ echo "=========================================="
 # 1. Clean up old bundle directory
 rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage
 
-# 2. Build React web application assets
-npm run build
-
-# 3. Compile Rust executable binary
+# 2. Build React web application assets and compile Rust executable binary
 npm run tauri build || cargo build --release --manifest-path /app/src-tauri/Cargo.toml
 
 # 4. Prepare target AppImage directory
