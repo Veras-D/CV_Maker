@@ -13,6 +13,7 @@ export const CVPreview: React.FC = () => {
 
   const handleExportPDF = async () => {
     setIsExporting(true);
+    try {
       const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
       await exportCVToPDF(
         'cv-preview-container',
