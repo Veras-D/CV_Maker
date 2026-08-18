@@ -67,7 +67,7 @@ export async function exportCVToPDF(
       const pEl = node.parentElement;
       const rect = pEl.getBoundingClientRect();
       const x = ((rect.left - cloneRect.left) / cloneRect.width) * pdfWidth;
-      const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight + 2.5;
+      const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight;
       const fontSize = Math.max(6, Math.min(14, (parseFloat(window.getComputedStyle(pEl).fontSize) || 10) * 0.75));
       textNodes.push({ x, y, text: val, fontSize });
     }
@@ -96,12 +96,12 @@ export async function exportCVToPDF(
     // Single page ATS Resume
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
-    // Inject selectable text layer
+    // Inject selectable text layer with baseline: top alignment for 100% exact text selection bounds
     pdf.setTextColor(255, 255, 255);
     (pdf as any).setRenderingMode?.('invisible');
     textNodes.forEach(tn => {
       pdf.setFontSize(tn.fontSize);
-      pdf.text(tn.text, tn.x, tn.y);
+      pdf.text(tn.text, tn.x, tn.y, { baseline: 'top' });
     });
 
     // Inject clickable links
