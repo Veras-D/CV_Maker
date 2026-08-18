@@ -57,7 +57,10 @@ export const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ role, onCl
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(role.id)}
+            onClick={() => {
+              onConfirm(role.id);
+              onClose();
+            }}
             className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" />

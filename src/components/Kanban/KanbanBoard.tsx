@@ -128,7 +128,10 @@ export const KanbanBoard: React.FC = () => {
       <DeleteConfirmationModal
         role={roleToDelete}
         onClose={() => setRoleToDelete(null)}
-        onConfirm={(id) => deleteKanbanRole(id)}
+        onConfirm={(id) => {
+          deleteKanbanRole(id);
+          setRoleToDelete(null);
+        }}
       />
     </div>
   );
