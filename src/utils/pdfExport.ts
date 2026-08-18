@@ -4,8 +4,8 @@ import {
   CVData, 
   LanguageCode, 
   PDFMetadata, 
-  ExperienceItem, 
-  BulletPoint, 
+  WorkExperience, 
+  WorkBullet, 
   ProjectItem, 
   SkillCategory, 
   SkillItem, 
@@ -132,19 +132,19 @@ export async function exportCVToPDF(
 
   // 3. Professional Experience
   const filteredExperiences = experiences
-    .filter((e: ExperienceItem) => e.enabled)
-    .map((e: ExperienceItem) => {
-      const activeBullets = e.bullets.filter((b: BulletPoint) => 
+    .filter((e: WorkExperience) => e.enabled)
+    .map((e: WorkExperience) => {
+      const activeBullets = e.bullets.filter((b: WorkBullet) => 
         b.enabled && (tags.length === 0 || b.tags.some((t: string) => tags.includes(t)))
       );
       return { ...e, activeBullets };
     })
-    .filter((e: ExperienceItem & { activeBullets: BulletPoint[] }) => e.activeBullets.length > 0 || tags.length === 0);
+    .filter((e: WorkExperience & { activeBullets: WorkBullet[] }) => e.activeBullets.length > 0 || tags.length === 0);
 
   if (filteredExperiences.length > 0) {
     drawSectionHeader(lang === 'en' ? 'Professional Experience' : 'Pracovní Zkušenosti');
 
-    filteredExperiences.forEach((exp: ExperienceItem & { activeBullets: BulletPoint[] }) => {
+    filteredExperiences.forEach((exp: WorkExperience & { activeBullets: WorkBullet[] }) => {
       // Role Title (left) & Dates (right)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.8);
@@ -161,11 +161,11 @@ export async function exportCVToPDF(
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.8);
       doc.setTextColor(71, 85, 105);
-      doc.text(`${exp.company} | ${exp.location}`, MARGIN_LEFT, y);
+      doc.text(`${exp.company} | ${exp.location || 'Remote'}`, MARGIN_LEFT, y);
       y += 3.2;
 
       // Bullets
-      exp.activeBullets.forEach((b: BulletPoint) => {
+      exp.activeBullets.forEach((b: WorkBullet) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(15, 23, 42);
