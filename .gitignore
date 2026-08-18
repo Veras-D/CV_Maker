@@ -28,3 +28,11 @@ temp_cv.pdf
 # OS files
 .DS_Store
 Thumbs.db
+
+# Executables & AppImages
+*.AppImage
+*.deb
+*.dmg
+*.msi
+*.exe
+
