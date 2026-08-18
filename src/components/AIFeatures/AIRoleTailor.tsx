@@ -1,11 +1,64 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { processAiJobTailoring, AITailorResult } from '../../utils/aiService';
-import { Sparkles, Download, FileText, CheckCircle, Globe, Building } from 'lucide-react';
+import { Sparkles, Download, FileText, CheckCircle2, Globe, Building, Target, Zap } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
 import { ClassicTemplate } from '../CVPreview/ClassicTemplate';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { ProModal } from '../Common/ProModal';
+import { runLocalAITailor, LocalTailorOutput } from '../../utils/localAiEngine';
+import { LanguageCode } from '../../types/cv';
+
+const ATSScoreCard: React.FC<{ output: LocalTailorOutput }> = ({ output }) => {
+  const { atsScore, matchedKeywords, missingKeywords } = output.matchResult;
+
+  const scoreColor = atsScore >= 80 
+    ? 'text-emerald-400 border-emerald-500/40 bg-emerald-950/40' 
+    : 'text-amber-400 border-amber-500/40 bg-amber-950/40';
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-sky-400" />
+          <span className="text-xs font-bold text-white">Local ATS Semantic Match</span>
+        </div>
+        <div className={`text-xs font-bold px-2.5 py-1 rounded-full border ${scoreColor}`}>
+          {atsScore}% Match
+        </div>
+      </div>
+
+      {matchedKeywords.length > 0 && (
+        <div>
+          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+            Matched Skills & Keywords ({matchedKeywords.length})
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {matchedKeywords.slice(0, 10).map((kw, idx) => (
+              <span key={idx} className="text-[10px] bg-sky-950/80 text-sky-300 border border-sky-800/60 px-2 py-0.5 rounded font-medium">
+                ✓ {kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {missingKeywords.length > 0 && (
+        <div className="pt-2 border-t border-slate-800/80">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+            Job Keywords to Consider Adding:
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {missingKeywords.map((kw, idx) => (
+              <span key={idx} className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
+                + {kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AIRoleTailor: React.FC = () => {
   const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
@@ -15,7 +68,7 @@ export const AIRoleTailor: React.FC = () => {
   const [roleUrl, setRoleUrl] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tailoredResult, setTailoredResult] = useState<AITailorResult | null>(null);
+  const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
@@ -29,23 +82,22 @@ export const AIRoleTailor: React.FC = () => {
     { value: 'pt', label: 'Português (PT)', isPro: true }
   ];
 
-  const handleRunTailor = async (e: React.FormEvent) => {
+  const handleRunTailor = (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobDescription.trim()) return;
 
     setIsProcessing(true);
     try {
-      const result = await processAiJobTailoring({
+      const output = runLocalAITailor({
         jobTitle,
         companyName,
         jobDescription,
         cvData,
-        language: activeLanguage
+        language: activeLanguage as LanguageCode
       });
-      setTailoredResult(result);
-      setCoverLetterEditable(result.coverLetter.content[activeLanguage] || result.coverLetter.content.en || '');
+      setTailoredOutput(output);
+      setCoverLetterEditable(output.coverLetter.content[activeLanguage] || output.coverLetter.content.en || '');
       
-      // Auto add card to Kanban board under "Applied"
       addKanbanRole({
         roleTitle: jobTitle || 'Software Engineer',
         company: companyName || 'Target Company',
@@ -53,10 +105,10 @@ export const AIRoleTailor: React.FC = () => {
         status: 'applied',
         dateApplied: new Date().toISOString().slice(0, 10),
         roleUrl: roleUrl.trim() || undefined,
-        notes: `AI Matched Tags: ${result.matchedTags.join(', ')}`
+        notes: `Local ATS Match: ${output.matchResult.atsScore}% | Matched: ${output.matchResult.matchedKeywords.slice(0, 3).join(', ')}`
       });
-    } catch (e) {
-      console.error("AI Tailor Error:", e);
+    } catch (err) {
+      console.error("Local Tailor Error:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -68,10 +120,10 @@ export const AIRoleTailor: React.FC = () => {
       await exportCVToPDF({
         elementId: 'tailored-ats-cv-preview',
         filename: `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
-        metadata: activePreset.metadata,
-        data: cvData,
-        language: activeLanguage,
-        selectedTags: tailoredResult?.matchedTags || []
+        metadata: tailoredOutput?.tailoredMetadata || activePreset.metadata,
+        data: tailoredOutput?.updatedData || cvData,
+        language: activeLanguage as LanguageCode,
+        selectedTags: tailoredOutput?.matchResult.matchedTags || []
       });
     } catch (e) {
       console.error("PDF export failed", e);
@@ -81,7 +133,7 @@ export const AIRoleTailor: React.FC = () => {
   };
 
   const handleDownloadCoverLetter = () => {
-    const file = new Blob([coverLetterEditable], {type: 'text/plain'});
+    const file = new Blob([coverLetterEditable], { type: 'text/plain' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(file);
     link.download = `Cover_Letter_${(companyName || 'Job').replace(/\s+/g, '_')}.txt`;
@@ -90,14 +142,21 @@ export const AIRoleTailor: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const isMasterEmpty = !cvData.profile.name?.trim() && cvData.experiences.length === 0;
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       
       {/* Header */}
       <div className="border-b border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-[200px]">
-          <h1 className="text-lg font-bold text-white">Target Job Vacancy Auto-Tailor</h1>
-          <p className="text-xs text-slate-400">Paste job requirements to generate an ATS-optimized CV and Cover Letter</p>
+          <h1 className="text-lg font-bold text-white flex items-center gap-2">
+            <Zap className="w-4 h-4 text-sky-400" />
+            <span>Target Vacancy Auto-Tailor (100% Local RAG)</span>
+          </h1>
+          <p className="text-xs text-slate-400">
+            Semantic ATS matching, bullet re-ranking, and cover letter synthesis
+          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
@@ -116,15 +175,15 @@ export const AIRoleTailor: React.FC = () => {
       </div>
 
       {/* AI Import Recommendation Banner when empty */}
-      {!cvData.profile.name?.trim() && cvData.experiences.length === 0 && (
+      {isMasterEmpty && (
         <div className="bg-gradient-to-r from-sky-950/80 to-slate-900 border border-sky-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <p className="font-bold text-white text-xs">Fast Track: Import Your Profile with AI</p>
-              <p className="text-slate-400 text-[11px]">Let AI automatically scrape and organize your experiences from LinkedIn, GitHub, or an existing CV.</p>
+              <p className="font-bold text-white text-xs">Fast Track: Import Your Profile Data</p>
+              <p className="text-slate-400 text-[11px]">Auto-import repositories, skills, and bio from GitHub, website, or resume text.</p>
             </div>
           </div>
           <button
@@ -133,7 +192,7 @@ export const AIRoleTailor: React.FC = () => {
             className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Open AI Importer</span>
+            <span>Open Importer</span>
           </button>
         </div>
       )}
@@ -145,7 +204,7 @@ export const AIRoleTailor: React.FC = () => {
         <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <Building className="w-4 h-4 text-sky-400" />
-            <span>Vacancy Details</span>
+            <span>Target Vacancy Details</span>
           </h3>
 
           <form onSubmit={handleRunTailor} className="space-y-3">
@@ -157,7 +216,7 @@ export const AIRoleTailor: React.FC = () => {
                 placeholder="e.g. Senior Full-Stack Engineer"
                 value={jobTitle}
                 onChange={(e) => setJobTitle(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
               />
             </div>
 
@@ -169,7 +228,7 @@ export const AIRoleTailor: React.FC = () => {
                   placeholder="e.g. Stripe"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                 />
               </div>
 
@@ -180,7 +239,7 @@ export const AIRoleTailor: React.FC = () => {
                   placeholder="https://..."
                   value={roleUrl}
                   onChange={(e) => setRoleUrl(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                 />
               </div>
             </div>
@@ -192,47 +251,44 @@ export const AIRoleTailor: React.FC = () => {
               <textarea
                 required
                 rows={9}
-                placeholder="Paste vacancy requirements text here..."
+                placeholder="Paste vacancy requirements text here to extract keywords and rank your resume bullets..."
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-sky-500 font-mono resize-none"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono resize-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+              className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow flex items-center justify-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
             >
-              {isProcessing ? (
-                <span>AI Filtering & Tailoring...</span>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Generate Tailored CV & Cover Letter</span>
-                </>
-              )}
+              <Sparkles className="w-4 h-4" />
+              <span>Run Local Semantic Tailor</span>
             </button>
           </form>
         </div>
 
         {/* Right Output Column */}
-        <div className="lg:col-span-7 space-y-5 overflow-hidden">
+        <div className="lg:col-span-7 space-y-4 overflow-hidden">
           
-          {tailoredResult ? (
+          {tailoredOutput ? (
             <div className="space-y-4">
               
-              {/* Output Actions */}
+              {/* ATS Match Scorecard */}
+              <ATSScoreCard output={tailoredOutput} />
+
+              {/* Action Toolbar */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>CV & Cover Letter Tailored</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Resume & Cover Letter Tailored</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownloadCoverLetter}
-                    className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1"
+                    className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>Cover Letter</span>
@@ -241,7 +297,7 @@ export const AIRoleTailor: React.FC = () => {
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isPdfExporting}
-                    className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow"
+                    className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>{isPdfExporting ? 'Exporting...' : 'Export PDF'}</span>
@@ -249,7 +305,7 @@ export const AIRoleTailor: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cover Letter Edit Box */}
+              {/* Cover Letter Box */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
                 <h4 className="text-xs font-bold text-slate-300 mb-2">Tailored Cover Letter ({activeLanguage.toUpperCase()})</h4>
                 <textarea
@@ -260,15 +316,15 @@ export const AIRoleTailor: React.FC = () => {
                 />
               </div>
 
-              {/* CV Document Container - Scaled cleanly */}
+              {/* CV Preview */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-x-auto">
-                <h4 className="text-xs font-bold text-slate-300 mb-2">ATS Classic Resume Preview</h4>
+                <h4 className="text-xs font-bold text-slate-300 mb-2">ATS Tailored Resume Preview</h4>
                 <div className="bg-slate-950 p-2 rounded flex justify-center overflow-auto max-h-[600px]">
                   <div id="tailored-ats-cv-preview" className="bg-white text-slate-900 shadow-xl max-w-full">
                     <ClassicTemplate 
-                      data={cvData} 
-                      language={activeLanguage} 
-                      selectedTags={tailoredResult.matchedTags} 
+                      data={tailoredOutput.updatedData} 
+                      language={activeLanguage as LanguageCode} 
+                      selectedTags={tailoredOutput.matchResult.matchedTags} 
                       preset={activePreset} 
                     />
                   </div>
@@ -281,16 +337,16 @@ export const AIRoleTailor: React.FC = () => {
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Classic Corporate ATS Resume Preview
+                  Master ATS Resume Preview
                 </h3>
-                <span className="text-xs text-slate-400">Master Document Format</span>
+                <span className="text-xs text-slate-400">Default Baseline</span>
               </div>
 
               <div className="bg-slate-950 p-2 rounded flex justify-center overflow-auto max-h-[700px]">
                 <div id="tailored-ats-cv-preview" className="bg-white text-slate-900 shadow-xl max-w-full">
                   <ClassicTemplate 
                     data={cvData} 
-                    language={activeLanguage} 
+                    language={activeLanguage as LanguageCode} 
                     selectedTags={[]} 
                     preset={activePreset} 
                   />

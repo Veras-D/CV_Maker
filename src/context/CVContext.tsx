@@ -14,6 +14,7 @@ import {
   UserProfile,
   createEmptyCVData
 } from '../types/cv';
+import { IngestionResult, mergeIngestionIntoCVData } from '../utils/ingestionService';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -85,10 +86,11 @@ interface CVContextType {
   updateKanbanRole: (id: string, updated: Partial<KanbanRole>) => void;
   deleteKanbanRole: (id: string) => void;
 
-  // AI Ingestion Modal
+  // AI Ingestion Modal & Data Ingestion
   isIngestionModalOpen: boolean;
   setIsIngestionModalOpen: (open: boolean) => void;
   openIngestionModal: () => void;
+  applyIngestionResult: (result: IngestionResult) => void;
 
   // Data Persistence & Reset
   exportDataJSON: () => string;
@@ -523,6 +525,10 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return false;
   };
 
+  const applyIngestionResult = (result: IngestionResult) => {
+    setCvData(prev => mergeIngestionIntoCVData(prev, result));
+  };
+
   const resetToDefaultData = () => {
     setCvData(createEmptyCVData());
     localStorage.removeItem(STORAGE_KEY);
@@ -581,7 +587,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       resetToDefaultData,
       isIngestionModalOpen,
       setIsIngestionModalOpen,
-      openIngestionModal
+      openIngestionModal,
+      applyIngestionResult
     }}>
       {children}
     </CVContext.Provider>
