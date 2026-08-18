@@ -8,7 +8,7 @@ import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { ProModal } from '../Common/ProModal';
 
 export const AIRoleTailor: React.FC = () => {
-  const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, setActiveTab } = useCV();
+  const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
   
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -129,7 +129,7 @@ export const AIRoleTailor: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={() => setActiveTab('editor')}
+            onClick={openIngestionModal}
             className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow"
           >
             <Sparkles className="w-3.5 h-3.5" />

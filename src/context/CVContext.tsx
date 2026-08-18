@@ -85,6 +85,11 @@ interface CVContextType {
   updateKanbanRole: (id: string, updated: Partial<KanbanRole>) => void;
   deleteKanbanRole: (id: string) => void;
 
+  // AI Ingestion Modal
+  isIngestionModalOpen: boolean;
+  setIsIngestionModalOpen: (open: boolean) => void;
+  openIngestionModal: () => void;
+
   // Data Persistence & Reset
   exportDataJSON: () => string;
   importDataJSON: (jsonString: string) => boolean;
@@ -115,6 +120,9 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showArchivedKanban, setShowArchivedKanban] = useState(false);
+  const [isIngestionModalOpen, setIsIngestionModalOpen] = useState(false);
+
+  const openIngestionModal = () => setIsIngestionModalOpen(true);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -570,7 +578,10 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       deleteKanbanRole,
       exportDataJSON,
       importDataJSON,
-      resetToDefaultData
+      resetToDefaultData,
+      isIngestionModalOpen,
+      setIsIngestionModalOpen,
+      openIngestionModal
     }}>
       {children}
     </CVContext.Provider>

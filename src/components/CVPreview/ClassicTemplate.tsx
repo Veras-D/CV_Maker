@@ -1,7 +1,7 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset, UserProfile, WorkExperience, ProjectItem, SkillCategory, EducationItem, LanguageItem } from '../../types/cv';
 import { openExternalUrl } from '../../utils/urlHelper';
-import { Sparkles, FileText } from 'lucide-react';
+import { DownloadCloud, FileText } from 'lucide-react';
 import { useCV } from '../../context/CVContext';
 
 interface TemplateProps {
@@ -35,13 +35,13 @@ function hasAnyContent(data: CVData, language: LanguageCode): boolean {
 }
 
 const EmptyResumePlaceholder: React.FC = () => {
-  const { setActiveTab } = useCV();
+  const { setActiveTab, openIngestionModal } = useCV();
 
   return (
     <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 pt-16 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-start text-center">
       <div className="max-w-md space-y-4 p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/80">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center mx-auto shadow-md shadow-sky-500/20">
-          <Sparkles className="w-6 h-6" />
+        <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center mx-auto shadow-sm">
+          <DownloadCloud className="w-5 h-5 text-sky-600" />
         </div>
         <div>
           <h3 className="text-sm font-bold text-slate-900">Build Your Resume with AI</h3>
@@ -53,10 +53,10 @@ const EmptyResumePlaceholder: React.FC = () => {
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab('editor')}
+            onClick={openIngestionModal}
             className="w-full sm:w-auto bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <DownloadCloud className="w-3.5 h-3.5" />
             <span>Import Profile with AI</span>
           </button>
           <button
