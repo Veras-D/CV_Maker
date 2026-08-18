@@ -222,6 +222,26 @@ export async function extractTextFromPDF(file: File): Promise<string> {
   return rawString.replace(/[^\x20-\x7E\n\r\t]/g, ' ');
 }
 
+function parseJsonCVFile(parsed: Partial<CVData>): IngestionResult {
+  const profile = parsed.profile;
+  return {
+    sourceType: 'file',
+    detectedName: profile?.name,
+    detectedBio: profile?.summary?.en || profile?.summary?.cs,
+    detectedEmail: profile?.email,
+    detectedPhone: profile?.phone,
+    detectedLocation: profile?.location,
+    detectedGithubUrl: profile?.githubUrl,
+    detectedLinkedinUrl: profile?.linkedinUrl,
+    detectedPortfolioUrl: profile?.portfolioUrl,
+    experiences: parsed.experiences || [],
+    projects: parsed.projects || [],
+    skillCategories: parsed.skillCategories || [],
+    education: parsed.education || [],
+    languages: parsed.languages || []
+  };
+}
+
 /**
  * Ingest CV data from an uploaded file (.pdf, .txt, .md, .json)
  */
@@ -230,34 +250,10 @@ export async function ingestFromFile(file: File): Promise<IngestionResult> {
 
   if (ext === 'json') {
     const text = await file.text();
-    const parsed = JSON.parse(text);
-    if (parsed.profile || parsed.experiences || parsed.skillCategories) {
-      return {
-        sourceType: 'file',
-        detectedName: parsed.profile?.name,
-        detectedBio: parsed.profile?.summary?.en || parsed.profile?.summary?.cs,
-        detectedEmail: parsed.profile?.email,
-        detectedPhone: parsed.profile?.phone,
-        detectedLocation: parsed.profile?.location,
-        detectedGithubUrl: parsed.profile?.githubUrl,
-        detectedLinkedinUrl: parsed.profile?.linkedinUrl,
-        detectedPortfolioUrl: parsed.profile?.portfolioUrl,
-        experiences: parsed.experiences || [],
-        projects: parsed.projects || [],
-        skillCategories: parsed.skillCategories || [],
-        education: parsed.education || [],
-        languages: parsed.languages || []
-      };
-    }
+    return parseJsonCVFile(JSON.parse(text));
   }
 
-  if (ext === 'pdf') {
-    const pdfText = await extractTextFromPDF(file);
-    const result = parseRawResumeText(pdfText);
-    return { ...result, sourceType: 'file' };
-  }
-
-  const rawText = await file.text();
+  const rawText = ext === 'pdf' ? await extractTextFromPDF(file) : await file.text();
   const result = parseRawResumeText(rawText);
   return { ...result, sourceType: 'file' };
 }
