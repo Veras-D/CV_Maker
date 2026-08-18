@@ -97,8 +97,8 @@ export const AIRoleTailor: React.FC = () => {
           <p className="text-xs text-slate-400">Paste job requirements to generate an ATS-optimized CV and Cover Letter</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 flex items-center gap-1">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap shrink-0">
             <Globe className="w-3.5 h-3.5" />
             <span>Target Language:</span>
           </span>
@@ -107,6 +107,7 @@ export const AIRoleTailor: React.FC = () => {
             value={activeLanguage}
             onChange={(val) => setLanguage(val)}
             onProClick={() => setIsProModalOpen(true)}
+            className="w-36 shrink-0"
           />
         </div>
       </div>
