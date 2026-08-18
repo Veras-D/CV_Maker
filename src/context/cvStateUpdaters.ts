@@ -95,17 +95,17 @@ export const deleteBulletState = (data: CVData, expId: string, bulletId: string)
   )
 });
 
-export const addSkillCategoryState = (data: CVData, nameEn: string, nameCs?: string): CVData => ({
-  ...data,
-  skillCategories: [
-    ...data.skillCategories,
-    {
-      id: `cat-${Date.now()}`,
-      categoryName: { en: nameEn, ...(nameCs ? { cs: nameCs } : {}) },
-      skills: []
-    }
-  ]
-});
+export const addSkillCategoryState = (data: CVData, nameEn: string, nameCs?: string): CVData => {
+  const newCat: SkillCategory = {
+    id: `cat-${Date.now()}`,
+    categoryName: { en: nameEn, ...(nameCs ? { cs: nameCs } : {}) },
+    skills: []
+  };
+  return {
+    ...data,
+    skillCategories: [...data.skillCategories, newCat]
+  };
+};
 
 export const updateSkillCategoryState = (data: CVData, catId: string, nameEn: string, nameCs?: string): CVData => ({
   ...data,

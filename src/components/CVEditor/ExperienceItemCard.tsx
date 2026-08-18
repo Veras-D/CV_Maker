@@ -1,57 +1,8 @@
 import React from 'react';
 import { WorkExperience, WorkBullet, LanguageCode } from '../../types/cv';
-import { Plus, Trash2, Eye, EyeOff, Calendar } from 'lucide-react';
+import { Trash2, Eye, EyeOff, Calendar } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
-
-interface BulletRowProps {
-  bullet: WorkBullet;
-  activeLanguage: LanguageCode;
-  onToggle: () => void;
-  onUpdateText: (text: string) => void;
-  onDelete: () => void;
-}
-
-const BulletItemRow: React.FC<BulletRowProps> = ({
-  bullet,
-  activeLanguage,
-  onToggle,
-  onUpdateText,
-  onDelete
-}) => {
-  const currentText = bullet.text[activeLanguage] || bullet.text.en || '';
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg space-y-2">
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`mt-1 cursor-pointer ${bullet.enabled ? 'text-sky-400' : 'text-slate-600'}`}
-        >
-          {bullet.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-        </button>
-
-        <textarea
-          rows={2}
-          placeholder="e.g. Architected and deployed microservices reducing API latency by 45%..."
-          value={currentText}
-          onChange={(e) => onUpdateText(e.target.value)}
-          className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none ${
-            !bullet.enabled ? 'line-through text-slate-500' : ''
-          }`}
-        />
-
-        <button
-          type="button"
-          onClick={onDelete}
-          className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-};
+import { BulletListEditor } from './BulletListEditor';
 
 interface DateSelectorsProps {
   startDate: string;
@@ -265,32 +216,14 @@ export const ExperienceItemCard: React.FC<ExperienceItemCardProps> = ({
         />
       </div>
 
-      <div className="space-y-2 pt-2 border-t border-slate-800">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-300">Key Achievements</span>
-          <button
-            type="button"
-            onClick={() => onAddBullet(exp.id)}
-            className="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Add Bullet</span>
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          {exp.bullets.map((b) => (
-            <BulletItemRow
-              key={b.id}
-              bullet={b}
-              activeLanguage={activeLanguage}
-              onToggle={() => onUpdateBullet(exp.id, b.id, { enabled: !b.enabled })}
-              onUpdateText={(text) => onUpdateBullet(exp.id, b.id, { text: { ...b.text, [activeLanguage]: text } })}
-              onDelete={() => onDeleteBullet(exp.id, b.id)}
-            />
-          ))}
-        </div>
-      </div>
+      <BulletListEditor
+        expId={exp.id}
+        bullets={exp.bullets}
+        activeLanguage={activeLanguage}
+        onAddBullet={onAddBullet}
+        onUpdateBullet={onUpdateBullet}
+        onDeleteBullet={onDeleteBullet}
+      />
     </div>
   );
 };

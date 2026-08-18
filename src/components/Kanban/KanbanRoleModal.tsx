@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { KanbanRole, KanbanStatus } from '../../types/cv';
-import { CustomSelect, SelectOption } from '../Common/CustomSelect';
-import { CustomDatePicker } from '../Common/CustomDatePicker';
-import { CustomCurrencyInput } from '../Common/CustomCurrencyInput';
+import { KanbanRoleFormFields } from './KanbanRoleFormFields';
 
 export interface AddEditModalProps {
   isOpen: boolean;
@@ -11,15 +9,6 @@ export interface AddEditModalProps {
   onClose: () => void;
   onSave: (data: Omit<KanbanRole, 'id' | 'updatedAt'>) => void;
 }
-
-const STAGE_OPTIONS: SelectOption[] = [
-  { value: 'applied', label: 'Applied' },
-  { value: 'hr_call', label: 'HR Screening' },
-  { value: 'tech_interview', label: 'Tech Interview' },
-  { value: 'manager_interview', label: 'Manager Round' },
-  { value: 'hired', label: 'Offer / Hired' },
-  { value: 'archived', label: 'Archive Application' }
-];
 
 export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
   isOpen,
@@ -82,109 +71,39 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
         <h3 className="text-base font-bold text-white mb-3">
           {editingRole ? 'Edit Application' : 'Add Application'}
         </h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs text-slate-300 mb-1 font-medium">Role Title</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Senior Full-Stack Engineer"
-              value={roleTitle}
-              onChange={(e) => setRoleTitle(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <KanbanRoleFormFields
+            roleTitle={roleTitle}
+            company={company}
+            location={location}
+            salary={salary}
+            status={status}
+            dateApplied={dateApplied}
+            roleUrl={roleUrl}
+            notes={notes}
+            onRoleTitleChange={setRoleTitle}
+            onCompanyChange={setCompany}
+            onLocationChange={setLocation}
+            onSalaryChange={setSalary}
+            onStatusChange={setStatus}
+            onDateAppliedChange={setDateApplied}
+            onRoleUrlChange={setRoleUrl}
+            onNotesChange={setNotes}
+          />
 
-          <div>
-            <label className="block text-xs text-slate-300 mb-1 font-medium">Company</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Stripe"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs text-slate-300 mb-1 font-medium">Location</label>
-              <input
-                type="text"
-                placeholder="San Francisco, CA / Remote"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-300 mb-1 font-medium">Salary</label>
-              <CustomCurrencyInput
-                value={salary}
-                onChange={setSalary}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs text-slate-300 mb-1 font-medium">Pipeline Stage</label>
-              <CustomSelect
-                className="w-full"
-                options={STAGE_OPTIONS}
-                value={status}
-                onChange={(val) => setStatus(val as KanbanStatus)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-300 mb-1 font-medium">Date Applied</label>
-              <CustomDatePicker
-                value={dateApplied}
-                onChange={setDateApplied}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-300 mb-1 font-medium">Role Link (Optional)</label>
-            <input
-              type="url"
-              placeholder="https://..."
-              value={roleUrl}
-              onChange={(e) => setRoleUrl(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-300 mb-1 font-medium">Notes</label>
-            <textarea
-              rows={2}
-              placeholder="Notes..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 resize-none font-sans"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white cursor-pointer"
+              className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-4 py-1.5 rounded-lg text-xs shadow transition-all cursor-pointer"
             >
-              {editingRole ? 'Update Card' : 'Save Card'}
+              Save Application
             </button>
           </div>
         </form>
