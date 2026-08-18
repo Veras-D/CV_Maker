@@ -51,22 +51,22 @@ export async function exportCVToPDF(
   doc.setFontSize(22);
   doc.setTextColor(15, 23, 42); // slate-900
   doc.text(profile.name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
-  y += 6.5;
+  y += 6.2;
 
   // Headline (Helvetica Italic 10pt)
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85); // slate-700
   doc.text(profile.headline[lang] || profile.headline.en, PAGE_WIDTH / 2, y, { align: 'center' });
-  y += 5.2;
+  y += 5.0;
 
-  // Contact info row (clean vector bullet dots and clickable hyperlinks)
+  // Contact info row (Plain text for Email, Phone, Location - Link ONLY for Portfolio)
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.8);
 
   const contactItems: { text: string; url?: string }[] = [
-    { text: profile.email, url: `mailto:${profile.email}` },
-    { text: profile.phone, url: `tel:${profile.phone.replace(/\s+/g, '')}` },
+    { text: profile.email },
+    { text: profile.phone },
     { text: profile.location }
   ];
 
@@ -74,8 +74,8 @@ export async function exportCVToPDF(
     contactItems.push({ text: profile.portfolioUrl, url: profile.portfolioUrl });
   }
 
-  // Measure widths to center contact row
-  const dotWidth = 5.0; // space reserved for each bullet dot
+  // Calculate widths to center contact row
+  const dotWidth = 5.2; // space reserved for bullet dot
   let totalWidth = 0;
   const itemWidths = contactItems.map(item => {
     const w = doc.getTextWidth(item.text);
@@ -87,17 +87,17 @@ export async function exportCVToPDF(
   let startX = (PAGE_WIDTH - totalWidth) / 2;
   contactItems.forEach((item, idx) => {
     if (item.url) {
-      doc.setTextColor(3, 105, 161); // sky-700
+      doc.setTextColor(3, 105, 161); // sky-700 (Only Portfolio URL is a link)
       (doc as any).textWithLink(item.text, startX, y, { url: item.url });
     } else {
-      doc.setTextColor(71, 85, 105); // slate-600
+      doc.setTextColor(71, 85, 105); // slate-600 (Email, Phone, Location are plain text)
       doc.text(item.text, startX, y);
     }
     startX += itemWidths[idx];
 
     // Draw vector bullet dot between items
     if (idx < contactItems.length - 1) {
-      doc.setFillColor(100, 116, 139);
+      doc.setFillColor(100, 116, 139); // slate-500
       doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
       startX += dotWidth;
     }
@@ -105,13 +105,13 @@ export async function exportCVToPDF(
 
   y += 3.8;
 
-  // Header bottom border
+  // Header bottom border (2px slate-900)
   doc.setDrawColor(15, 23, 42);
   doc.setLineWidth(0.65);
   doc.line(MARGIN_LEFT, y, MARGIN_RIGHT, y);
   y += 5.5;
 
-  // Section Header Helper
+  // Section Header Helper (Helvetica Bold with bottom border line)
   const drawSectionHeader = (title: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
@@ -149,7 +149,7 @@ export async function exportCVToPDF(
     drawSectionHeader(lang === 'en' ? 'Professional Experience' : 'Pracovní Zkušenosti');
 
     filteredExperiences.forEach((exp: WorkExperience & { activeBullets: WorkBullet[] }) => {
-      // Role Title (left) & Dates (right)
+      // Role Title (left, bold) & Dates (right, regular)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.8);
       doc.setTextColor(15, 23, 42);
@@ -194,15 +194,15 @@ export async function exportCVToPDF(
     drawSectionHeader(lang === 'en' ? 'Featured Portfolio Projects' : 'Projekty');
 
     activeProjects.forEach((p: ProjectItem) => {
-      // Title (left) & Link (right)
+      // Title (left, bold) & URL (right, mono link)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.6);
       doc.setTextColor(15, 23, 42);
       doc.text(p.title, MARGIN_LEFT, y);
 
       if (p.url) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.2);
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(8.0);
         doc.setTextColor(3, 105, 161); // sky-700
         const linkW = doc.getTextWidth(p.url) + 3.5;
         const linkX = MARGIN_RIGHT - linkW;
