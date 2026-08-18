@@ -41,64 +41,76 @@ function drawSectionHeader(doc: jsPDF, title: string, y: number): number {
 }
 
 function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): number {
-  let y = 18;
-
-  // Name
-  doc.setFont('times', 'bold');
-  doc.setFontSize(22);
-  doc.setTextColor(15, 23, 42);
-  doc.text(profile.name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
-  y += 6.2;
-
-  // Headline
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(10);
-  doc.setTextColor(51, 65, 85);
-  doc.text(profile.headline[lang] || profile.headline.en, PAGE_WIDTH / 2, y, { align: 'center' });
-  y += 5.0;
-
-  // Contact info row
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
+  const hasName = Boolean(profile.name && profile.name.trim());
+  const headline = profile.headline?.[lang] || profile.headline?.en || '';
+  const hasHeadline = Boolean(headline.trim());
 
   const contactItems: { text: string; url?: string }[] = [
-    { text: profile.email },
-    { text: profile.phone },
-    { text: profile.location }
-  ];
+    { text: (profile.email || '').trim() },
+    { text: (profile.phone || '').trim() },
+    { text: (profile.location || '').trim() }
+  ].filter(item => Boolean(item.text));
 
-  if (profile.portfolioUrl) {
-    contactItems.push({ text: profile.portfolioUrl, url: profile.portfolioUrl });
+  if (profile.portfolioUrl && profile.portfolioUrl.trim()) {
+    contactItems.push({ text: profile.portfolioUrl.trim(), url: profile.portfolioUrl.trim() });
   }
 
-  const dotWidth = 5.2;
-  let totalWidth = 0;
-  const itemWidths = contactItems.map(item => {
-    const w = doc.getTextWidth(item.text);
-    totalWidth += w;
-    return w;
-  });
-  totalWidth += (contactItems.length - 1) * dotWidth;
+  if (!hasName && !hasHeadline && contactItems.length === 0) {
+    return 18;
+  }
 
-  let startX = (PAGE_WIDTH - totalWidth) / 2;
-  contactItems.forEach((item, idx) => {
-    if (item.url) {
-      doc.setTextColor(3, 105, 161);
-      doc.textWithLink(item.text, startX, y, { url: item.url });
-    } else {
-      doc.setTextColor(71, 85, 105);
-      doc.text(item.text, startX, y);
-    }
-    startX += itemWidths[idx];
+  let y = 18;
 
-    if (idx < contactItems.length - 1) {
-      doc.setFillColor(100, 116, 139);
-      doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
-      startX += dotWidth;
-    }
-  });
+  if (hasName) {
+    doc.setFont('times', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42);
+    doc.text(profile.name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
+    y += 6.2;
+  }
 
-  y += 3.8;
+  if (hasHeadline) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+    doc.text(headline, PAGE_WIDTH / 2, y, { align: 'center' });
+    y += 5.0;
+  }
+
+  if (contactItems.length > 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+
+    const dotWidth = 5.2;
+    let totalWidth = 0;
+    const itemWidths = contactItems.map(item => {
+      const w = doc.getTextWidth(item.text);
+      totalWidth += w;
+      return w;
+    });
+    totalWidth += (contactItems.length - 1) * dotWidth;
+
+    let startX = (PAGE_WIDTH - totalWidth) / 2;
+    contactItems.forEach((item, idx) => {
+      if (item.url) {
+        doc.setTextColor(3, 105, 161);
+        doc.textWithLink(item.text, startX, y, { url: item.url });
+      } else {
+        doc.setTextColor(71, 85, 105);
+        doc.text(item.text, startX, y);
+      }
+      startX += itemWidths[idx];
+
+      if (idx < contactItems.length - 1) {
+        doc.setFillColor(100, 116, 139);
+        doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
+        startX += dotWidth;
+      }
+    });
+
+    y += 3.8;
+  }
+
   doc.setDrawColor(15, 23, 42);
   doc.setLineWidth(0.65);
   doc.line(MARGIN_LEFT, y, MARGIN_RIGHT, y);
@@ -106,11 +118,13 @@ function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): numbe
 }
 
 function drawSummary(doc: jsPDF, profile: UserProfile, lang: LanguageCode, startY: number): number {
+  const summaryText = profile.summary?.[lang] || profile.summary?.en || '';
+  if (!summaryText.trim()) return startY;
+
   let y = drawSectionHeader(doc, lang === 'en' ? 'Executive Profile' : 'Profil', startY);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.2);
   doc.setTextColor(30, 41, 59);
-  const summaryText = profile.summary[lang] || profile.summary.en;
   const summaryLines = doc.splitTextToSize(summaryText, CONTENT_WIDTH);
   doc.text(summaryLines, MARGIN_LEFT, y);
   y += (summaryLines.length * 4.2) + 4.0;
@@ -235,11 +249,12 @@ function drawProjects(doc: jsPDF, projects: ProjectItem[], lang: LanguageCode, s
 }
 
 function drawSkills(doc: jsPDF, skillCategories: SkillCategory[], lang: LanguageCode, startY: number): number {
-  if (skillCategories.length === 0) return startY;
+  const activeCategories = skillCategories.filter(cat => cat.skills.some((s: SkillItem) => s.enabled));
+  if (activeCategories.length === 0) return startY;
 
   let y = drawSectionHeader(doc, lang === 'en' ? 'Technical Competencies' : 'Technické Kompetence', startY);
 
-  skillCategories.forEach(cat => {
+  activeCategories.forEach(cat => {
     const activeSkills = cat.skills.filter((s: SkillItem) => s.enabled);
     if (activeSkills.length === 0) return;
 
