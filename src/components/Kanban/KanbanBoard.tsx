@@ -260,8 +260,8 @@ export const KanbanBoard: React.FC = () => {
                       </div>
                     </div>
 
-                    {role.notes && role.notes.trim() !== '' && role.notes.trim().toLowerCase() !== 'application submitted.' && (
-                      <p className="text-[10px] text-slate-300 bg-slate-800 p-1.5 rounded border border-slate-750 font-sans line-clamp-2">
+                    {role.notes && role.notes.trim() !== '' && (
+                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded border border-slate-750 font-sans line-clamp-2 mt-1">
                         {role.notes}
                       </p>
                     )}
