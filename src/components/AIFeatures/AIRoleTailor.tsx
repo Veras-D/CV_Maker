@@ -1,22 +1,12 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { Sparkles, Globe, Zap } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
-import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { ProModal } from '../Common/ProModal';
 import { runLocalAITailor, LocalTailorOutput } from '../../utils/localAiEngine';
 import { LanguageCode } from '../../types/cv';
+import { AIRoleTailorHeader } from './AIRoleTailorHeader';
 import { VacancyDetailsForm } from './VacancyDetailsForm';
 import { TailoredOutputView } from './TailoredOutputView';
-
-const LANGUAGE_OPTIONS: SelectOption[] = [
-  { value: 'en', label: 'English (EN)' },
-  { value: 'cs', label: 'Čeština (CS)', isPro: true },
-  { value: 'de', label: 'Deutsch (DE)', isPro: true },
-  { value: 'fr', label: 'Français (FR)', isPro: true },
-  { value: 'es', label: 'Español (ES)', isPro: true },
-  { value: 'pt', label: 'Português (PT)', isPro: true }
-];
 
 export const AIRoleTailor: React.FC = () => {
   const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
@@ -95,54 +85,13 @@ export const AIRoleTailor: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      
-      <div className="border-b border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-[200px]">
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
-            <Zap className="w-4 h-4 text-sky-400" />
-            <span>Target Vacancy Auto-Tailor (100% Local RAG)</span>
-          </h1>
-          <p className="text-xs text-slate-400">
-            Semantic ATS matching, bullet re-ranking, and cover letter synthesis
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap">
-            <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span>Target Language:</span>
-          </span>
-          <CustomSelect
-            options={LANGUAGE_OPTIONS}
-            value={activeLanguage}
-            onChange={(val) => setLanguage(val)}
-            onProClick={() => setIsProModalOpen(true)}
-            className="min-w-[130px]"
-          />
-        </div>
-      </div>
-
-      {isMasterEmpty && (
-        <div className="bg-gradient-to-r from-sky-950/80 to-slate-900 border border-sky-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-white text-xs">Fast Track: Import Your Profile Data</p>
-              <p className="text-slate-400 text-[11px]">Auto-import repositories, skills, and bio from GitHub, website, or resume text.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={openIngestionModal}
-            className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Open Importer</span>
-          </button>
-        </div>
-      )}
+      <AIRoleTailorHeader
+        activeLanguage={activeLanguage}
+        isMasterEmpty={isMasterEmpty}
+        onLanguageChange={setLanguage}
+        onOpenProModal={() => setIsProModalOpen(true)}
+        onOpenIngestionModal={openIngestionModal}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-5">
