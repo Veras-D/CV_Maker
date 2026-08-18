@@ -140,17 +140,6 @@ export const Navbar: React.FC = () => {
 
         {/* Right Tools */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          <CustomSelect
-            options={languageOptions}
-            value={activeLanguage}
-            onChange={(val) => setLanguage(val)}
-            onProClick={(val) => {
-              const opt = languageOptions.find(o => o.value === val);
-              setProFeatureName(`Export in ${opt?.label || val}`);
-              setIsProModalOpen(true);
-            }}
-          />
 
           <button
             onClick={handleBackup}
