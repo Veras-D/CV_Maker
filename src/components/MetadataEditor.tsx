@@ -39,9 +39,10 @@ export const MetadataEditor: React.FC = () => {
             </label>
             <input
               type="text"
+              placeholder="e.g. Senior Full-Stack Engineer Resume - Jane Doe"
               value={metadata.dc_title}
               onChange={(e) => updateMetadata({ dc_title: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 font-mono"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono"
             />
           </div>
 
@@ -52,9 +53,10 @@ export const MetadataEditor: React.FC = () => {
             </label>
             <input
               type="text"
+              placeholder="e.g. Jane Doe"
               value={metadata.dc_creator}
               onChange={(e) => updateMetadata({ dc_creator: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 font-mono"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono"
             />
           </div>
 
@@ -65,10 +67,10 @@ export const MetadataEditor: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="React, TypeScript, Node.js, Docker, AWS, DevOps"
+              placeholder="e.g. React, TypeScript, Node.js, Docker, AWS, DevOps, PostgreSQL, Architecture"
               value={metadata.cp_keywords}
               onChange={(e) => updateMetadata({ cp_keywords: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 font-mono"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono"
             />
           </div>
 
@@ -79,9 +81,10 @@ export const MetadataEditor: React.FC = () => {
             </label>
             <textarea
               rows={2}
+              placeholder="e.g. Comprehensive CV and career portfolio for Senior Full-Stack Engineer position..."
               value={metadata.cp_description}
               onChange={(e) => updateMetadata({ cp_description: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 font-mono resize-none"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono resize-none"
             />
           </div>
 
@@ -92,9 +95,10 @@ export const MetadataEditor: React.FC = () => {
             </label>
             <input
               type="text"
+              placeholder="e.g. Resume / Curriculum Vitae"
               value={metadata.cp_category}
               onChange={(e) => updateMetadata({ cp_category: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 font-mono"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono"
             />
           </div>
         </div>
