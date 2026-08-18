@@ -56,7 +56,7 @@ jobs:
             xdg-utils
 
       - name: Install Frontend Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Quality Gate Checks
         run: |

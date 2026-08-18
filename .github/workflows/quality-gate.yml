@@ -24,7 +24,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: 'Gate 1: TypeScript Strict Typecheck'
         run: npm run typecheck
