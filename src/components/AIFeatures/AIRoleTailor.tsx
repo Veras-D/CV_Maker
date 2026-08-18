@@ -91,15 +91,15 @@ export const AIRoleTailor: React.FC = () => {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+      <div className="border-b border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-[200px]">
           <h1 className="text-lg font-bold text-white">Target Job Vacancy Auto-Tailor</h1>
           <p className="text-xs text-slate-400">Paste job requirements to generate an ATS-optimized CV and Cover Letter</p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap shrink-0">
-            <Globe className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap">
+            <Globe className="w-3.5 h-3.5 shrink-0" />
             <span>Target Language:</span>
           </span>
           <CustomSelect
@@ -107,7 +107,7 @@ export const AIRoleTailor: React.FC = () => {
             value={activeLanguage}
             onChange={(val) => setLanguage(val)}
             onProClick={() => setIsProModalOpen(true)}
-            className="w-36 shrink-0"
+            className="min-w-[130px]"
           />
         </div>
       </div>
