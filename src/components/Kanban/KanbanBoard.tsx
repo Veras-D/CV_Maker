@@ -4,6 +4,7 @@ import { useCV } from '../../context/CVContext';
 import { KanbanStatus, KanbanRole } from '../../types/cv';
 import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
+import { CustomDatePicker } from '../Common/CustomDatePicker';
 import { openExternalUrl } from '../../utils/urlHelper';
 
 export const KanbanBoard: React.FC = () => {
@@ -382,12 +383,10 @@ export const KanbanBoard: React.FC = () => {
 
                 <div>
                   <label className="block text-xs text-slate-300 mb-1 font-medium">Date Applied</label>
-                  <input
-                    type="text"
-                    placeholder="YYYY-MM-DD"
+                  <CustomDatePicker
                     value={dateApplied}
-                    onChange={(e) => setDateApplied(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 font-mono"
+                    onChange={setDateApplied}
+                    className="w-full"
                   />
                 </div>
               </div>
