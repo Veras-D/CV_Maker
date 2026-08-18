@@ -8,11 +8,12 @@ import { openExternalUrl } from '../../utils/urlHelper';
 
 export const KanbanBoard: React.FC = () => {
   const { cvData, addKanbanRole, updateKanbanRoleStatus, updateKanbanRole, deleteKanbanRole, showArchivedKanban, setShowArchivedKanban } = useCV();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { kanbanRoles } = cvData;
 
-  // Add / Edit Modal State
+  const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingRole, setEditingRole] = useState<KanbanRole | null>(null);
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
 
   // Form state
   const [roleTitle, setRoleTitle] = useState('');
@@ -20,11 +21,11 @@ export const KanbanBoard: React.FC = () => {
   const [location, setLocation] = useState('');
   const [salary, setSalary] = useState('');
   const [status, setStatus] = useState<KanbanStatus>('applied');
-  const [dateApplied, setDateApplied] = useState(new Date().toISOString().split('T')[0]);
+  const [dateApplied, setDateApplied] = useState(new Date().toISOString().slice(0, 10));
   const [roleUrl, setRoleUrl] = useState('');
   const [notes, setNotes] = useState('');
 
-  const columns: { id: KanbanStatus; title: string }[] = [
+  const activeColumns: { id: KanbanStatus; title: string }[] = [
     { id: 'applied', title: 'Applied' },
     { id: 'hr_call', title: 'HR Screening' },
     { id: 'tech_interview', title: 'Technical Interview' },
@@ -43,46 +44,32 @@ export const KanbanBoard: React.FC = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roleTitle || !company) return;
-
-    if (editingRole) {
-      updateKanbanRole(editingRole.id, {
-        roleTitle,
-        company,
-        location,
-        salary,
-        status,
-        dateApplied,
-        roleUrl,
-        notes
-      });
-    } else {
-      addKanbanRole({
-        roleTitle,
-        company,
-        location,
-        salary,
-        status,
-        dateApplied,
-        roleUrl,
-        notes
-      });
+    if (roleTitle.trim() && company.trim()) {
+      if (editingRole) {
+        updateKanbanRole(editingRole.id, {
+          roleTitle: roleTitle.trim(),
+          company: company.trim(),
+          location: location.trim() || 'Remote',
+          salary: salary.trim() || undefined,
+          status,
+          dateApplied,
+          roleUrl: roleUrl.trim() || undefined,
+          notes: notes.trim() || undefined
+        });
+      } else {
+        addKanbanRole({
+          roleTitle: roleTitle.trim(),
+          company: company.trim(),
+          location: location.trim() || 'Remote',
+          salary: salary.trim() || undefined,
+          status,
+          dateApplied,
+          roleUrl: roleUrl.trim() || undefined,
+          notes: notes.trim() || undefined
+        });
+      }
+      closeModal();
     }
-
-    closeModal();
-  };
-
-  const openAddModal = () => {
-    setEditingRole(null);
-    setRoleTitle('');
-    setCompany('');
-    setLocation('');
-    setSalary('');
-    setStatus('applied');
-    setDateApplied(new Date().toISOString().split('T')[0]);
-    setRoleUrl('');
-    setNotes('');
-    setShowAddModal(true);
   };
 
   const openEditModal = (role: KanbanRole) => {
@@ -99,78 +86,89 @@ export const KanbanBoard: React.FC = () => {
   };
 
   const closeModal = () => {
-    setShowAddModal(false);
     setEditingRole(null);
+    setRoleTitle('');
+    setCompany('');
+    setLocation('');
+    setSalary('');
+    setNotes('');
+    setShowAddModal(false);
   };
 
-  const filteredRoles = cvData.kanbanRoles.filter(role => {
-    const isArchived = role.status === 'archived';
-    if (showArchivedKanban) {
-      if (!isArchived) return false;
-    } else {
-      if (isArchived) return false;
-    }
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedCardId(id);
+    e.dataTransfer.setData('text/plain', id);
+  };
 
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      role.roleTitle.toLowerCase().includes(term) ||
-      role.company.toLowerCase().includes(term) ||
-      (role.location && role.location.toLowerCase().includes(term))
-    );
-  });
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: KanbanStatus) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain') || draggedCardId;
+    if (id) {
+      updateKanbanRoleStatus(id, targetStatus);
+      setDraggedCardId(null);
+    }
+  };
+
+  const filteredRoles = kanbanRoles.filter(r => 
+    r.roleTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.company.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const archivedCount = filteredRoles.filter(r => r.status === 'archived').length;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
       
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg">
+      {/* Header */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>Job Application Kanban Pipeline</span>
-          </h1>
-          <p className="text-xs text-slate-400">Track active applications, interviews, and offer stages</p>
+          <h2 className="text-base font-bold text-white">Application Pipeline</h2>
+          <p className="text-xs text-slate-400">Drag & drop cards or select stage to move applications</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          {/* Search */}
-          <div className="relative flex-1 sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search applications..."
+              placeholder="Search roles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+              className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 w-36 sm:w-48"
             />
           </div>
 
-          {/* Toggle Archived */}
           <button
             onClick={() => setShowArchivedKanban(!showArchivedKanban)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
               showArchivedKanban 
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
-                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750'
+                ? 'bg-slate-700 text-white border-slate-600' 
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
             }`}
           >
-            {showArchivedKanban ? (
-              <>
-                <ArchiveRestore className="w-3.5 h-3.5" />
-                <span>Show Active ({cvData.kanbanRoles.filter(r => r.status !== 'archived').length})</span>
-              </>
-            ) : (
-              <>
-                <Archive className="w-3.5 h-3.5" />
-                <span>Archived ({cvData.kanbanRoles.filter(r => r.status === 'archived').length})</span>
-              </>
-            )}
+            {showArchivedKanban ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+            <span>{showArchivedKanban ? 'Hide Archive' : `Archive (${archivedCount})`}</span>
           </button>
 
-          {/* Add New Application */}
           <button
-            onClick={openAddModal}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white flex items-center gap-1.5 shadow-md shadow-sky-600/20 transition-all"
+            onClick={() => {
+              setEditingRole(null);
+              setRoleTitle('');
+              setCompany('');
+              setLocation('');
+              setSalary('');
+              setStatus('applied');
+              setDateApplied(new Date().toISOString().slice(0, 10));
+              setRoleUrl('');
+              setNotes('');
+              setShowAddModal(true);
+            }}
+            className="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add Role</span>
@@ -178,137 +176,142 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Kanban Board View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {columns.map(col => {
+      {/* Main Board Columns */}
+      <div className={`grid gap-4 items-start ${
+        showArchivedKanban ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-6' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
+      }`}>
+        
+        {activeColumns.map((col) => {
           const colRoles = filteredRoles.filter(r => r.status === col.id);
-
           return (
             <div 
-              key={col.id}
-              className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 flex flex-col min-h-[500px]"
+              key={col.id} 
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col.id)}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] transition-colors hover:border-slate-700 flex flex-col justify-between"
             >
-              {/* Column Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-                <h3 className="text-xs font-bold text-slate-200 tracking-wide">
-                  {col.title}
-                </h3>
-                <span className="text-[10px] font-mono font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-750">
-                  {colRoles.length}
-                </span>
-              </div>
+              <div>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                  <span className="text-xs font-bold text-slate-200">{col.title}</span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold">
+                    {colRoles.length}
+                  </span>
+                </div>
 
-              {/* Cards List */}
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {colRoles.map(role => (
-                  <div
-                    key={role.id}
-                    className="bg-slate-850 hover:bg-slate-800 border border-slate-750 hover:border-slate-700 p-3 rounded-xl shadow-sm transition-all group relative"
-                  >
-                    {/* Top card bar */}
-                    <div className="flex items-start justify-between gap-1 mb-1">
-                      <h4 className="text-xs font-bold text-white group-hover:text-sky-300 transition-colors leading-tight">
-                        {role.roleTitle}
-                      </h4>
-                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditModal(role)}
-                          className="text-slate-400 hover:text-sky-400 p-1"
-                          title="Edit role"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteKanbanRole(role.id)}
-                          className="text-slate-400 hover:text-red-400 p-1"
-                          title="Delete role"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                {/* Cards list */}
+                <div className="space-y-2.5">
+                  {colRoles.map((role) => (
+                    <div 
+                      key={role.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, role.id)}
+                      className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group cursor-grab active:cursor-grabbing"
+                    >
+                      <div className="flex justify-between items-start gap-1">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <GripVertical className="w-3.5 h-3.5 text-slate-600 opacity-40 group-hover:opacity-100 shrink-0" />
+                          <h4 className="font-bold text-xs text-white truncate">{role.roleTitle}</h4>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <button onClick={() => openEditModal(role)} className="p-1 text-slate-400 hover:text-sky-400">
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => deleteKanbanRole(role.id)} className="p-1 text-slate-400 hover:text-red-400">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-300 mb-2">
-                      <Building className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{role.company}</span>
-                    </div>
+                      <div className="flex justify-between items-center text-[11px] text-slate-400">
+                        <span className="font-medium text-slate-300 flex items-center gap-1 truncate mr-1">
+                          <Building className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span className="truncate">{role.company}</span>
+                        </span>
+                        {role.salary && (
+                          <span className="text-[10px] text-emerald-400 font-mono shrink-0">{role.salary}</span>
+                        )}
+                      </div>
 
-                    {/* Details tags */}
-                    <div className="space-y-1 text-[10px] text-slate-400 mb-3">
-                      {role.location && (
-                        <div className="flex items-center gap-1">
+                      <div className="flex justify-between items-center text-[10px] text-slate-400">
+                        <span className="flex items-center gap-1 truncate mr-1">
                           <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
                           <span className="truncate">{role.location}</span>
-                        </div>
-                      )}
-                      {role.salary && (
-                        <div className="flex items-center gap-1 text-emerald-400 font-mono">
-                          <DollarSign className="w-3 h-3 shrink-0" />
-                          <span>{role.salary}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Date Applied & External Link Row */}
-                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 mb-2">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
-                        <span>{role.dateApplied}</span>
+                        </span>
+                        <span className="flex items-center gap-1 font-mono shrink-0">
+                          <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>{role.dateApplied}</span>
+                        </span>
                       </div>
 
                       {role.roleUrl && (
-                        <button 
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); openExternalUrl(role.roleUrl!); }}
-                          className="text-sky-400 hover:text-sky-300 hover:underline cursor-pointer flex items-center gap-1 font-medium shrink-0"
-                        >
-                          <span>Link</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
+                        <div className="pt-1">
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); openExternalUrl(role.roleUrl!); }}
+                            className="text-[10px] text-sky-400 hover:underline flex items-center gap-0.5 font-medium cursor-pointer"
+                          >
+                            <span>Link</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
                       )}
-                    </div>
 
-                    {/* Full-Width Stage Selector */}
-                    <div className="w-full">
-                      <CustomSelect
-                        className="w-full"
-                        options={stageOptions}
-                        value={role.status}
-                        onChange={(newStatus) => updateKanbanRoleStatus(role.id, newStatus as KanbanStatus)}
-                      />
-                    </div>
+                      {role.notes && role.notes.trim() !== '' && role.notes.trim().toLowerCase() !== 'application submitted.' && (
+                        <p className="text-[10px] text-slate-300 bg-slate-900/60 p-1.5 rounded border border-slate-800 line-clamp-2">
+                          {role.notes}
+                        </p>
+                      )}
 
-                    {/* Optional Custom Notes */}
-                    {role.notes && role.notes.trim() !== '' && role.notes.trim().toLowerCase() !== 'application submitted.' && (
-                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded-lg border border-slate-750 font-sans line-clamp-2 mt-2">
-                        {role.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                      {/* Move Stage Select */}
+                      <div className="pt-2 border-t border-slate-800">
+                        <CustomSelect
+                          className="w-full text-[10px]"
+                          options={stageOptions}
+                          value={role.status}
+                          onChange={(val) => updateKanbanRoleStatus(role.id, val as KanbanStatus)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           );
         })}
 
-        {/* Archived Roles List View if active */}
-        {showArchivedKanban && filteredRoles.length > 0 && (
-          <div className="col-span-full bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Archive className="w-4 h-4 text-amber-400" />
-              <span>Archived Application Records</span>
-            </h3>
+        {/* Hidden Archive Column */}
+        {showArchivedKanban && (
+          <div 
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, 'archived')}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-3 min-h-[480px] bg-slate-950/40"
+          >
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800 text-rose-400">
+              <span className="text-xs font-bold">Archived / Dismissed</span>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
+                {archivedCount}
+              </span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredRoles.map(role => (
-                <div key={role.id} className="bg-slate-850 border border-slate-750 p-3 rounded-xl flex justify-between items-center text-xs">
-                  <div>
-                    <h4 className="font-bold text-white">{role.roleTitle}</h4>
-                    <p className="text-slate-400">{role.company} • {role.dateApplied}</p>
+            <div className="space-y-2.5">
+              {filteredRoles.filter(r => r.status === 'archived').map((role) => (
+                <div 
+                  key={role.id} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, role.id)}
+                  className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg text-xs opacity-75 space-y-1 cursor-grab"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-300">{role.roleTitle}</span>
+                    <button onClick={() => deleteKanbanRole(role.id)} className="text-slate-500 hover:text-red-400">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
+                  <span className="text-[10px] text-slate-500 block">{role.company}</span>
                   <button
                     onClick={() => updateKanbanRoleStatus(role.id, 'applied')}
-                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 rounded-lg text-[11px] font-medium border border-slate-700"
+                    className="mt-1 text-[10px] text-sky-400 hover:underline block"
                   >
                     Restore to Applied
                   </button>
