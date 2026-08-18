@@ -15,6 +15,7 @@ import {
   createEmptyCVData
 } from '../types/cv';
 import { IngestionResult, mergeIngestionIntoCVData } from '../utils/ingestionService';
+import * as updaters from './cvStateUpdaters';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -100,25 +101,20 @@ interface CVContextType {
 
 const CVContext = createContext<CVContextType | undefined>(undefined);
 
-export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cvData, setCvData] = useState<CVData>(() => {
-    try {
-      localStorage.removeItem('cv_maker_data_v1');
-      localStorage.removeItem('cv_maker_data_v2');
-    } catch {
-      // ignore
-    }
+function loadInitialCVData(): CVData {
+  try {
+    localStorage.removeItem('cv_maker_data_v1');
+    localStorage.removeItem('cv_maker_data_v2');
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to parse saved CV data:", e);
-      }
-    }
-    return createEmptyCVData();
-  });
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error("Failed to parse saved CV data:", e);
+  }
+  return createEmptyCVData();
+}
 
+export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [cvData, setCvData] = useState<CVData>(loadInitialCVData);
   const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showArchivedKanban, setShowArchivedKanban] = useState(false);
@@ -126,20 +122,15 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const openIngestionModal = () => setIsIngestionModalOpen(true);
 
-  // Sync state to LocalStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cvData));
   }, [cvData]);
 
-  // Active Preset
   const activePreset = cvData.presets.find(p => p.id === cvData.activePresetId) || cvData.presets[0];
   const activeLanguage = activePreset?.activeLanguage || 'en';
   const activeLayout = activePreset?.activeLayout || 'classic';
 
-  // Preset handlers
-  const selectPreset = (presetId: string) => {
-    setCvData(prev => ({ ...prev, activePresetId: presetId }));
-  };
+  const selectPreset = (presetId: string) => setCvData(prev => ({ ...prev, activePresetId: presetId }));
 
   const createPreset = (name: string, description?: string) => {
     const newPreset: RolePreset = {
@@ -147,8 +138,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       name,
       description: description || 'Custom role preset',
       activeTags: [...selectedTags],
-      activeLanguage: activeLanguage,
-      activeLayout: activeLayout,
+      activeLanguage,
+      activeLayout,
       metadata: { ...activePreset.metadata, dc_title: `${cvData.profile.name} - ${name}` }
     };
     setCvData(prev => ({
@@ -162,360 +153,36 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     if (cvData.presets.length <= 1) return;
     setCvData(prev => {
       const filtered = prev.presets.filter(p => p.id !== presetId);
-      return {
-        ...prev,
-        presets: filtered,
-        activePresetId: filtered[0].id
-      };
+      return { ...prev, presets: filtered, activePresetId: filtered[0].id };
     });
   };
 
   const setLanguage = (lang: string) => {
     setCvData(prev => ({
       ...prev,
-      presets: prev.presets.map(p => 
-        p.id === prev.activePresetId ? { ...p, activeLanguage: lang } : p
-      )
+      presets: prev.presets.map(p => p.id === prev.activePresetId ? { ...p, activeLanguage: lang } : p)
     }));
   };
 
   const setLayout = (layout: 'classic' | 'modern' | 'minimal') => {
     setCvData(prev => ({
       ...prev,
-      presets: prev.presets.map(p => 
-        p.id === prev.activePresetId ? { ...p, activeLayout: layout } : p
-      )
+      presets: prev.presets.map(p => p.id === prev.activePresetId ? { ...p, activeLayout: layout } : p)
     }));
   };
 
   const toggleTagFilter = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  const clearTagFilters = () => {
-    setSelectedTags([]);
-  };
+  const clearTagFilters = () => setSelectedTags([]);
 
-  // Profile
-  const updateProfile = (updated: Partial<UserProfile>) => {
-    setCvData(prev => ({
-      ...prev,
-      profile: { ...prev.profile, ...updated }
-    }));
-  };
-
-  // Experiences
-  const addExperience = () => {
-    const newExp: WorkExperience = {
-      id: `exp-${Date.now()}`,
-      roleTitle: { en: "Role Title", cs: "Název Pozice" },
-      company: "Company Name",
-      location: "Location / Remote",
-      startDate: "2024",
-      endDate: "Present",
-      summary: { en: "Role description", cs: "Popis pozice" },
-      tags: ["fullstack"],
-      enabled: true,
-      bullets: [
-        {
-          id: `b-${Date.now()}-1`,
-          text: { en: "Key responsibility or achievement", cs: "Klíčová odpovědnost nebo úspěch" },
-          tags: ["fullstack"],
-          enabled: true
-        }
-      ]
-    };
-    setCvData(prev => ({ ...prev, experiences: [newExp, ...prev.experiences] }));
-  };
-
-  const updateExperience = (id: string, updated: Partial<WorkExperience>) => {
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.map(e => e.id === id ? { ...e, ...updated } : e)
-    }));
-  };
-
-  const deleteExperience = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.filter(e => e.id !== id)
-    }));
-  };
-
-  const toggleExperienceEnabled = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e)
-    }));
-  };
-
-  const addBullet = (expId: string) => {
-    const newBullet: WorkBullet = {
-      id: `b-${Date.now()}`,
-      text: { en: "Achievement bullet point", cs: "Popis dosaženého výsledku" },
-      tags: ["fullstack"],
-      enabled: true
-    };
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.map(e => 
-        e.id === expId ? { ...e, bullets: [...e.bullets, newBullet] } : e
-      )
-    }));
-  };
-
-  const updateBullet = (expId: string, bulletId: string, updated: Partial<WorkBullet>) => {
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.map(e => 
-        e.id === expId ? {
-          ...e,
-          bullets: e.bullets.map(b => b.id === bulletId ? { ...b, ...updated } : b)
-        } : e
-      )
-    }));
-  };
-
-  const deleteBullet = (expId: string, bulletId: string) => {
-    setCvData(prev => ({
-      ...prev,
-      experiences: prev.experiences.map(e => 
-        e.id === expId ? {
-          ...e,
-          bullets: e.bullets.filter(b => b.id !== bulletId)
-        } : e
-      )
-    }));
-  };
-
-  // Skills
-  const addSkillCategory = (categoryNameEn: string, categoryNameCs?: string) => {
-    const newCat: SkillCategory = {
-      id: `cat-${Date.now()}`,
-      categoryName: { en: categoryNameEn, ...(categoryNameCs ? { cs: categoryNameCs } : {}) },
-      skills: []
-    };
-    setCvData(prev => ({ ...prev, skillCategories: [...prev.skillCategories, newCat] }));
-  };
-
-  const updateSkillCategory = (catId: string, nameEn: string, nameCs?: string) => {
-    setCvData(prev => ({
-      ...prev,
-      skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? { ...c, categoryName: { ...c.categoryName, en: nameEn, ...(nameCs ? { cs: nameCs } : {}) } } : c
-      )
-    }));
-  };
-
-  const deleteSkillCategory = (catId: string) => {
-    setCvData(prev => ({
-      ...prev,
-      skillCategories: prev.skillCategories.filter(c => c.id !== catId)
-    }));
-  };
-
-  const addSkill = (catId: string, name: string, tags: string[]) => {
-    const newSkill = {
-      id: `sk-${Date.now()}`,
-      name,
-      tags: tags.length ? tags : ["fullstack"],
-      enabled: true
-    };
-    setCvData(prev => ({
-      ...prev,
-      skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? { ...c, skills: [...c.skills, newSkill] } : c
-      )
-    }));
-  };
-
-  const toggleSkillEnabled = (catId: string, skillId: string) => {
-    setCvData(prev => ({
-      ...prev,
-      skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? {
-          ...c,
-          skills: c.skills.map(s => s.id === skillId ? { ...s, enabled: !s.enabled } : s)
-        } : c
-      )
-    }));
-  };
-
-  const deleteSkill = (catId: string, skillId: string) => {
-    setCvData(prev => ({
-      ...prev,
-      skillCategories: prev.skillCategories.map(c => 
-        c.id === catId ? {
-          ...c,
-          skills: c.skills.filter(s => s.id !== skillId)
-        } : c
-      )
-    }));
-  };
-
-  // Projects
-  const addProject = () => {
-    const newProj: ProjectItem = {
-      id: `proj-${Date.now()}`,
-      title: "Project Title",
-      description: { en: "Description of the project", cs: "Popis projektu" },
-      techStack: ["React", "TypeScript"],
-      tags: ["fullstack"],
-      enabled: true
-    };
-    setCvData(prev => ({ ...prev, projects: [...prev.projects, newProj] }));
-  };
-
-  const updateProject = (id: string, updated: Partial<ProjectItem>) => {
-    setCvData(prev => ({
-      ...prev,
-      projects: prev.projects.map(p => p.id === id ? { ...p, ...updated } : p)
-    }));
-  };
-
-  const deleteProject = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      projects: prev.projects.filter(p => p.id !== id)
-    }));
-  };
-
-  const toggleProjectEnabled = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      projects: prev.projects.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p)
-    }));
-  };
-
-  // Education
-  const addEducation = () => {
-    const newEdu: EducationItem = {
-      id: `edu-${Date.now()}`,
-      institution: "University / Institute",
-      program: { en: "Degree / Program Title", cs: "Titul / Název Programu" },
-      dates: "2023 - 2024",
-      technologies: [],
-      enabled: true
-    };
-    setCvData(prev => ({ ...prev, education: [...prev.education, newEdu] }));
-  };
-
-  const updateEducation = (id: string, updated: Partial<EducationItem>) => {
-    setCvData(prev => ({
-      ...prev,
-      education: prev.education.map(e => e.id === id ? { ...e, ...updated } : e)
-    }));
-  };
-
-  const deleteEducation = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      education: prev.education.filter(e => e.id !== id)
-    }));
-  };
-
-  const toggleEducationEnabled = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      education: prev.education.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e)
-    }));
-  };
-
-  // Languages
-  const addLanguage = () => {
-    const newLang: LanguageItem = {
-      id: `lang-${Date.now()}`,
-      language: { en: "Language Name", cs: "Název Jazyka" },
-      proficiency: { en: "Proficiency Level", cs: "Úroveň" },
-      enabled: true
-    };
-    setCvData(prev => ({ ...prev, languages: [...prev.languages, newLang] }));
-  };
-
-  const updateLanguage = (id: string, updated: Partial<LanguageItem>) => {
-    setCvData(prev => ({
-      ...prev,
-      languages: prev.languages.map(l => l.id === id ? { ...l, ...updated } : l)
-    }));
-  };
-
-  const deleteLanguage = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      languages: prev.languages.filter(l => l.id !== id)
-    }));
-  };
-
-  // PDF Metadata
-  const updateMetadata = (metadata: Partial<PDFMetadata>) => {
-    setCvData(prev => ({
-      ...prev,
-      presets: prev.presets.map(p => 
-        p.id === prev.activePresetId ? {
-          ...p,
-          metadata: { ...p.metadata, ...metadata }
-        } : p
-      )
-    }));
-  };
-
-  // Kanban
-  const addKanbanRole = (role: Omit<KanbanRole, 'id' | 'updatedAt'>) => {
-    const newRole: KanbanRole = {
-      ...role,
-      id: `kanban-${Date.now()}`,
-      updatedAt: new Date().toISOString()
-    };
-    setCvData(prev => ({
-      ...prev,
-      kanbanRoles: [newRole, ...prev.kanbanRoles]
-    }));
-  };
-
-  const updateKanbanRoleStatus = (id: string, status: KanbanStatus) => {
-    setCvData(prev => ({
-      ...prev,
-      kanbanRoles: prev.kanbanRoles.map(r => 
-        r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
-      )
-    }));
-  };
-
-  const updateKanbanRole = (id: string, updated: Partial<KanbanRole>) => {
-    setCvData(prev => ({
-      ...prev,
-      kanbanRoles: prev.kanbanRoles.map(r => 
-        r.id === id ? { ...r, ...updated, updatedAt: new Date().toISOString() } : r
-      )
-    }));
-  };
-
-  const deleteKanbanRole = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      kanbanRoles: prev.kanbanRoles.filter(r => r.id !== id)
-    }));
-  };
-
-  // Export / Import / Reset
-  const exportDataJSON = () => {
-    const filename = `cv_master_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cvData, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", filename);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    return filename;
-  };
+  const exportDataJSON = () => JSON.stringify(cvData, null, 2);
 
   const importDataJSON = (jsonString: string): boolean => {
     try {
       const parsed = JSON.parse(jsonString);
-      if (parsed.profile && parsed.experiences && parsed.presets) {
+      if (parsed && typeof parsed === 'object' && parsed.profile && parsed.experiences) {
         setCvData(parsed);
         return true;
       }
@@ -552,36 +219,36 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       setLayout,
       toggleTagFilter,
       clearTagFilters,
-      updateProfile,
-      addExperience,
-      updateExperience,
-      deleteExperience,
-      toggleExperienceEnabled,
-      addBullet,
-      updateBullet,
-      deleteBullet,
-      addSkillCategory,
-      updateSkillCategory,
-      deleteSkillCategory,
-      addSkill,
-      toggleSkillEnabled,
-      deleteSkill,
-      addProject,
-      updateProject,
-      deleteProject,
-      toggleProjectEnabled,
-      addEducation,
-      updateEducation,
-      deleteEducation,
-      toggleEducationEnabled,
-      addLanguage,
-      updateLanguage,
-      deleteLanguage,
-      updateMetadata,
-      addKanbanRole,
-      updateKanbanRoleStatus,
-      updateKanbanRole,
-      deleteKanbanRole,
+      updateProfile: (u) => setCvData(prev => updaters.updateProfileState(prev, u)),
+      addExperience: () => setCvData(prev => updaters.addExperienceState(prev)),
+      updateExperience: (id, u) => setCvData(prev => updaters.updateExperienceState(prev, id, u)),
+      deleteExperience: (id) => setCvData(prev => updaters.deleteExperienceState(prev, id)),
+      toggleExperienceEnabled: (id) => setCvData(prev => updaters.toggleExperienceEnabledState(prev, id)),
+      addBullet: (expId) => setCvData(prev => updaters.addBulletState(prev, expId)),
+      updateBullet: (expId, bId, u) => setCvData(prev => updaters.updateBulletState(prev, expId, bId, u)),
+      deleteBullet: (expId, bId) => setCvData(prev => updaters.deleteBulletState(prev, expId, bId)),
+      addSkillCategory: (en, cs) => setCvData(prev => updaters.addSkillCategoryState(prev, en, cs)),
+      updateSkillCategory: (id, en, cs) => setCvData(prev => updaters.updateSkillCategoryState(prev, id, en, cs)),
+      deleteSkillCategory: (id) => setCvData(prev => updaters.deleteSkillCategoryState(prev, id)),
+      addSkill: (id, name, tags) => setCvData(prev => updaters.addSkillState(prev, id, name, tags)),
+      toggleSkillEnabled: (cId, sId) => setCvData(prev => updaters.toggleSkillEnabledState(prev, cId, sId)),
+      deleteSkill: (cId, sId) => setCvData(prev => updaters.deleteSkillState(prev, cId, sId)),
+      addProject: () => setCvData(prev => updaters.addProjectState(prev)),
+      updateProject: (id, u) => setCvData(prev => updaters.updateProjectState(prev, id, u)),
+      deleteProject: (id) => setCvData(prev => updaters.deleteProjectState(prev, id)),
+      toggleProjectEnabled: (id) => setCvData(prev => updaters.toggleProjectEnabledState(prev, id)),
+      addEducation: () => setCvData(prev => updaters.addEducationState(prev)),
+      updateEducation: (id, u) => setCvData(prev => updaters.updateEducationState(prev, id, u)),
+      deleteEducation: (id) => setCvData(prev => updaters.deleteEducationState(prev, id)),
+      toggleEducationEnabled: (id) => setCvData(prev => updaters.toggleEducationEnabledState(prev, id)),
+      addLanguage: () => setCvData(prev => updaters.addLanguageState(prev)),
+      updateLanguage: (id, u) => setCvData(prev => updaters.updateLanguageState(prev, id, u)),
+      deleteLanguage: (id) => setCvData(prev => updaters.deleteLanguageState(prev, id)),
+      updateMetadata: (u) => setCvData(prev => updaters.updateMetadataState(prev, u)),
+      addKanbanRole: (r) => setCvData(prev => updaters.addKanbanRoleState(prev, r)),
+      updateKanbanRoleStatus: (id, s) => setCvData(prev => updaters.updateKanbanRoleStatusState(prev, id, s)),
+      updateKanbanRole: (id, u) => setCvData(prev => updaters.updateKanbanRoleState(prev, id, u)),
+      deleteKanbanRole: (id) => setCvData(prev => updaters.deleteKanbanRoleState(prev, id)),
       exportDataJSON,
       importDataJSON,
       resetToDefaultData,

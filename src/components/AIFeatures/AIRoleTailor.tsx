@@ -1,64 +1,22 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { Sparkles, Download, FileText, CheckCircle2, Globe, Building, Target, Zap } from 'lucide-react';
+import { Sparkles, Download, FileText, CheckCircle2, Globe, Building, Zap } from 'lucide-react';
 import { exportCVToPDF } from '../../utils/pdfExport';
 import { ClassicTemplate } from '../CVPreview/ClassicTemplate';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { ProModal } from '../Common/ProModal';
 import { runLocalAITailor, LocalTailorOutput } from '../../utils/localAiEngine';
 import { LanguageCode } from '../../types/cv';
+import { ATSScoreCard } from './ATSScoreCard';
 
-const ATSScoreCard: React.FC<{ output: LocalTailorOutput }> = ({ output }) => {
-  const { atsScore, matchedKeywords, missingKeywords } = output.matchResult;
-
-  const scoreColor = atsScore >= 80 
-    ? 'text-emerald-400 border-emerald-500/40 bg-emerald-950/40' 
-    : 'text-amber-400 border-amber-500/40 bg-amber-950/40';
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-sky-400" />
-          <span className="text-xs font-bold text-white">Local ATS Semantic Match</span>
-        </div>
-        <div className={`text-xs font-bold px-2.5 py-1 rounded-full border ${scoreColor}`}>
-          {atsScore}% Match
-        </div>
-      </div>
-
-      {matchedKeywords.length > 0 && (
-        <div>
-          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-            Matched Skills & Keywords ({matchedKeywords.length})
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {matchedKeywords.slice(0, 10).map((kw, idx) => (
-              <span key={idx} className="text-[10px] bg-sky-950/80 text-sky-300 border border-sky-800/60 px-2 py-0.5 rounded font-medium">
-                ✓ {kw}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {missingKeywords.length > 0 && (
-        <div className="pt-2 border-t border-slate-800/80">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-            Job Keywords to Consider Adding:
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {missingKeywords.map((kw, idx) => (
-              <span key={idx} className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
-                + {kw}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+const LANGUAGE_OPTIONS: SelectOption[] = [
+  { value: 'en', label: 'English (EN)' },
+  { value: 'cs', label: 'Čeština (CS)', isPro: true },
+  { value: 'de', label: 'Deutsch (DE)', isPro: true },
+  { value: 'fr', label: 'Français (FR)', isPro: true },
+  { value: 'es', label: 'Español (ES)', isPro: true },
+  { value: 'pt', label: 'Português (PT)', isPro: true }
+];
 
 export const AIRoleTailor: React.FC = () => {
   const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
@@ -72,15 +30,6 @@ export const AIRoleTailor: React.FC = () => {
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
-
-  const languageOptions: SelectOption[] = [
-    { value: 'en', label: 'English (EN)' },
-    { value: 'cs', label: 'Čeština (CS)', isPro: true },
-    { value: 'de', label: 'Deutsch (DE)', isPro: true },
-    { value: 'fr', label: 'Français (FR)', isPro: true },
-    { value: 'es', label: 'Español (ES)', isPro: true },
-    { value: 'pt', label: 'Português (PT)', isPro: true }
-  ];
 
   const handleRunTailor = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +114,7 @@ export const AIRoleTailor: React.FC = () => {
             <span>Target Language:</span>
           </span>
           <CustomSelect
-            options={languageOptions}
+            options={LANGUAGE_OPTIONS}
             value={activeLanguage}
             onChange={(val) => setLanguage(val)}
             onProClick={() => setIsProModalOpen(true)}
@@ -274,11 +223,8 @@ export const AIRoleTailor: React.FC = () => {
           
           {tailoredOutput ? (
             <div className="space-y-4">
-              
-              {/* ATS Match Scorecard */}
               <ATSScoreCard output={tailoredOutput} />
 
-              {/* Action Toolbar */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
                   <CheckCircle2 className="w-4 h-4" />
@@ -305,7 +251,6 @@ export const AIRoleTailor: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cover Letter Box */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
                 <h4 className="text-xs font-bold text-slate-300 mb-2">Tailored Cover Letter ({activeLanguage.toUpperCase()})</h4>
                 <textarea
@@ -316,7 +261,6 @@ export const AIRoleTailor: React.FC = () => {
                 />
               </div>
 
-              {/* CV Preview */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-x-auto">
                 <h4 className="text-xs font-bold text-slate-300 mb-2">ATS Tailored Resume Preview</h4>
                 <div className="bg-slate-950 p-2 rounded flex justify-center overflow-auto max-h-[600px]">
@@ -333,7 +277,6 @@ export const AIRoleTailor: React.FC = () => {
 
             </div>
           ) : (
-            /* Initial Master Preview */
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
