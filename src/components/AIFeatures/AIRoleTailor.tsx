@@ -68,7 +68,10 @@ export const AIRoleTailor: React.FC = () => {
       await exportCVToPDF(
         'tailored-ats-cv-preview',
         `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
-        activePreset.metadata
+        activePreset.metadata,
+        cvData,
+        activeLanguage,
+        tailoredResult?.matchedTags || []
       );
     } catch (e) {
       console.error("PDF export failed", e);

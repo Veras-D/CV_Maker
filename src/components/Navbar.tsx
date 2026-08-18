@@ -37,7 +37,10 @@ export const Navbar: React.FC = () => {
       await exportCVToPDF(
         'tailored-ats-cv-preview',
         `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
-        activePreset.metadata
+        activePreset.metadata,
+        cvData,
+        activeLanguage,
+        selectedTags
       );
       const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
       setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);

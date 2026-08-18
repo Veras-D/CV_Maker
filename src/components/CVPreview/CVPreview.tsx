@@ -17,7 +17,10 @@ export const CVPreview: React.FC = () => {
       await exportCVToPDF(
         'cv-preview-container',
         filename,
-        activePreset.metadata
+        activePreset.metadata,
+        cvData,
+        activeLanguage,
+        selectedTags
       );
       setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
       setTimeout(() => setFeedbackNotification(null), 5000);
