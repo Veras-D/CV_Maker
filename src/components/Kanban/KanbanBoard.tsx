@@ -516,13 +516,6 @@ export const KanbanBoard: React.FC = () => {
                       onDelete={(r) => setRoleToDelete(r)}
                     />
                   ))}
-
-                  {isDropTarget && (
-                    <div className="border-2 border-dashed border-sky-400/80 bg-sky-500/10 rounded-lg p-3 text-center text-sky-300 text-xs font-semibold animate-pulse flex items-center justify-center gap-1.5 shadow-inner">
-                      <GripVertical className="w-3.5 h-3.5" />
-                      <span>Drop into {col.title}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -577,13 +570,6 @@ export const KanbanBoard: React.FC = () => {
                     </button>
                   </div>
                 ))}
-
-                {dragOverColumn === 'archived' && draggedCardId !== null && (
-                  <div className="border-2 border-dashed border-rose-400/80 bg-rose-500/10 rounded-lg p-3 text-center text-rose-300 text-xs font-semibold animate-pulse flex items-center justify-center gap-1.5 shadow-inner">
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Archive role</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
