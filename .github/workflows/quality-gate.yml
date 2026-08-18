@@ -8,7 +8,7 @@ on:
 
 jobs:
   quality-gate:
-    name: Code Quality, Complexity & Security Gate
+    name: Automated Quality & Security Gate
     runs-on: ubuntu-latest
 
     steps:
@@ -29,19 +29,21 @@ jobs:
       - name: 'Gate 1: TypeScript Strict Typecheck'
         run: npm run typecheck
 
-      - name: 'Gate 2: Static Analysis, Complexity & AST Security'
+      - name: 'Gate 2: Static Analysis & Cyclomatic Complexity'
         run: npm run lint
 
       - name: 'Gate 3: Code Duplication & Clone Detection'
         run: npm run quality:duplication
 
-      - name: 'Gate 4: Dependency Vulnerability Audit'
-        run: npm run quality:audit
-
-      - name: 'Gate 5: Secret & Token Leak Detection (Gitleaks)'
+      - name: 'Gate 4: Security Gate (Dependencies & Secret Scanning)'
+        run: |
+          echo "Scanning dependencies for known CVEs and vulnerabilities..."
+          npm run quality:audit
+        
+      - name: 'Gate 4: Security Gate (Gitleaks Secret & Token Scanning)'
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Gate 6: Production Build Verification'
+      - name: 'Gate 5: Production Build Verification'
         run: npm run build

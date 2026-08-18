@@ -218,13 +218,14 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 The repository enforces a strict **5-Stage Quality & Security Gate** on every commit and pull request:
 
 ```bash
-# Run all quality checks locally (Typecheck + Lint/Security + Duplication)
+# Run all quality & security checks locally
 npm run quality:check
 
 # Individual verification commands:
 npm run typecheck            # Gate 1: TypeScript strict compiler check
-npm run lint                 # Gate 2: ESLint (complexity <= 12, max-lines <= 350, security rules)
+npm run lint                 # Gate 2: Static Analysis & Complexity (ESLint <= 12, max-lines <= 350)
 npm run quality:duplication  # Gate 3: Clone & copy/paste detector (jscpd <= 3%)
+npm run quality:audit        # Gate 4: Security Gate - Dependency Vulnerability Audit
 npm run build                # Gate 5: Production build bundle verification
 ```
 
