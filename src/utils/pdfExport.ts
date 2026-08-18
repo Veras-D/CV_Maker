@@ -13,14 +13,27 @@ export async function exportCVToPDF(
     throw new Error(`Element with id ${elementId} not found`);
   }
 
-  // 1. Render element to high-res canvas (scale 2 for sharpness)
-  const canvas = await html2canvas(element, {
+  // 1. Clone target element into unconstrained offscreen container to capture 100% of document height without scroll clipping
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.width = '210mm';
+  clone.style.height = 'auto';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+  document.body.appendChild(clone);
+
+  // 2. Render unconstrained clone to high-res canvas (scale 2 for sharpness)
+  const canvas = await html2canvas(clone, {
     scale: 2,
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff',
     windowWidth: 1200
   });
+
+  document.body.removeChild(clone);
 
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
   
@@ -32,7 +45,7 @@ export async function exportCVToPDF(
   const canvasHeight = canvas.height;
   const imgHeightInMm = (canvasHeight * pdfWidth) / canvasWidth;
 
-  // 2. Generate initial jsPDF document
+  // 3. Generate initial jsPDF document
   const pdf = new jsPDF('p', 'mm', 'a4');
   let heightLeft = imgHeightInMm;
   let position = 0;
@@ -41,8 +54,8 @@ export async function exportCVToPDF(
   pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
   heightLeft -= pdfHeight;
 
-  // Additional pages if needed
-  while (heightLeft > 0) {
+  // Additional pages if document spans multiple pages
+  while (heightLeft > 3) {
     position = heightLeft - imgHeightInMm;
     pdf.addPage();
     pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
@@ -51,7 +64,7 @@ export async function exportCVToPDF(
 
   const pdfArrayBuffer = pdf.output('arraybuffer');
 
-  // 3. Inject Metadata into PDF using pdf-lib (Dublin Core & Content Properties)
+  // 4. Inject Metadata into PDF using pdf-lib (Dublin Core & Content Properties)
   const pdfDoc = await PDFDocument.load(pdfArrayBuffer);
   
   if (metadata.dc_title) {
@@ -76,7 +89,7 @@ export async function exportCVToPDF(
 
   const finalPdfBytes = await pdfDoc.save();
 
-  // 4. Download file in browser / webview environment
+  // 5. Download file in browser / webview environment
   const blob = new Blob([finalPdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);

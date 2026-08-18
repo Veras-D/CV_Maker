@@ -84,13 +84,14 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
                 {exp.company} | {exp.location}
               </div>
 
-              <ul className="list-disc list-outside ml-4 space-y-1 text-slate-800 text-[10.5px]">
+              <div className="space-y-1 text-slate-800 text-[10.5px] pl-1">
                 {exp.activeBullets.map(b => (
-                  <li key={b.id}>
-                    {b.text[language]}
-                  </li>
+                  <div key={b.id} className="flex items-start">
+                    <span className="mr-2 text-slate-800 font-bold shrink-0">•</span>
+                    <span>{b.text[language]}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </div>
