@@ -98,7 +98,7 @@ export async function exportCVToPDF(
 
     // Inject selectable text layer
     pdf.setTextColor(255, 255, 255);
-    pdf.setRenderingMode('invisible');
+    (pdf as any).setRenderingMode?.('invisible');
     textNodes.forEach(tn => {
       pdf.setFontSize(tn.fontSize);
       pdf.text(tn.text, tn.x, tn.y);
