@@ -15,7 +15,7 @@ import {
   createEmptyCVData
 } from '../types/cv';
 
-const STORAGE_KEY = 'cv_maker_data_v2';
+const STORAGE_KEY = 'cv_maker_data_v3';
 
 interface CVContextType {
   cvData: CVData;
@@ -95,6 +95,12 @@ const CVContext = createContext<CVContextType | undefined>(undefined);
 
 export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cvData, setCvData] = useState<CVData>(() => {
+    try {
+      localStorage.removeItem('cv_maker_data_v1');
+      localStorage.removeItem('cv_maker_data_v2');
+    } catch {
+      // ignore
+    }
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
