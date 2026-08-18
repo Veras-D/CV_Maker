@@ -1,6 +1,6 @@
 import React from 'react';
 import { CVData, LanguageCode, RolePreset } from '../../types/cv';
-import { Mail, Phone, MapPin, Globe, Github, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Linkedin } from 'lucide-react';
 import { openExternalUrl } from '../../utils/urlHelper';
 
 interface TemplateProps {
@@ -112,7 +112,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                     </p>
                   )}
 
-                  <div className="space-y-1 text-slate-700 pl-1">
+                  <div className="space-y-1 text-slate-700 pl-1 leading-normal">
                     {exp.activeBullets.map(b => (
                       <div key={b.id} className="flex items-start">
                         <span className="mr-1.5 text-slate-700 font-bold shrink-0">•</span>
@@ -147,9 +147,9 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                         </a>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-600 mt-0.5">{p.description[language] || p.description.en}</p>
+                    <p className="text-[10px] text-slate-600 mt-0.5 mb-1.5 leading-normal">{p.description[language] || p.description.en}</p>
                     {p.techStack && p.techStack.length > 0 && (
-                      <div className="mt-1.5 leading-none">
+                      <div className="pt-0.5">
                         {p.techStack.map((tech, i) => (
                           <span key={i} className="inline-block text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200 mr-1 mb-1 leading-tight">
                             {tech}
@@ -184,7 +184,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                     <h3 className="text-[10px] font-bold text-slate-700 mb-1">
                       {cat.categoryName[language]}
                     </h3>
-                    <div className="leading-none">
+                    <div className="pt-0.5">
                       {activeSkills.map(s => (
                         <span 
                           key={s.id}

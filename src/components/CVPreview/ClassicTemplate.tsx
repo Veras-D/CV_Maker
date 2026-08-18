@@ -62,7 +62,7 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-400 mb-1.5 pb-0.5">
           {language === 'en' ? 'Executive Profile' : 'Profil'}
         </h2>
-        <p className="text-slate-800 text-[10px]">
+        <p className="text-slate-800 text-[10px] leading-normal">
           {profile.summary[language]}
         </p>
       </section>
@@ -78,13 +78,13 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
             <div key={exp.id}>
               <div className="flex justify-between items-baseline font-bold">
                 <span className="text-slate-900 text-[11px]">{exp.roleTitle[language]}</span>
-                <span className="text-[9.5px] text-slate-600">{exp.startDate} – {exp.endDate}</span>
+                <span className="text-[9.5px] text-slate-600 font-normal">{exp.startDate} – {exp.endDate}</span>
               </div>
               <div className="text-[10px] font-semibold text-slate-700 mb-1">
                 {exp.company} | {exp.location}
               </div>
 
-              <div className="space-y-0.5 text-slate-800 text-[10px] pl-1">
+              <div className="space-y-0.5 text-slate-800 text-[10px] pl-1 leading-normal">
                 {exp.activeBullets.map(b => (
                   <div key={b.id} className="flex items-start">
                     <span className="mr-1.5 text-slate-800 font-bold shrink-0">•</span>
@@ -104,7 +104,7 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
             {language === 'en' ? 'Featured Portfolio Projects' : 'Projekty'}
           </h2>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {activeProjects.map(p => (
               <div key={p.id}>
                 <div className="flex justify-between items-baseline font-bold text-slate-900">
@@ -119,9 +119,9 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
                     </a>
                   )}
                 </div>
-                <p className="text-[9.5px] text-slate-700 mt-0.5">{p.description[language] || p.description.en}</p>
+                <p className="text-[9.5px] text-slate-700 mt-0.5 mb-1.5 leading-normal">{p.description[language] || p.description.en}</p>
                 {p.techStack && p.techStack.length > 0 && (
-                  <div className="mt-1.5 leading-none">
+                  <div className="pt-0.5">
                     {p.techStack.map((tech, idx) => (
                       <span key={idx} className="inline-block text-[8.5px] px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200 mr-1 mb-1 leading-tight">
                         {tech}
