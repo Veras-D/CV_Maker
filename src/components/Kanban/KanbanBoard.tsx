@@ -234,7 +234,7 @@ export const KanbanBoard: React.FC = () => {
                     </div>
 
                     {/* Details tags */}
-                    <div className="space-y-1 text-[10px] text-slate-400 mb-2.5">
+                    <div className="space-y-1 text-[10px] text-slate-400 mb-3">
                       {role.location && (
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
@@ -249,37 +249,38 @@ export const KanbanBoard: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Stage Selector & Link */}
-                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-                      <div className="w-28">
-                        <CustomSelect
-                          options={stageOptions}
-                          value={role.status}
-                          onChange={(newStatus) => updateKanbanRoleStatus(role.id, newStatus as KanbanStatus)}
-                        />
+                    {/* Date Applied & External Link Row */}
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 mb-2">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span>{role.dateApplied}</span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{role.dateApplied}</span>
-                        </div>
-
-                        {role.roleUrl && (
-                          <button 
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); openExternalUrl(role.roleUrl!); }}
-                            className="text-sky-400 hover:underline cursor-pointer flex items-center gap-0.5"
-                          >
-                            <span>Link</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </div>
+                      {role.roleUrl && (
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); openExternalUrl(role.roleUrl!); }}
+                          className="text-sky-400 hover:text-sky-300 hover:underline cursor-pointer flex items-center gap-1 font-medium shrink-0"
+                        >
+                          <span>Link</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
 
-                    {role.notes && role.notes.trim() !== '' && (
-                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded border border-slate-750 font-sans line-clamp-2 mt-1">
+                    {/* Full-Width Stage Selector */}
+                    <div className="w-full">
+                      <CustomSelect
+                        className="w-full"
+                        options={stageOptions}
+                        value={role.status}
+                        onChange={(newStatus) => updateKanbanRoleStatus(role.id, newStatus as KanbanStatus)}
+                      />
+                    </div>
+
+                    {/* Optional Custom Notes */}
+                    {role.notes && role.notes.trim() !== '' && role.notes.trim().toLowerCase() !== 'application submitted.' && (
+                      <p className="text-[10px] text-slate-300 bg-slate-800/80 p-1.5 rounded-lg border border-slate-750 font-sans line-clamp-2 mt-2">
                         {role.notes}
                       </p>
                     )}
