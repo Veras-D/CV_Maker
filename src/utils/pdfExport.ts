@@ -78,43 +78,50 @@ function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: string }
   return y + 3.8;
 }
 
-function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): number {
-  const hasName = Boolean(profile.name && profile.name.trim());
-  const headline = profile.headline?.[lang] || profile.headline?.en || '';
-  const hasHeadline = Boolean(headline.trim());
-
-  const contactItems: { text: string; url?: string }[] = [
+function getPDFContactItems(profile: UserProfile): { text: string; url?: string }[] {
+  const items: { text: string; url?: string }[] = [
     { text: (profile.email || '').trim() },
     { text: (profile.phone || '').trim() },
     { text: (profile.location || '').trim() }
   ].filter(item => Boolean(item.text));
 
   if (profile.portfolioUrl && profile.portfolioUrl.trim()) {
-    contactItems.push({ text: profile.portfolioUrl.trim(), url: profile.portfolioUrl.trim() });
+    items.push({ text: profile.portfolioUrl.trim(), url: profile.portfolioUrl.trim() });
   }
 
-  if (!hasName && !hasHeadline && contactItems.length === 0) {
-    return 18;
-  }
+  return items;
+}
 
-  let y = 18;
-
-  if (hasName) {
+function drawTitleAndHeadline(doc: jsPDF, name: string, headline: string, startY: number): number {
+  let y = startY;
+  if (name) {
     doc.setFont('times', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text(profile.name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
+    doc.text(name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
     y += 6.2;
   }
 
-  if (hasHeadline) {
+  if (headline) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10);
     doc.setTextColor(51, 65, 85);
     doc.text(headline, PAGE_WIDTH / 2, y, { align: 'center' });
     y += 5.0;
   }
+  return y;
+}
 
+function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): number {
+  const name = (profile.name || '').trim();
+  const headline = (profile.headline?.[lang] || profile.headline?.en || '').trim();
+  const contactItems = getPDFContactItems(profile);
+
+  if (!name && !headline && contactItems.length === 0) {
+    return 18;
+  }
+
+  let y = drawTitleAndHeadline(doc, name, headline, 18);
   y = drawContactRow(doc, contactItems, y);
 
   doc.setDrawColor(15, 23, 42);

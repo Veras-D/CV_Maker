@@ -10,6 +10,29 @@ interface TemplateProps {
   preset: RolePreset;
 }
 
+function getContactList(profile: UserProfile): string[] {
+  return [profile.email, profile.phone, profile.location]
+    .map(s => (s || '').trim())
+    .filter(Boolean);
+}
+
+function hasAnyContent(data: CVData, language: LanguageCode): boolean {
+  const { profile, experiences, skillCategories, projects, education, languages } = data;
+  if (profile.name?.trim() || profile.headline?.[language]?.trim() || profile.headline?.en?.trim()) {
+    return true;
+  }
+  if (profile.summary?.[language]?.trim() || profile.summary?.en?.trim()) {
+    return true;
+  }
+  if (experiences.some(e => e.enabled) || projects.some(p => p.enabled)) {
+    return true;
+  }
+  if (skillCategories.some(cat => cat.skills.some(s => s.enabled))) {
+    return true;
+  }
+  return education.some(e => e.enabled) || languages.some(l => l.enabled);
+}
+
 const EmptyResumePlaceholder: React.FC = () => (
   <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 font-sans shadow-2xl mx-auto box-border text-[10.5px] flex flex-col items-center justify-center text-center">
     <div className="max-w-sm space-y-4 p-8 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/70">
@@ -27,21 +50,20 @@ const EmptyResumePlaceholder: React.FC = () => (
 );
 
 const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> = ({ profile, language }) => {
-  const hasName = Boolean(profile.name && profile.name.trim());
+  const name = profile.name?.trim();
   const headline = profile.headline?.[language]?.trim() || profile.headline?.en?.trim();
-  const contactItems = [profile.email, profile.phone, profile.location]
-    .map(s => (s || '').trim())
-    .filter(Boolean);
+  const contactItems = getContactList(profile);
+  const portfolio = profile.portfolioUrl?.trim();
 
-  if (!hasName && !headline && contactItems.length === 0 && !profile.portfolioUrl) {
+  if (!name && !headline && contactItems.length === 0 && !portfolio) {
     return null;
   }
 
   return (
     <header className="text-center border-b-2 border-slate-900 pb-3 mb-4">
-      {hasName && (
+      {name && (
         <h1 className="text-2xl font-bold uppercase tracking-widest text-slate-900">
-          {profile.name}
+          {name}
         </h1>
       )}
       {headline && (
@@ -49,7 +71,7 @@ const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> =
           {headline}
         </p>
       )}
-      {(contactItems.length > 0 || profile.portfolioUrl) && (
+      {(contactItems.length > 0 || portfolio) && (
         <div className="text-[9.5px] text-slate-600 font-sans mt-1.5 flex flex-wrap justify-center items-center gap-2">
           {contactItems.map((item, idx) => (
             <React.Fragment key={idx}>
@@ -57,15 +79,15 @@ const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> =
               <span>{item}</span>
             </React.Fragment>
           ))}
-          {profile.portfolioUrl && (
+          {portfolio && (
             <>
               {contactItems.length > 0 && <span className="text-slate-400 font-bold">•</span>}
               <a 
-                href={profile.portfolioUrl}
-                onClick={(e) => { e.preventDefault(); openExternalUrl(profile.portfolioUrl!); }} 
+                href={portfolio}
+                onClick={(e) => { e.preventDefault(); openExternalUrl(portfolio); }} 
                 className="text-sky-700 hover:underline cursor-pointer"
               >
-                {profile.portfolioUrl}
+                {portfolio}
               </a>
             </>
           )}
@@ -227,6 +249,10 @@ const ResumeEducationLanguages: React.FC<{ education: EducationItem[]; languages
 };
 
 export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selectedTags, preset: _preset }) => {
+  if (!hasAnyContent(data, language)) {
+    return <EmptyResumePlaceholder />;
+  }
+
   const { profile, experiences, skillCategories, projects, education, languages } = data;
 
   const filteredExperiences = experiences
@@ -244,14 +270,6 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
   const activeEdu = education.filter(e => e.enabled);
   const activeLang = languages.filter(l => l.enabled);
   const summaryText = profile.summary?.[language]?.trim() || profile.summary?.en?.trim() || '';
-
-  const hasName = Boolean(profile.name && profile.name.trim());
-  const hasHeadline = Boolean(profile.headline?.[language]?.trim() || profile.headline?.en?.trim());
-  const hasContent = hasName || hasHeadline || Boolean(summaryText) || filteredExperiences.length > 0 || activeProjects.length > 0 || activeCategories.length > 0 || activeEdu.length > 0 || activeLang.length > 0;
-
-  if (!hasContent) {
-    return <EmptyResumePlaceholder />;
-  }
 
   return (
     <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 font-serif shadow-2xl mx-auto box-border text-[10.5px] leading-relaxed overflow-hidden">
