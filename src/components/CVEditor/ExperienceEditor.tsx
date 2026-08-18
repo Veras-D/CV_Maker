@@ -4,6 +4,140 @@ import { Briefcase, Plus, Trash2, Eye, EyeOff, Calendar } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { WorkExperience, WorkBullet, LanguageCode } from '../../types/cv';
 
+interface BulletRowProps {
+  bullet: WorkBullet;
+  activeLanguage: LanguageCode;
+  onToggle: () => void;
+  onUpdateText: (text: string) => void;
+  onDelete: () => void;
+}
+
+const BulletItemRow: React.FC<BulletRowProps> = ({
+  bullet,
+  activeLanguage,
+  onToggle,
+  onUpdateText,
+  onDelete
+}) => {
+  const currentText = bullet.text[activeLanguage] || bullet.text.en || '';
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg space-y-2">
+      <div className="flex items-start gap-2">
+        <button
+          onClick={onToggle}
+          className={bullet.enabled ? 'text-sky-400 mt-1' : 'text-slate-600 mt-1'}
+        >
+          {bullet.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+        </button>
+
+        <textarea
+          rows={2}
+          value={currentText}
+          onChange={(e) => onUpdateText(e.target.value)}
+          className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 focus:outline-none focus:border-sky-500 resize-none ${
+            !bullet.enabled ? 'line-through text-slate-500' : ''
+          }`}
+        />
+
+        <button
+          onClick={onDelete}
+          className="text-slate-500 hover:text-red-400 p-1"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface DateSelectorsProps {
+  startDate: string;
+  endDate: string;
+  months: SelectOption[];
+  years: SelectOption[];
+  currentYear: number;
+  onUpdateDates: (updates: { startDate?: string; endDate?: string }) => void;
+}
+
+const DateSelectors: React.FC<DateSelectorsProps> = ({
+  startDate,
+  endDate,
+  months,
+  years,
+  currentYear,
+  onUpdateDates
+}) => {
+  const parseMonthYear = (dateStr: string) => {
+    const parts = dateStr.split(' ');
+    return parts.length === 2 ? { month: parts[0], year: parts[1] } : { month: 'Jan', year: currentYear.toString() };
+  };
+
+  const start = parseMonthYear(startDate);
+  const isPresent = endDate.toLowerCase() === 'present';
+  const end = isPresent ? { month: 'Present', year: 'Present' } : parseMonthYear(endDate);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+      <div>
+        <label className="block text-[10px] font-medium text-slate-400 mb-1 flex items-center gap-1">
+          <Calendar className="w-3 h-3 text-sky-400" />
+          <span>Start Date (Month / Year)</span>
+        </label>
+        <div className="grid grid-cols-2 gap-1.5">
+          <CustomSelect
+            options={months}
+            value={start.month}
+            onChange={(val) => onUpdateDates({ startDate: `${val} ${start.year}` })}
+          />
+          <CustomSelect
+            options={years}
+            value={start.year}
+            onChange={(val) => onUpdateDates({ startDate: `${start.month} ${val}` })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-medium text-slate-400 mb-1 flex items-center justify-between">
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-sky-400" />
+            <span>End Date</span>
+          </span>
+          <label className="flex items-center gap-1 cursor-pointer text-[10px] text-sky-400 font-semibold">
+            <input
+              type="checkbox"
+              checked={isPresent}
+              onChange={(e) => onUpdateDates({ endDate: e.target.checked ? 'Present' : `Dec ${currentYear}` })}
+              className="rounded bg-slate-800 border-slate-700"
+            />
+            <span>Current Position</span>
+          </label>
+        </label>
+
+        {isPresent ? (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-emerald-400 font-semibold text-center">
+            Present
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5">
+            <CustomSelect
+              options={months}
+              value={end.month}
+              onChange={(val) => onUpdateDates({ endDate: `${val} ${end.year}` })}
+            />
+            <CustomSelect
+              options={years}
+              value={end.year}
+              onChange={(val) => onUpdateDates({ endDate: `${end.month} ${val}` })}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface ExperienceCardProps {
   exp: WorkExperience;
   index: number;
@@ -33,17 +167,8 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
   onUpdateBullet,
   onDeleteBullet,
 }) => {
-  const parseMonthYear = (dateStr: string) => {
-    const parts = dateStr.split(' ');
-    if (parts.length === 2) {
-      return { month: parts[0], year: parts[1] };
-    }
-    return { month: 'Jan', year: currentYear.toString() };
-  };
-
-  const startParsed = parseMonthYear(exp.startDate);
-  const isPresent = exp.endDate.toLowerCase() === 'present';
-  const endParsed = isPresent ? { month: 'Present', year: 'Present' } : parseMonthYear(exp.endDate);
+  const currentRoleTitle = exp.roleTitle[activeLanguage] || exp.roleTitle.en || '';
+  const currentSummary = exp.summary ? (exp.summary[activeLanguage] || exp.summary.en || '') : '';
 
   return (
     <div 
@@ -92,7 +217,7 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
           </label>
           <input
             type="text"
-            value={exp.roleTitle[activeLanguage] || exp.roleTitle.en || ''}
+            value={currentRoleTitle}
             onChange={(e) => onUpdate(exp.id, {
               roleTitle: { ...exp.roleTitle, [activeLanguage]: e.target.value }
             })}
@@ -112,63 +237,14 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
       </div>
 
       {/* Structured Date Selectors */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-        <div>
-          <label className="block text-[10px] font-medium text-slate-400 mb-1 flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-sky-400" />
-            <span>Start Date (Month / Year)</span>
-          </label>
-          <div className="grid grid-cols-2 gap-1.5">
-            <CustomSelect
-              options={months}
-              value={startParsed.month}
-              onChange={(val) => onUpdate(exp.id, { startDate: `${val} ${startParsed.year}` })}
-            />
-            <CustomSelect
-              options={years}
-              value={startParsed.year}
-              onChange={(val) => onUpdate(exp.id, { startDate: `${startParsed.month} ${val}` })}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-medium text-slate-400 mb-1 flex items-center justify-between">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-sky-400" />
-              <span>End Date</span>
-            </span>
-            <label className="flex items-center gap-1 cursor-pointer text-[10px] text-sky-400 font-semibold">
-              <input
-                type="checkbox"
-                checked={isPresent}
-                onChange={(e) => onUpdate(exp.id, { endDate: e.target.checked ? 'Present' : `Dec ${currentYear}` })}
-                className="rounded bg-slate-800 border-slate-700"
-              />
-              <span>Current Position</span>
-            </label>
-          </label>
-
-          {isPresent ? (
-            <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-emerald-400 font-semibold text-center">
-              Present
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1.5">
-              <CustomSelect
-                options={months}
-                value={endParsed.month}
-                onChange={(val) => onUpdate(exp.id, { endDate: `${val} ${endParsed.year}` })}
-              />
-              <CustomSelect
-                options={years}
-                value={endParsed.year}
-                onChange={(val) => onUpdate(exp.id, { endDate: `${endParsed.month} ${val}` })}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      <DateSelectors
+        startDate={exp.startDate}
+        endDate={exp.endDate}
+        months={months}
+        years={years}
+        currentYear={currentYear}
+        onUpdateDates={(updates) => onUpdate(exp.id, updates)}
+      />
 
       {/* Summary */}
       <div>
@@ -177,7 +253,7 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
         </label>
         <textarea
           rows={2}
-          value={exp.summary ? (exp.summary[activeLanguage] || exp.summary.en || '') : ''}
+          value={currentSummary}
           onChange={(e) => onUpdate(exp.id, {
             summary: { ...exp.summary, [activeLanguage]: e.target.value }
           })}
@@ -200,34 +276,14 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
 
         <div className="space-y-2">
           {exp.bullets.map((b) => (
-            <div key={b.id} className="bg-slate-900 border border-slate-800 p-2 rounded-lg space-y-2">
-              <div className="flex items-start gap-2">
-                <button
-                  onClick={() => onUpdateBullet(exp.id, b.id, { enabled: !b.enabled })}
-                  className={b.enabled ? 'text-sky-400 mt-1' : 'text-slate-600 mt-1'}
-                >
-                  {b.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                </button>
-
-                <textarea
-                  rows={2}
-                  value={b.text[activeLanguage] || b.text.en || ''}
-                  onChange={(e) => onUpdateBullet(exp.id, b.id, {
-                    text: { ...b.text, [activeLanguage]: e.target.value }
-                  })}
-                  className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 focus:outline-none focus:border-sky-500 resize-none ${
-                    !b.enabled ? 'line-through text-slate-500' : ''
-                  }`}
-                />
-
-                <button
-                  onClick={() => onDeleteBullet(exp.id, b.id)}
-                  className="text-slate-500 hover:text-red-400 p-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            <BulletItemRow
+              key={b.id}
+              bullet={b}
+              activeLanguage={activeLanguage}
+              onToggle={() => onUpdateBullet(exp.id, b.id, { enabled: !b.enabled })}
+              onUpdateText={(text) => onUpdateBullet(exp.id, b.id, { text: { ...b.text, [activeLanguage]: text } })}
+              onDelete={() => onDeleteBullet(exp.id, b.id)}
+            />
           ))}
         </div>
       </div>

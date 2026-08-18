@@ -14,14 +14,14 @@ export const CVPreview: React.FC = () => {
     setIsExporting(true);
     try {
       const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
-      await exportCVToPDF(
-        'cv-preview-container',
+      await exportCVToPDF({
+        elementId: 'cv-preview-container',
         filename,
-        activePreset.metadata,
-        cvData,
-        activeLanguage,
+        metadata: activePreset.metadata,
+        data: cvData,
+        language: activeLanguage,
         selectedTags
-      );
+      });
       setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
       setTimeout(() => setFeedbackNotification(null), 5000);
     } catch (e) {

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useCV } from '../context/CVContext';
 import { Sparkles, FileText, Kanban, Sliders, Download, DownloadCloud, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { exportCVToPDF } from '../utils/pdfExport';
-import { SelectOption } from './Common/CustomSelect';
 import { ProModal } from './Common/ProModal';
 
 export const Navbar: React.FC = () => {
@@ -13,36 +12,25 @@ export const Navbar: React.FC = () => {
     selectedTags,
     activeTab, 
     setActiveTab, 
-    setLanguage,
     exportDataJSON,
     importDataJSON
   } = useCV();
 
   const [isExporting, setIsExporting] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
-  const [proFeatureName, setProFeatureName] = useState('');
   const [feedbackNotification, setFeedbackNotification] = useState<string | null>(null);
-
-  const languageOptions: SelectOption[] = [
-    { value: 'en', label: 'English (EN)' },
-    { value: 'cs', label: 'Čeština (CS)', isPro: true },
-    { value: 'de', label: 'Deutsch (DE)', isPro: true },
-    { value: 'fr', label: 'Français (FR)', isPro: true },
-    { value: 'es', label: 'Español (ES)', isPro: true },
-    { value: 'pt', label: 'Português (PT)', isPro: true }
-  ];
 
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      await exportCVToPDF(
-        'tailored-ats-cv-preview',
-        `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
-        activePreset.metadata,
-        cvData,
-        activeLanguage,
+      await exportCVToPDF({
+        elementId: 'tailored-ats-cv-preview',
+        filename: `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
+        metadata: activePreset.metadata,
+        data: cvData,
+        language: activeLanguage,
         selectedTags
-      );
+      });
       const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
       setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
       setTimeout(() => setFeedbackNotification(null), 5000);
@@ -189,7 +177,7 @@ export const Navbar: React.FC = () => {
       <ProModal
         isOpen={isProModalOpen}
         onClose={() => setIsProModalOpen(false)}
-        featureName={proFeatureName}
+        featureName="Pro Features"
       />
     </header>
   );

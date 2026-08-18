@@ -35,13 +35,13 @@ export const AIRoleTailor: React.FC = () => {
 
     setIsProcessing(true);
     try {
-      const result = await processAiJobTailoring(
+      const result = await processAiJobTailoring({
         jobTitle,
         companyName,
         jobDescription,
         cvData,
-        activeLanguage
-      );
+        language: activeLanguage
+      });
       setTailoredResult(result);
       setCoverLetterEditable(result.coverLetter.content[activeLanguage] || result.coverLetter.content.en || '');
       
@@ -65,14 +65,14 @@ export const AIRoleTailor: React.FC = () => {
   const handleDownloadPDF = async () => {
     setIsPdfExporting(true);
     try {
-      await exportCVToPDF(
-        'tailored-ats-cv-preview',
-        `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
-        activePreset.metadata,
-        cvData,
-        activeLanguage,
-        tailoredResult?.matchedTags || []
-      );
+      await exportCVToPDF({
+        elementId: 'tailored-ats-cv-preview',
+        filename: `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
+        metadata: activePreset.metadata,
+        data: cvData,
+        language: activeLanguage,
+        selectedTags: tailoredResult?.matchedTags || []
+      });
     } catch (e) {
       console.error("PDF export failed", e);
     } finally {
