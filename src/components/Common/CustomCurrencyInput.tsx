@@ -83,12 +83,12 @@ export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
       </div>
 
       {/* Currency Selector */}
-      <div className="w-[95px] shrink-0">
+      <div className="w-[108px] shrink-0">
         <CustomSelect
           options={currencyOptions}
           value={currency}
           onChange={handleCurrencyChange}
-          className="w-full text-xs font-mono"
+          className="w-full text-xs"
         />
       </div>
     </div>
