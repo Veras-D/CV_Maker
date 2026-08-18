@@ -365,9 +365,9 @@ export const initialCVData: CVData = {
     {
       id: "kanban-1",
       roleTitle: "Senior DevOps & Cloud Engineer",
-      company: "Avast / Gen Digital",
-      location: "Prague, CZ",
-      salary: "130,000 CZK / mo",
+      company: "Datadog",
+      location: "San Francisco, CA / Remote",
+      salary: "165,000 USD / yr",
       status: "tech_interview",
       dateApplied: "2026-08-10",
       roleUrl: "https://www.linkedin.com/jobs/view/123456789",
@@ -377,12 +377,12 @@ export const initialCVData: CVData = {
     {
       id: "kanban-2",
       roleTitle: "Full-Stack TypeScript Developer",
-      company: "Mews",
-      location: "Prague / Remote",
-      salary: "120,000 CZK / mo",
+      company: "Stripe",
+      location: "Austin, TX / Remote",
+      salary: "145,000 USD / yr",
       status: "hr_call",
       dateApplied: "2026-08-14",
-      roleUrl: "https://mews.careers/jobs/fullstack-ts",
+      roleUrl: "https://stripe.com/jobs",
       notes: "Recruiter screening call completed.",
       updatedAt: "2026-08-14T14:30:00.000Z"
     },
@@ -390,11 +390,12 @@ export const initialCVData: CVData = {
       id: "kanban-3",
       roleTitle: "Backend Software Engineer",
       company: "Red Hat",
-      location: "Brno / Remote",
-      salary: "125,000 CZK / mo",
+      location: "Raleigh, NC / Remote",
+      salary: "135,000 USD / yr",
       status: "applied",
       dateApplied: "2026-08-16",
       roleUrl: "https://redhat.jobs",
+      notes: "Application submitted via company portal.",
       updatedAt: "2026-08-16T09:15:00.000Z"
     }
   ]

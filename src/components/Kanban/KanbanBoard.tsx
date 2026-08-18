@@ -346,7 +346,7 @@ export const KanbanBoard: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Mews"
+                  placeholder="e.g. Stripe"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
@@ -358,7 +358,7 @@ export const KanbanBoard: React.FC = () => {
                   <label className="block text-xs text-slate-300 mb-1 font-medium">Location</label>
                   <input
                     type="text"
-                    placeholder="Prague / Remote"
+                    placeholder="San Francisco, CA / Remote"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"

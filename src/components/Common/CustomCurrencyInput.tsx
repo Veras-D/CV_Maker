@@ -3,7 +3,7 @@ import { DollarSign } from 'lucide-react';
 import { CustomSelect, SelectOption } from './CustomSelect';
 
 interface CurrencyInputProps {
-  value: string; // e.g. "120,000 CZK / mo"
+  value: string; // e.g. "145,000 USD / yr"
   onChange: (value: string) => void;
   className?: string;
 }
@@ -14,27 +14,27 @@ export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
   className = ''
 }) => {
   const currencyOptions: SelectOption[] = [
-    { value: 'CZK / mo', label: 'CZK / mo' },
-    { value: 'EUR / mo', label: 'EUR / mo' },
     { value: 'USD / yr', label: 'USD / yr' },
     { value: 'USD / mo', label: 'USD / mo' },
     { value: 'EUR / yr', label: 'EUR / yr' },
-    { value: 'GBP / yr', label: 'GBP / yr' }
+    { value: 'EUR / mo', label: 'EUR / mo' },
+    { value: 'GBP / yr', label: 'GBP / yr' },
+    { value: 'CZK / mo', label: 'CZK / mo' }
   ];
 
   // Parse value into formatted amount and currency unit
   const parseValue = (val: string) => {
-    if (!val) return { amount: '', currency: 'CZK / mo' };
+    if (!val) return { amount: '', currency: 'USD / yr' };
     const clean = val.trim();
     // Match numeric digits and extract currency suffix
     const digitsOnly = clean.replace(/[^\d]/g, '');
     const numPart = digitsOnly ? Number(digitsOnly.slice(0, 9)).toLocaleString('en-US') : '';
     
-    // Find matching currency or default to CZK / mo
+    // Find matching currency or default to USD / yr
     const matchedCurr = currencyOptions.find(opt => clean.toLowerCase().includes(opt.value.toLowerCase()));
     return {
       amount: numPart,
-      currency: matchedCurr ? matchedCurr.value : 'CZK / mo'
+      currency: matchedCurr ? matchedCurr.value : 'USD / yr'
     };
   };
 
@@ -75,7 +75,7 @@ export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
         <DollarSign className="w-3.5 h-3.5 text-emerald-400 absolute left-2 top-2 pointer-events-none" />
         <input
           type="text"
-          placeholder="120,000"
+          placeholder="145,000"
           value={amount}
           onChange={handleAmountChange}
           className="w-full bg-slate-800 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg pl-6 pr-1.5 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none placeholder:text-slate-500 transition-colors"
