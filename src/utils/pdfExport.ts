@@ -40,6 +40,44 @@ function drawSectionHeader(doc: jsPDF, title: string, y: number): number {
   return nextY + 4.2;
 }
 
+function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: string }[], startY: number): number {
+  if (contactItems.length === 0) return startY;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.8);
+
+  const dotWidth = 5.2;
+  let totalWidth = 0;
+  const itemWidths = contactItems.map(item => {
+    const w = doc.getTextWidth(item.text);
+    totalWidth += w;
+    return w;
+  });
+  totalWidth += (contactItems.length - 1) * dotWidth;
+
+  let startX = (PAGE_WIDTH - totalWidth) / 2;
+  const y = startY;
+
+  contactItems.forEach((item, idx) => {
+    if (item.url) {
+      doc.setTextColor(3, 105, 161);
+      doc.textWithLink(item.text, startX, y, { url: item.url });
+    } else {
+      doc.setTextColor(71, 85, 105);
+      doc.text(item.text, startX, y);
+    }
+    startX += itemWidths[idx];
+
+    if (idx < contactItems.length - 1) {
+      doc.setFillColor(100, 116, 139);
+      doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
+      startX += dotWidth;
+    }
+  });
+
+  return y + 3.8;
+}
+
 function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): number {
   const hasName = Boolean(profile.name && profile.name.trim());
   const headline = profile.headline?.[lang] || profile.headline?.en || '';
@@ -77,39 +115,7 @@ function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): numbe
     y += 5.0;
   }
 
-  if (contactItems.length > 0) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
-
-    const dotWidth = 5.2;
-    let totalWidth = 0;
-    const itemWidths = contactItems.map(item => {
-      const w = doc.getTextWidth(item.text);
-      totalWidth += w;
-      return w;
-    });
-    totalWidth += (contactItems.length - 1) * dotWidth;
-
-    let startX = (PAGE_WIDTH - totalWidth) / 2;
-    contactItems.forEach((item, idx) => {
-      if (item.url) {
-        doc.setTextColor(3, 105, 161);
-        doc.textWithLink(item.text, startX, y, { url: item.url });
-      } else {
-        doc.setTextColor(71, 85, 105);
-        doc.text(item.text, startX, y);
-      }
-      startX += itemWidths[idx];
-
-      if (idx < contactItems.length - 1) {
-        doc.setFillColor(100, 116, 139);
-        doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
-        startX += dotWidth;
-      }
-    });
-
-    y += 3.8;
-  }
+  y = drawContactRow(doc, contactItems, y);
 
   doc.setDrawColor(15, 23, 42);
   doc.setLineWidth(0.65);
