@@ -24,6 +24,55 @@ export async function exportCVToPDF(
   clone.style.overflow = 'visible';
   document.body.appendChild(clone);
 
+  // Measure clone dimensions for link and text layer calculation
+  const cloneRect = clone.getBoundingClientRect();
+  const pdfWidth = 210;
+  const pdfHeight = 297;
+
+  // Extract clickable links (<a>, <button>, or elements with URL text) before removing clone
+  const linkElements = clone.querySelectorAll('a, button, [data-url]');
+  const linksToInject: { x: number; y: number; w: number; h: number; url: string }[] = [];
+
+  linkElements.forEach(el => {
+    const htmlEl = el as HTMLElement;
+    let url = htmlEl.getAttribute('href') || htmlEl.dataset.url;
+    
+    if (!url) {
+      const text = htmlEl.innerText.trim();
+      if (text.startsWith('http://') || text.startsWith('https://') || text.includes('github.com') || text.includes('linkedin.com')) {
+        url = text;
+      }
+    }
+
+    if (url) {
+      const rect = htmlEl.getBoundingClientRect();
+      const targetUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+      
+      const x = ((rect.left - cloneRect.left) / cloneRect.width) * pdfWidth;
+      const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight;
+      const w = Math.max(2, (rect.width / cloneRect.width) * pdfWidth);
+      const h = Math.max(2, (rect.height / cloneRect.height) * pdfHeight);
+
+      linksToInject.push({ x, y, w, h, url: targetUrl });
+    }
+  });
+
+  // Extract text nodes for vector searchability & ATS selection
+  const textNodes: { x: number; y: number; text: string; fontSize: number }[] = [];
+  const walk = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null);
+  let node: Node | null;
+  while ((node = walk.nextNode())) {
+    const val = node.nodeValue?.trim();
+    if (val && node.parentElement) {
+      const pEl = node.parentElement;
+      const rect = pEl.getBoundingClientRect();
+      const x = ((rect.left - cloneRect.left) / cloneRect.width) * pdfWidth;
+      const y = ((rect.top - cloneRect.top) / cloneRect.height) * pdfHeight + 2.5;
+      const fontSize = Math.max(6, Math.min(14, (parseFloat(window.getComputedStyle(pEl).fontSize) || 10) * 0.75));
+      textNodes.push({ x, y, text: val, fontSize });
+    }
+  }
+
   // 2. Render unconstrained clone to high-res canvas (scale 2 for sharpness)
   const canvas = await html2canvas(clone, {
     scale: 2,
@@ -36,11 +85,6 @@ export async function exportCVToPDF(
   document.body.removeChild(clone);
 
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
-  
-  // A4 dimensions in mm
-  const pdfWidth = 210;
-  const pdfHeight = 297;
-
   const canvasWidth = canvas.width;
   const canvasHeight = canvas.height;
   const imgHeightInMm = (canvasHeight * pdfWidth) / canvasWidth;
@@ -49,10 +93,23 @@ export async function exportCVToPDF(
   const pdf = new jsPDF('p', 'mm', 'a4');
 
   if (imgHeightInMm <= 330) {
-    // Standard Single Page ATS Resume: Scale cleanly to 1 A4 page with 0 sliced headers or spillovers
+    // Single page ATS Resume
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+    // Inject selectable text layer
+    pdf.setTextColor(255, 255, 255);
+    pdf.setRenderingMode('invisible');
+    textNodes.forEach(tn => {
+      pdf.setFontSize(tn.fontSize);
+      pdf.text(tn.text, tn.x, tn.y);
+    });
+
+    // Inject clickable links
+    linksToInject.forEach(l => {
+      pdf.link(l.x, l.y, l.w, l.h, { url: l.url });
+    });
   } else {
-    // Multi-page document: Add pages with clean page break handling
+    // Multi-page document
     let heightLeft = imgHeightInMm;
     let position = 0;
 
@@ -65,6 +122,11 @@ export async function exportCVToPDF(
       pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
       heightLeft -= pdfHeight;
     }
+
+    // Inject links
+    linksToInject.forEach(l => {
+      pdf.link(l.x, l.y, l.w, l.h, { url: l.url });
+    });
   }
 
   const pdfArrayBuffer = pdf.output('arraybuffer');

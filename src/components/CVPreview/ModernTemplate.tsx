@@ -60,17 +60,17 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
           </div>
           {profile.githubUrl && (
             <div className="flex items-center justify-end gap-1.5 text-sky-700">
-              <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.githubUrl!); }} className="hover:underline cursor-pointer">
+              <a href={profile.githubUrl} onClick={(e) => { e.preventDefault(); openExternalUrl(profile.githubUrl!); }} className="hover:underline cursor-pointer">
                 github.com/Veras-D
-              </button>
+              </a>
               <Github className="w-3 h-3 text-slate-400" />
             </div>
           )}
           {profile.linkedinUrl && (
             <div className="flex items-center justify-end gap-1.5 text-sky-700">
-              <button onClick={(e) => { e.preventDefault(); openExternalUrl(profile.linkedinUrl!); }} className="hover:underline cursor-pointer">
+              <a href={profile.linkedinUrl} onClick={(e) => { e.preventDefault(); openExternalUrl(profile.linkedinUrl!); }} className="hover:underline cursor-pointer">
                 linkedin.com/in/veras-d
-              </button>
+              </a>
               <Linkedin className="w-3 h-3 text-slate-400" />
             </div>
           )}
@@ -112,13 +112,14 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                     </p>
                   )}
 
-                  <ul className="list-disc list-outside ml-3.5 space-y-1 text-slate-700">
+                  <div className="space-y-1 text-slate-700 pl-1">
                     {exp.activeBullets.map(b => (
-                      <li key={b.id}>
-                        {b.text[language]}
-                      </li>
+                      <div key={b.id} className="flex items-start">
+                        <span className="mr-1.5 text-slate-700 font-bold shrink-0">•</span>
+                        <span>{b.text[language]}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
             </div>
@@ -137,20 +138,20 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                     <div className="flex justify-between items-baseline">
                       <span className="font-bold text-slate-900">{p.title}</span>
                       {p.url && (
-                        <button
-                          type="button"
+                        <a
+                          href={p.url}
                           onClick={(e) => { e.preventDefault(); openExternalUrl(p.url!); }}
                           className="text-[9.5px] text-sky-700 font-mono hover:underline cursor-pointer"
                         >
                           Link ↗
-                        </button>
+                        </a>
                       )}
                     </div>
                     <p className="text-[10px] text-slate-600 mt-0.5">{p.description[language] || p.description.en}</p>
                     {p.techStack && p.techStack.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="mt-1.5 leading-none">
                         {p.techStack.map((tech, i) => (
-                          <span key={i} className="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                          <span key={i} className="inline-block text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200 mr-1 mb-1 leading-tight">
                             {tech}
                           </span>
                         ))}
@@ -183,11 +184,11 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, language, select
                     <h3 className="text-[10px] font-bold text-slate-700 mb-1">
                       {cat.categoryName[language]}
                     </h3>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="leading-none">
                       {activeSkills.map(s => (
                         <span 
                           key={s.id}
-                          className="text-[9.5px] px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded font-medium border border-slate-200"
+                          className="inline-block text-[9.5px] px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded font-medium border border-slate-200 mr-1 mb-1 leading-tight"
                         >
                           {s.name}
                         </span>

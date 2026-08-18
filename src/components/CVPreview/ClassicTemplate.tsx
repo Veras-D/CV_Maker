@@ -45,13 +45,13 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
           {profile.portfolioUrl && (
             <>
               <span>•</span>
-              <button 
-                type="button"
+              <a 
+                href={profile.portfolioUrl}
                 onClick={(e) => { e.preventDefault(); openExternalUrl(profile.portfolioUrl!); }} 
                 className="text-sky-700 hover:underline cursor-pointer"
               >
                 {profile.portfolioUrl}
-              </button>
+              </a>
             </>
           )}
         </div>
@@ -104,26 +104,26 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
             {language === 'en' ? 'Featured Portfolio Projects' : 'Projekty'}
           </h2>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {activeProjects.map(p => (
               <div key={p.id}>
                 <div className="flex justify-between items-baseline font-bold text-slate-900">
                   <span className="text-[10.5px]">{p.title}</span>
                   {p.url && (
-                    <button
-                      type="button"
+                    <a
+                      href={p.url}
                       onClick={(e) => { e.preventDefault(); openExternalUrl(p.url!); }}
                       className="text-[9px] text-sky-700 font-mono hover:underline cursor-pointer"
                     >
                       {p.url} ↗
-                    </button>
+                    </a>
                   )}
                 </div>
                 <p className="text-[9.5px] text-slate-700 mt-0.5">{p.description[language] || p.description.en}</p>
                 {p.techStack && p.techStack.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-0.5">
+                  <div className="mt-1.5 leading-none">
                     {p.techStack.map((tech, idx) => (
-                      <span key={idx} className="text-[8.5px] px-1 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                      <span key={idx} className="inline-block text-[8.5px] px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200 mr-1 mb-1 leading-tight">
                         {tech}
                       </span>
                     ))}
