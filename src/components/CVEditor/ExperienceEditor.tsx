@@ -33,9 +33,10 @@ const BulletItemRow: React.FC<BulletRowProps> = ({
 
         <textarea
           rows={2}
+          placeholder="e.g. Architected and deployed microservices reducing API latency by 45%..."
           value={currentText}
           onChange={(e) => onUpdateText(e.target.value)}
-          className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 focus:outline-none focus:border-sky-500 resize-none ${
+          className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none ${
             !bullet.enabled ? 'line-through text-slate-500' : ''
           }`}
         />
@@ -205,9 +206,10 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
           <label className="block text-[11px] font-medium text-slate-400 mb-1">Company Name</label>
           <input
             type="text"
+            placeholder="e.g. Stripe / Google"
             value={exp.company}
             onChange={(e) => onUpdate(exp.id, { company: e.target.value })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
         </div>
 
@@ -217,11 +219,12 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
           </label>
           <input
             type="text"
+            placeholder="e.g. Senior Full-Stack Engineer"
             value={currentRoleTitle}
             onChange={(e) => onUpdate(exp.id, {
               roleTitle: { ...exp.roleTitle, [activeLanguage]: e.target.value }
             })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
         </div>
 
@@ -229,9 +232,10 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
           <label className="block text-[11px] font-medium text-slate-400 mb-1">Location / Remote</label>
           <input
             type="text"
+            placeholder="e.g. San Francisco, CA (Hybrid)"
             value={exp.location || ''}
             onChange={(e) => onUpdate(exp.id, { location: e.target.value })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
         </div>
       </div>
@@ -253,11 +257,12 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
         </label>
         <textarea
           rows={2}
+          placeholder="e.g. Spearheaded core platform infrastructure, delivering scalable microservices and leading sprint planning..."
           value={currentSummary}
           onChange={(e) => onUpdate(exp.id, {
             summary: { ...exp.summary, [activeLanguage]: e.target.value }
           })}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 resize-none font-sans"
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none font-sans"
         />
       </div>
 

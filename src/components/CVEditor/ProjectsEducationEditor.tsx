@@ -75,10 +75,10 @@ export const ProjectsEducationEditor: React.FC = () => {
                   </button>
                   <input
                     type="text"
-                    placeholder="Project Title..."
+                    placeholder="e.g. AI Workflow Engine"
                     value={p.title}
                     onChange={(e) => updateProject(p.id, { title: e.target.value })}
-                    className="flex-1 min-w-0 bg-transparent font-bold text-xs text-slate-100 focus:outline-none focus:border-b border-sky-500"
+                    className="flex-1 min-w-0 bg-transparent font-bold text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-b border-sky-500"
                   />
                 </div>
                 <button onClick={() => deleteProject(p.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0">
@@ -89,31 +89,32 @@ export const ProjectsEducationEditor: React.FC = () => {
               <div className="space-y-2">
                 <input
                   type="text"
-                  placeholder="Project URL..."
+                  placeholder="e.g. https://github.com/janedoe/workflow-engine"
                   value={p.url || ''}
                   onChange={(e) => updateProject(p.id, { url: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                 />
 
                 <textarea
                   rows={2}
-                  placeholder={`Description (${activeLanguage.toUpperCase()})...`}
+                  placeholder={`e.g. Real-time distributed task orchestrator built with React and Rust (${activeLanguage.toUpperCase()})...`}
                   value={p.description[activeLanguage] || p.description.en || ''}
                   onChange={(e) => updateProject(p.id, {
                     description: { ...p.description, [activeLanguage]: e.target.value }
                   })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-sky-500 resize-none font-sans"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none font-sans"
                 />
 
                 <div>
                   <label className="block text-[10px] text-slate-400 font-medium mb-1">Tech Stack (comma separated)</label>
                   <input
                     type="text"
+                    placeholder="e.g. React, TypeScript, Rust, Tailwind CSS"
                     value={p.techStack.join(', ')}
                     onChange={(e) => updateProject(p.id, {
                       techStack: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                     })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                   />
                 </div>
               </div>
@@ -156,10 +157,10 @@ export const ProjectsEducationEditor: React.FC = () => {
                       </button>
                       <input
                         type="text"
-                        placeholder="Institution / Academy"
+                        placeholder="e.g. Stanford University / MIT"
                         value={edu.institution}
                         onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
-                        className="flex-1 min-w-0 bg-transparent text-xs font-bold text-slate-100 focus:outline-none focus:border-b border-sky-500"
+                        className="flex-1 min-w-0 bg-transparent text-xs font-bold text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-b border-sky-500"
                       />
                     </div>
                     <button onClick={() => deleteEducation(edu.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0">
@@ -170,12 +171,12 @@ export const ProjectsEducationEditor: React.FC = () => {
                   <div>
                     <input
                       type="text"
-                      placeholder="Degree / Program Title"
+                      placeholder="e.g. B.S. in Computer Science & Engineering"
                       value={edu.program[activeLanguage] || edu.program.en || ''}
                       onChange={(e) => updateEducation(edu.id, {
                         program: { ...edu.program, [activeLanguage]: e.target.value }
                       })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                      className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
                     />
                   </div>
 
@@ -226,12 +227,12 @@ export const ProjectsEducationEditor: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <input
                     type="text"
-                    placeholder="Language Name (e.g. English, Czech)"
+                    placeholder="e.g. English, French, Czech"
                     value={lang.language[activeLanguage] || lang.language.en || ''}
                     onChange={(e) => updateLanguage(lang.id, {
                       language: { ...lang.language, [activeLanguage]: e.target.value }
                     })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-100 focus:outline-none"
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none"
                   />
                   <button onClick={() => deleteLanguage(lang.id)} className="text-slate-500 hover:text-red-400 p-1 ml-2">
                     <Trash2 className="w-3.5 h-3.5" />

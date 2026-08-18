@@ -18,9 +18,10 @@ export const ProfileEditor: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-400 mb-1">Full Name</label>
           <input
             type="text"
+            placeholder="e.g. Jane Doe"
             value={profile.name}
             onChange={(e) => updateProfile({ name: e.target.value })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
         </div>
 
@@ -30,9 +31,10 @@ export const ProfileEditor: React.FC = () => {
             <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="email"
+              placeholder="e.g. jane.doe@example.com"
               value={profile.email}
               onChange={(e) => updateProfile({ email: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -43,9 +45,10 @@ export const ProfileEditor: React.FC = () => {
             <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
+              placeholder="e.g. +1 (555) 019-2834"
               value={profile.phone}
               onChange={(e) => updateProfile({ phone: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -56,9 +59,10 @@ export const ProfileEditor: React.FC = () => {
             <MapPin className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
+              placeholder="e.g. San Francisco, CA (or Remote)"
               value={profile.location}
               onChange={(e) => updateProfile({ location: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -69,9 +73,10 @@ export const ProfileEditor: React.FC = () => {
             <Github className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
+              placeholder="e.g. https://github.com/janedoe"
               value={profile.githubUrl}
               onChange={(e) => updateProfile({ githubUrl: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -82,9 +87,10 @@ export const ProfileEditor: React.FC = () => {
             <Linkedin className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
             <input
               type="text"
+              placeholder="e.g. https://linkedin.com/in/janedoe"
               value={profile.linkedinUrl}
               onChange={(e) => updateProfile({ linkedinUrl: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -99,11 +105,12 @@ export const ProfileEditor: React.FC = () => {
           </div>
           <input
             type="text"
+            placeholder="e.g. Senior Full-Stack Engineer | React, TypeScript & Cloud Architecture"
             value={profile.headline[activeLanguage]}
             onChange={(e) => updateProfile({
               headline: { ...profile.headline, [activeLanguage]: e.target.value }
             })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
         </div>
 
@@ -114,11 +121,12 @@ export const ProfileEditor: React.FC = () => {
           </div>
           <textarea
             rows={3}
+            placeholder="e.g. Versatile software engineer with 6+ years of experience designing, building, and scaling resilient web applications and distributed cloud systems..."
             value={profile.summary[activeLanguage]}
             onChange={(e) => updateProfile({
               summary: { ...profile.summary, [activeLanguage]: e.target.value }
             })}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-500 resize-none text-slate-200"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none text-slate-200"
           />
         </div>
       </div>

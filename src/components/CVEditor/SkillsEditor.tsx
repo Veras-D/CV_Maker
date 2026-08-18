@@ -49,9 +49,10 @@ export const SkillsEditor: React.FC = () => {
             <div className="flex items-center justify-between">
               <input
                 type="text"
+                placeholder="Category Name (e.g. Frontend)..."
                 value={cat.categoryName[activeLanguage] || cat.categoryName.en || ''}
                 onChange={(e) => updateSkillCategory(cat.id, e.target.value, e.target.value)}
-                className="bg-transparent text-xs font-bold text-sky-400 focus:outline-none focus:border-b border-sky-500"
+                className="bg-transparent text-xs font-bold text-sky-400 placeholder:text-sky-400/50 focus:outline-none focus:border-b border-sky-500"
               />
               <button
                 onClick={() => deleteSkillCategory(cat.id)}
