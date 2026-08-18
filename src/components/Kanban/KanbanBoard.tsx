@@ -257,21 +257,11 @@ export const KanbanBoard: React.FC = () => {
                         </div>
                       )}
 
-                      {role.notes && role.notes.trim() !== '' && role.notes.trim().toLowerCase() !== 'application submitted.' && (
-                        <p className="text-[10px] text-slate-300 bg-slate-900/60 p-1.5 rounded border border-slate-800 line-clamp-2">
+                      {role.notes && role.notes.trim() !== '' && (
+                        <p className="text-[10px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800 line-clamp-3">
                           {role.notes}
                         </p>
                       )}
-
-                      {/* Move Stage Select */}
-                      <div className="pt-2 border-t border-slate-800">
-                        <CustomSelect
-                          className="w-full text-[10px]"
-                          options={stageOptions}
-                          value={role.status}
-                          onChange={(val) => updateKanbanRoleStatus(role.id, val as KanbanStatus)}
-                        />
-                      </div>
                     </div>
                   ))}
                 </div>
