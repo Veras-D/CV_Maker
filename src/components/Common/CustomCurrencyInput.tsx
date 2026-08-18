@@ -1,0 +1,96 @@
+import React, { useState, useEffect } from 'react';
+import { DollarSign } from 'lucide-react';
+import { CustomSelect, SelectOption } from './CustomSelect';
+
+interface CurrencyInputProps {
+  value: string; // e.g. "120,000 CZK / mo"
+  onChange: (value: string) => void;
+  className?: string;
+}
+
+export const CustomCurrencyInput: React.FC<CurrencyInputProps> = ({
+  value,
+  onChange,
+  className = ''
+}) => {
+  const currencyOptions: SelectOption[] = [
+    { value: 'CZK / mo', label: 'CZK / mo' },
+    { value: 'EUR / mo', label: 'EUR / mo' },
+    { value: 'USD / yr', label: 'USD / yr' },
+    { value: 'USD / mo', label: 'USD / mo' },
+    { value: 'EUR / yr', label: 'EUR / yr' },
+    { value: 'GBP / yr', label: 'GBP / yr' }
+  ];
+
+  // Parse value into formatted amount and currency unit
+  const parseValue = (val: string) => {
+    if (!val) return { amount: '', currency: 'CZK / mo' };
+    const clean = val.trim();
+    // Match numeric digits and extract currency suffix
+    const digitsOnly = clean.replace(/[^\d]/g, '');
+    const numPart = digitsOnly ? Number(digitsOnly.slice(0, 9)).toLocaleString('en-US') : '';
+    
+    // Find matching currency or default to CZK / mo
+    const matchedCurr = currencyOptions.find(opt => clean.toLowerCase().includes(opt.value.toLowerCase()));
+    return {
+      amount: numPart,
+      currency: matchedCurr ? matchedCurr.value : 'CZK / mo'
+    };
+  };
+
+  const initial = parseValue(value);
+  const [amount, setAmount] = useState(initial.amount);
+  const [currency, setCurrency] = useState(initial.currency);
+
+  useEffect(() => {
+    const parsed = parseValue(value);
+    setAmount(parsed.amount);
+    if (parsed.currency) setCurrency(parsed.currency);
+  }, [value]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strip non-digits and limit to max 9 digits (999,999,999)
+    const rawDigits = e.target.value.replace(/[^\d]/g, '').slice(0, 9);
+    if (!rawDigits) {
+      setAmount('');
+      onChange('');
+      return;
+    }
+    const formatted = Number(rawDigits).toLocaleString('en-US');
+    setAmount(formatted);
+    onChange(`${formatted} ${currency}`);
+  };
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency);
+    if (amount) {
+      onChange(`${amount} ${newCurrency}`);
+    }
+  };
+
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      {/* Number Amount Input with Auto-formatting */}
+      <div className="relative flex-1">
+        <DollarSign className="w-3.5 h-3.5 text-emerald-400 absolute left-2.5 top-2.5 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="120,000"
+          value={amount}
+          onChange={handleAmountChange}
+          className="w-full bg-slate-800 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-emerald-400 font-mono focus:outline-none placeholder:text-slate-500 transition-colors"
+        />
+      </div>
+
+      {/* Currency Selector */}
+      <div className="w-28 shrink-0">
+        <CustomSelect
+          options={currencyOptions}
+          value={currency}
+          onChange={handleCurrencyChange}
+          className="w-full text-xs font-mono"
+        />
+      </div>
+    </div>
+  );
+};

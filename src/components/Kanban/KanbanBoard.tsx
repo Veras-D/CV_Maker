@@ -5,6 +5,7 @@ import { KanbanStatus, KanbanRole } from '../../types/cv';
 import { Plus, Building, MapPin, DollarSign, Calendar, ExternalLink, Trash2, Search, Archive, ArchiveRestore, Edit3, GripVertical } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { CustomDatePicker } from '../Common/CustomDatePicker';
+import { CustomCurrencyInput } from '../Common/CustomCurrencyInput';
 import { openExternalUrl } from '../../utils/urlHelper';
 
 export const KanbanBoard: React.FC = () => {
@@ -207,7 +208,7 @@ export const KanbanBoard: React.FC = () => {
                       key={role.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, role.id)}
-                      className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group cursor-grab active:cursor-grabbing"
+                      className="bg-slate-850 border border-slate-750 hover:border-sky-600/50 rounded-lg p-3 space-y-2 transition-all shadow-sm group cursor-grab active:cursor-grabbing overflow-hidden"
                     >
                       <div className="flex justify-between items-start gap-1">
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -225,12 +226,17 @@ export const KanbanBoard: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center text-[11px] text-slate-400">
-                        <span className="font-medium text-slate-300 flex items-center gap-1 truncate mr-1">
+                        <span className="font-medium text-slate-300 flex items-center gap-1 truncate mr-1.5 flex-1 min-w-0">
                           <Building className="w-3 h-3 text-slate-500 shrink-0" />
                           <span className="truncate">{role.company}</span>
                         </span>
                         {role.salary && (
-                          <span className="text-[10px] text-emerald-400 font-mono shrink-0">{role.salary}</span>
+                          <span 
+                            className="text-[10px] text-emerald-400 font-mono shrink-0 truncate max-w-[110px]"
+                            title={role.salary}
+                          >
+                            {role.salary}
+                          </span>
                         )}
                       </div>
 
@@ -360,12 +366,10 @@ export const KanbanBoard: React.FC = () => {
 
                 <div>
                   <label className="block text-xs text-slate-300 mb-1 font-medium">Salary</label>
-                  <input
-                    type="text"
-                    placeholder="120,000 CZK / mo"
+                  <CustomCurrencyInput
                     value={salary}
-                    onChange={(e) => setSalary(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+                    onChange={setSalary}
+                    className="w-full"
                   />
                 </div>
               </div>
