@@ -13,7 +13,7 @@ export async function exportCVToPDF(
     throw new Error(`Element with id ${elementId} not found`);
   }
 
-  // 1. Clone target element into unconstrained offscreen container to capture 100% of document height without scroll clipping
+  // 1. Clone target element into unconstrained offscreen container to capture 100% of document height
   const clone = element.cloneNode(true) as HTMLElement;
   clone.style.position = 'absolute';
   clone.style.left = '-9999px';
@@ -45,21 +45,26 @@ export async function exportCVToPDF(
   const canvasHeight = canvas.height;
   const imgHeightInMm = (canvasHeight * pdfWidth) / canvasWidth;
 
-  // 3. Generate initial jsPDF document
+  // 3. Generate jsPDF document
   const pdf = new jsPDF('p', 'mm', 'a4');
-  let heightLeft = imgHeightInMm;
-  let position = 0;
 
-  // Page 1
-  pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
-  heightLeft -= pdfHeight;
+  if (imgHeightInMm <= 330) {
+    // Standard Single Page ATS Resume: Scale cleanly to 1 A4 page with 0 sliced headers or spillovers
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  } else {
+    // Multi-page document: Add pages with clean page break handling
+    let heightLeft = imgHeightInMm;
+    let position = 0;
 
-  // Additional pages if document spans multiple pages
-  while (heightLeft > 3) {
-    position = heightLeft - imgHeightInMm;
-    pdf.addPage();
     pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
     heightLeft -= pdfHeight;
+
+    while (heightLeft > 5) {
+      position = heightLeft - imgHeightInMm;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeightInMm);
+      heightLeft -= pdfHeight;
+    }
   }
 
   const pdfArrayBuffer = pdf.output('arraybuffer');
