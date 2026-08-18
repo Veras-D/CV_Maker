@@ -120,10 +120,9 @@ function drawSummary(doc: jsPDF, profile: UserProfile, lang: LanguageCode, start
 function drawExperiences(
   doc: jsPDF, 
   experiences: WorkExperience[], 
-  tags: string[], 
-  lang: LanguageCode, 
-  startY: number
+  options: { tags: string[]; lang: LanguageCode; startY: number }
 ): number {
+  const { tags, lang, startY } = options;
   const filtered = experiences
     .filter(e => e.enabled)
     .map(e => ({
@@ -266,9 +265,9 @@ function drawEducationAndLanguages(
   doc: jsPDF, 
   education: EducationItem[], 
   languages: LanguageItem[], 
-  lang: LanguageCode, 
-  startY: number
+  options: { lang: LanguageCode; startY: number }
 ): number {
+  const { lang, startY } = options;
   const activeEdu = education.filter(e => e.enabled);
   const activeLang = languages.filter(l => l.enabled);
   if (activeEdu.length === 0 && activeLang.length === 0) return startY;
@@ -384,10 +383,10 @@ export async function exportCVToPDF(params: PDFExportParams): Promise<void> {
 
   let y = drawHeader(doc, profile, language);
   y = drawSummary(doc, profile, language, y);
-  y = drawExperiences(doc, experiences, selectedTags, language, y);
+  y = drawExperiences(doc, experiences, { tags: selectedTags, lang: language, startY: y });
   y = drawProjects(doc, projects, language, y);
   y = drawSkills(doc, skillCategories, language, y);
-  drawEducationAndLanguages(doc, education, languages, language, y);
+  drawEducationAndLanguages(doc, education, languages, { lang: language, startY: y });
 
   await injectMetadataAndDownload(doc, metadata, filename);
 }
