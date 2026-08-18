@@ -1,15 +1,101 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   Github, 
   Globe, 
   FileText, 
+  UploadCloud, 
   CheckCircle2, 
   Loader2, 
   ArrowRight, 
   FolderGit2, 
-  Cpu 
+  Cpu, 
+  FileCheck 
 } from 'lucide-react';
 import { IngestionResult } from '../../utils/ingestionService';
+
+export const FileUploadTabContent: React.FC<{
+  selectedFile: File | null;
+  onFileSelect: (f: File) => void;
+  onParse: () => void;
+  isProcessing: boolean;
+}> = ({ selectedFile, onFileSelect, onParse, isProcessing }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-xs font-semibold text-slate-300">
+        Upload Resume or CV Document (.pdf, .txt, .md, .json)
+      </label>
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 ${
+          isDragOver 
+            ? 'border-sky-500 bg-sky-950/30 ring-2 ring-sky-500/20' 
+            : selectedFile 
+            ? 'border-emerald-500/60 bg-emerald-950/20' 
+            : 'border-slate-700 bg-slate-950/60 hover:border-slate-600 hover:bg-slate-900/60'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.txt,.md,.json"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              onFileSelect(e.target.files[0]);
+            }
+          }}
+          className="hidden"
+        />
+
+        {selectedFile ? (
+          <div className="flex flex-col items-center justify-center space-y-1.5">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <FileCheck className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-bold text-slate-200">{selectedFile.name}</p>
+            <span className="text-[10px] text-slate-400 font-mono">
+              {(selectedFile.size / 1024).toFixed(1)} KB · Ready to parse
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-1.5">
+            <div className="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-semibold text-slate-300">
+              Drag and drop your CV file here, or <span className="text-sky-400 underline">browse</span>
+            </p>
+            <p className="text-[10px] text-slate-500">Supports PDF, Markdown, Plain Text, and JSON Backups</p>
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={onParse}
+        disabled={!selectedFile || isProcessing}
+        className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow"
+      >
+        {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+        <span>Parse & Extract File Data</span>
+      </button>
+    </div>
+  );
+};
 
 export const GitHubTabContent: React.FC<{
   input: string;

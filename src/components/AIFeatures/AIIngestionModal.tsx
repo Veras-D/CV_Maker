@@ -5,11 +5,13 @@ import { AlertCircle, X } from 'lucide-react';
 import { 
   ingestFromGitHub, 
   ingestFromWebsite, 
-  parseRawResumeText, 
+  parseRawResumeText,
+  ingestFromFile, 
   IngestionResult 
 } from '../../utils/ingestionService';
-import { IngestionSourceTabs } from './IngestionSourceTabs';
+import { IngestionSourceTabs, IngestionSourceType } from './IngestionSourceTabs';
 import { 
+  FileUploadTabContent,
   GitHubTabContent, 
   WebsiteTabContent, 
   TextTabContent, 
@@ -19,7 +21,8 @@ import {
 export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { applyIngestionResult, resetToDefaultData } = useCV();
   
-  const [activeTab, setActiveTab] = useState<'github' | 'website' | 'text'>('github');
+  const [activeTab, setActiveTab] = useState<IngestionSourceType>('file');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [githubInput, setGithubInput] = useState('');
   const [websiteInput, setWebsiteInput] = useState('');
   const [rawTextInput, setRawTextInput] = useState('');
@@ -37,7 +40,10 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
     setIsProcessing(true);
 
     try {
-      if (activeTab === 'github') {
+      if (activeTab === 'file') {
+        if (!selectedFile) throw new Error('Please select or drop a CV file first.');
+        setPreviewResult(await ingestFromFile(selectedFile));
+      } else if (activeTab === 'github') {
         setPreviewResult(await ingestFromGitHub(githubInput.trim()));
       } else if (activeTab === 'website') {
         setPreviewResult(await ingestFromWebsite(websiteInput.trim()));
@@ -59,6 +65,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
     setTimeout(() => {
       setIsSuccess(false);
       setPreviewResult(null);
+      setSelectedFile(null);
       onClose();
     }, 900);
   };
@@ -70,9 +77,10 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
             <h3 className="text-base font-bold text-white">Import & Scrape Profile Data</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Extract projects, skills, and bio locally without manual typing</p>
+            <p className="text-xs text-slate-400 mt-0.5">Extract projects, skills, and bio locally from files, web, or text</p>
           </div>
           <button 
+            type="button"
             onClick={onClose} 
             className="text-slate-500 hover:text-slate-300 p-1 rounded-lg transition-colors cursor-pointer"
           >
@@ -92,6 +100,14 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
           </div>
         )}
 
+        {activeTab === 'file' && (
+          <FileUploadTabContent
+            selectedFile={selectedFile}
+            onFileSelect={(f) => { setSelectedFile(f); setPreviewResult(null); setErrorMessage(''); }}
+            onParse={handleFetch}
+            isProcessing={isProcessing}
+          />
+        )}
         {activeTab === 'github' && (
           <GitHubTabContent 
             input={githubInput} 

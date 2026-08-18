@@ -214,6 +214,54 @@ export function parseRawResumeText(rawText: string): IngestionResult {
   };
 }
 
+export async function extractTextFromPDF(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const textDecoder = new TextDecoder('utf-8', { fatal: false });
+  const rawString = textDecoder.decode(bytes);
+  return rawString.replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+}
+
+/**
+ * Ingest CV data from an uploaded file (.pdf, .txt, .md, .json)
+ */
+export async function ingestFromFile(file: File): Promise<IngestionResult> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+  if (ext === 'json') {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (parsed.profile || parsed.experiences || parsed.skillCategories) {
+      return {
+        sourceType: 'file',
+        detectedName: parsed.profile?.name,
+        detectedBio: parsed.profile?.summary?.en || parsed.profile?.summary?.cs,
+        detectedEmail: parsed.profile?.email,
+        detectedPhone: parsed.profile?.phone,
+        detectedLocation: parsed.profile?.location,
+        detectedGithubUrl: parsed.profile?.githubUrl,
+        detectedLinkedinUrl: parsed.profile?.linkedinUrl,
+        detectedPortfolioUrl: parsed.profile?.portfolioUrl,
+        experiences: parsed.experiences || [],
+        projects: parsed.projects || [],
+        skillCategories: parsed.skillCategories || [],
+        education: parsed.education || [],
+        languages: parsed.languages || []
+      };
+    }
+  }
+
+  if (ext === 'pdf') {
+    const pdfText = await extractTextFromPDF(file);
+    const result = parseRawResumeText(pdfText);
+    return { ...result, sourceType: 'file' };
+  }
+
+  const rawText = await file.text();
+  const result = parseRawResumeText(rawText);
+  return { ...result, sourceType: 'file' };
+}
+
 /**
  * Merge an IngestionResult into the active CVData state
  */
