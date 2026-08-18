@@ -17,6 +17,59 @@ export interface IngestionResult {
   languages: LanguageItem[];
 }
 
+interface RawGitHubRepo {
+  id: number;
+  name: string;
+  description: string | null;
+  language: string | null;
+  topics?: string[];
+  html_url: string;
+  fork?: boolean;
+}
+
+function extractProjectsFromRepos(reposData: RawGitHubRepo[]): ProjectItem[] {
+  if (!Array.isArray(reposData)) return [];
+  return reposData
+    .filter(r => !r.fork)
+    .slice(0, 5)
+    .map(r => ({
+      id: `gh-${r.id}`,
+      title: r.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      description: {
+        en: r.description || `Open-source ${r.language || 'software'} project developed on GitHub.`
+      },
+      techStack: [r.language, ...(r.topics || [])].filter(Boolean) as string[],
+      url: r.html_url,
+      tags: ['fullstack'],
+      enabled: true
+    }));
+}
+
+function extractSkillsFromRepos(reposData: RawGitHubRepo[]): SkillCategory[] {
+  if (!Array.isArray(reposData)) return [];
+  const detected = new Set<string>();
+  reposData.forEach(r => {
+    if (r.language) detected.add(r.language);
+    if (Array.isArray(r.topics)) {
+      r.topics.forEach(t => detected.add(t));
+    }
+  });
+
+  if (detected.size === 0) return [];
+  return [
+    {
+      id: `cat-github-${Date.now()}`,
+      categoryName: { en: 'Technologies & Frameworks' },
+      skills: Array.from(detected).slice(0, 12).map((s, idx) => ({
+        id: `skill-gh-${idx}`,
+        name: s.charAt(0).toUpperCase() + s.slice(1),
+        tags: ['fullstack'],
+        enabled: true
+      }))
+    }
+  ];
+}
+
 /**
  * Fetch and parse a public GitHub profile and user repositories
  */
@@ -30,57 +83,16 @@ export async function ingestFromGitHub(inputUrlOrUsername: string): Promise<Inge
     throw new Error('Please provide a valid GitHub username or URL.');
   }
 
-  // 1. Fetch user profile
   const userRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`);
   if (!userRes.ok) {
     throw new Error(`GitHub user "${username}" not found (${userRes.status}).`);
   }
   const userData = await userRes.json();
 
-  // 2. Fetch top repositories
   const reposRes = await fetch(
     `https://api.github.com/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=10`
   );
-  const reposData = reposRes.ok ? await reposRes.json() : [];
-
-  const projects: ProjectItem[] = Array.isArray(reposData)
-    ? reposData
-        .filter((r: { fork?: boolean }) => !r.fork)
-        .slice(0, 5)
-        .map((r: { id: number; name: string; description: string; language: string; topics?: string[]; html_url: string }) => ({
-          id: `gh-${r.id}`,
-          title: r.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          description: {
-            en: r.description || `Open-source ${r.language || 'software'} project developed on GitHub.`
-          },
-          techStack: [r.language, ...(r.topics || [])].filter(Boolean) as string[],
-          url: r.html_url,
-          tags: ['fullstack'],
-          enabled: true
-        }))
-    : [];
-
-  // Extract unique languages & technologies
-  const detectedSkills = new Set<string>();
-  if (Array.isArray(reposData)) {
-    reposData.forEach((r: { language?: string; topics?: string[] }) => {
-      if (r.language) detectedSkills.add(r.language);
-      if (Array.isArray(r.topics)) r.topics.forEach(t => detectedSkills.add(t));
-    });
-  }
-
-  const skillCategories: SkillCategory[] = detectedSkills.size > 0 ? [
-    {
-      id: `cat-github-${Date.now()}`,
-      categoryName: { en: 'Technologies & Frameworks' },
-      skills: Array.from(detectedSkills).slice(0, 12).map((s, idx) => ({
-        id: `skill-gh-${idx}`,
-        name: s.charAt(0).toUpperCase() + s.slice(1),
-        tags: ['fullstack'],
-        enabled: true
-      }))
-    }
-  ] : [];
+  const reposData: RawGitHubRepo[] = reposRes.ok ? await reposRes.json() : [];
 
   return {
     sourceType: 'github',
@@ -91,8 +103,8 @@ export async function ingestFromGitHub(inputUrlOrUsername: string): Promise<Inge
     detectedPortfolioUrl: userData.blog ? (userData.blog.startsWith('http') ? userData.blog : `https://${userData.blog}`) : '',
     detectedGithubUrl: userData.html_url || `https://github.com/${username}`,
     experiences: [],
-    projects,
-    skillCategories,
+    projects: extractProjectsFromRepos(reposData),
+    skillCategories: extractSkillsFromRepos(reposData),
     education: [],
     languages: []
   };
@@ -113,12 +125,10 @@ export async function ingestFromWebsite(url: string): Promise<IngestionResult> {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
-  // Extract title and meta description
   const pageTitle = doc.querySelector('title')?.innerText || '';
   const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-  
-  // Extract main headings
   const h1Text = doc.querySelector('h1')?.innerText?.trim() || '';
+
   const paragraphs = Array.from(doc.querySelectorAll('p'))
     .map(p => p.innerText.trim())
     .filter(text => text.length > 30)
@@ -141,37 +151,21 @@ export async function ingestFromWebsite(url: string): Promise<IngestionResult> {
   };
 }
 
-/**
- * Parse raw resume text into structured CVData sections
- */
-export function parseRawResumeText(rawText: string): IngestionResult {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  
-  let detectedEmail = '';
-  let detectedPhone = '';
-  let detectedName = '';
-  let detectedLocation = '';
-  let detectedGithubUrl = '';
-  let detectedLinkedinUrl = '';
-
+function extractContactMatches(rawText: string) {
   const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  if (emailMatch) detectedEmail = emailMatch[0];
-
   const phoneMatch = rawText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-  if (phoneMatch) detectedPhone = phoneMatch[0];
-
   const ghMatch = rawText.match(/https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9_-]+/);
-  if (ghMatch) detectedGithubUrl = ghMatch[0];
-
   const liMatch = rawText.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/);
-  if (liMatch) detectedLinkedinUrl = liMatch[0];
 
-  // First non-empty short line is usually the candidate's name
-  if (lines.length > 0 && lines[0].length < 40 && !lines[0].includes('@')) {
-    detectedName = lines[0];
-  }
+  return {
+    detectedEmail: emailMatch ? emailMatch[0] : '',
+    detectedPhone: phoneMatch ? phoneMatch[0] : '',
+    detectedGithubUrl: ghMatch ? ghMatch[0] : '',
+    detectedLinkedinUrl: liMatch ? liMatch[0] : ''
+  };
+}
 
-  // Detect skills (comma separated lists)
+function extractSkillsFromText(rawText: string): SkillCategory[] {
   const detectedSkills: string[] = [];
   const skillKeywords = ['react', 'typescript', 'javascript', 'node.js', 'python', 'docker', 'aws', 'sql', 'html', 'css', 'tailwind', 'graphql', 'git'];
   const textLower = rawText.toLowerCase();
@@ -182,7 +176,8 @@ export function parseRawResumeText(rawText: string): IngestionResult {
     }
   });
 
-  const skillCategories: SkillCategory[] = detectedSkills.length > 0 ? [
+  if (detectedSkills.length === 0) return [];
+  return [
     {
       id: `cat-extracted-${Date.now()}`,
       categoryName: { en: 'Extracted Skills' },
@@ -193,19 +188,27 @@ export function parseRawResumeText(rawText: string): IngestionResult {
         enabled: true
       }))
     }
-  ] : [];
+  ];
+}
+
+/**
+ * Parse raw resume text into structured CVData sections
+ */
+export function parseRawResumeText(rawText: string): IngestionResult {
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const contacts = extractContactMatches(rawText);
+  const detectedName = lines.length > 0 && lines[0].length < 40 && !lines[0].includes('@') ? lines[0] : '';
 
   return {
     sourceType: 'text',
     detectedName: detectedName || undefined,
-    detectedEmail: detectedEmail || undefined,
-    detectedPhone: detectedPhone || undefined,
-    detectedLocation: detectedLocation || undefined,
-    detectedGithubUrl: detectedGithubUrl || undefined,
-    detectedLinkedinUrl: detectedLinkedinUrl || undefined,
+    detectedEmail: contacts.detectedEmail || undefined,
+    detectedPhone: contacts.detectedPhone || undefined,
+    detectedGithubUrl: contacts.detectedGithubUrl || undefined,
+    detectedLinkedinUrl: contacts.detectedLinkedinUrl || undefined,
     experiences: [],
     projects: [],
-    skillCategories,
+    skillCategories: extractSkillsFromText(rawText),
     education: [],
     languages: []
   };
