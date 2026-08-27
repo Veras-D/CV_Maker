@@ -8,63 +8,36 @@ export interface IngestionSourceTabsProps {
   onTabChange: (tab: IngestionSourceType) => void;
 }
 
+const TABS: { id: IngestionSourceType; label: string; icon: React.FC<{ className?: string }> }[] = [
+  { id: 'file', label: 'Upload CV', icon: UploadCloud },
+  { id: 'github', label: 'GitHub', icon: Github },
+  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+  { id: 'website', label: 'Portfolio', icon: Globe },
+  { id: 'text', label: 'Text', icon: FileText }
+];
+
 export const IngestionSourceTabs: React.FC<IngestionSourceTabsProps> = ({ activeTab, onTabChange }) => {
   return (
-    <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-[11px] sm:text-xs font-semibold overflow-x-auto gap-1">
-      <button
-        type="button"
-        onClick={() => onTabChange('file')}
-        className={`flex-1 py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-          activeTab === 'file' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <UploadCloud className="w-3.5 h-3.5 shrink-0" />
-        <span>Upload CV</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('github')}
-        className={`flex-1 py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-          activeTab === 'github' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Github className="w-3.5 h-3.5 shrink-0" />
-        <span>GitHub</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('linkedin')}
-        className={`flex-1 py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-          activeTab === 'linkedin' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Linkedin className="w-3.5 h-3.5 shrink-0" />
-        <span>LinkedIn</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('website')}
-        className={`flex-1 py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-          activeTab === 'website' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Globe className="w-3.5 h-3.5 shrink-0" />
-        <span>Portfolio</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onTabChange('text')}
-        className={`flex-1 py-2 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-          activeTab === 'text' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <FileText className="w-3.5 h-3.5 shrink-0" />
-        <span>Text</span>
-      </button>
+    <div className="grid grid-cols-5 rounded-xl bg-slate-950 p-1 border border-slate-800 text-[11px] sm:text-xs font-semibold gap-1">
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onTabChange(tab.id)}
+            className={`py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              isActive
+                ? 'bg-slate-800 text-sky-400 border border-slate-700/60 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 border border-transparent'
+            }`}
+          >
+            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };
