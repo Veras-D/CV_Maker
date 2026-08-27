@@ -147,7 +147,7 @@ function parseSkills(rawText: string): SkillCategory[] {
 }
 
 function parseProjects(lines: string[]): ProjectItem[] {
-  const titleSeparator = new RegExp('[-:|]');
+  const titleSeparator = /[-|]|\s:\s/;
   return lines
     .filter(l => l.length > 15 && l.length < 80 && !l.startsWith('•'))
     .slice(0, 4)

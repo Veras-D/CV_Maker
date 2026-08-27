@@ -53,7 +53,7 @@ function resolvePageName(doc: Document, jsonLd: JsonLdPerson | null, pageTitle: 
   if (jsonLd?.name) return jsonLd.name;
   const h1 = doc.querySelector('h1')?.textContent?.trim() || '';
   if (h1.length > 0 && h1.length < 35) return h1;
-  return pageTitle.split(/[-|–:]/)[0].trim();
+  return pageTitle.split(/[-|–]|\s:\s/)[0].trim();
 }
 
 function extractMetaInfo(doc: Document, jsonLd: JsonLdPerson | null) {
