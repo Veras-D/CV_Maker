@@ -187,6 +187,7 @@ export function parseFullResumeContent(rawText: string, sourceType: 'file' | 'te
   return {
     sourceType,
     detectedName: nameLine || undefined,
+    detectedHeadline: headlineCandidate || undefined,
     detectedBio: bioCandidate || undefined,
     detectedEmail: contacts.email,
     detectedPhone: contacts.phone,

@@ -5,14 +5,9 @@ import {
   Globe, 
   FileText, 
   UploadCloud, 
-  CheckCircle2, 
   Loader2, 
-  ArrowRight, 
-  FolderGit2, 
-  Cpu, 
   FileCheck 
 } from 'lucide-react';
-import { IngestionResult } from '../../utils/ingestionService';
 
 const ALLOWED_CV_EXTENSIONS = ['pdf', 'txt', 'md', 'json'];
 

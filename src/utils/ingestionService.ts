@@ -7,6 +7,7 @@ import { parseFullResumeContent } from './resumeSectionParser';
 export interface IngestionResult {
   sourceType: 'github' | 'linkedin' | 'website' | 'text' | 'file';
   detectedName?: string;
+  detectedHeadline?: string;
   detectedBio?: string;
   detectedEmail?: string;
   detectedPhone?: string;
@@ -221,23 +222,28 @@ export async function ingestFromFile(file: File): Promise<IngestionResult> {
   return parseFullResumeContent(rawText, 'file');
 }
 
+function mergeProfileFields(profile: CVData['profile'], result: IngestionResult): CVData['profile'] {
+  return {
+    ...profile,
+    name: result.detectedName || profile.name,
+    headline: result.detectedHeadline ? { ...profile.headline, en: result.detectedHeadline } : profile.headline,
+    summary: result.detectedBio ? { ...profile.summary, en: result.detectedBio } : profile.summary,
+    email: result.detectedEmail || profile.email,
+    phone: result.detectedPhone || profile.phone,
+    location: result.detectedLocation || profile.location,
+    githubUrl: result.detectedGithubUrl || profile.githubUrl,
+    linkedinUrl: result.detectedLinkedinUrl || profile.linkedinUrl,
+    portfolioUrl: result.detectedPortfolioUrl || profile.portfolioUrl
+  };
+}
+
 /**
  * Merge an IngestionResult into the active CVData state
  */
 export function mergeIngestionIntoCVData(current: CVData, result: IngestionResult): CVData {
   return {
     ...current,
-    profile: {
-      ...current.profile,
-      name: result.detectedName || current.profile.name,
-      summary: result.detectedBio ? { ...current.profile.summary, en: result.detectedBio } : current.profile.summary,
-      email: result.detectedEmail || current.profile.email,
-      phone: result.detectedPhone || current.profile.phone,
-      location: result.detectedLocation || current.profile.location,
-      githubUrl: result.detectedGithubUrl || current.profile.githubUrl,
-      linkedinUrl: result.detectedLinkedinUrl || current.profile.linkedinUrl,
-      portfolioUrl: result.detectedPortfolioUrl || current.profile.portfolioUrl
-    },
+    profile: mergeProfileFields(current.profile, result),
     experiences: result.experiences.length > 0 ? [...result.experiences, ...current.experiences] : current.experiences,
     education: result.education.length > 0 ? [...result.education, ...current.education] : current.education,
     languages: result.languages.length > 0 ? [...result.languages, ...current.languages] : current.languages,
