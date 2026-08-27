@@ -147,12 +147,13 @@ function parseSkills(rawText: string): SkillCategory[] {
 }
 
 function parseProjects(lines: string[]): ProjectItem[] {
+  const titleSeparator = new RegExp('[-:|]');
   return lines
     .filter(l => l.length > 15 && l.length < 80 && !l.startsWith('•'))
     .slice(0, 4)
     .map((line, idx) => ({
       id: `proj-parsed-${idx}`,
-      title: line.split(/[-:|]/)[0].trim(),
+      title: line.split(titleSeparator)[0].trim(),
       description: { en: line },
       techStack: [],
       tags: ['fullstack'],
