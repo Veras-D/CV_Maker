@@ -1,5 +1,6 @@
 import { CVData, WorkExperience, ProjectItem, SkillCategory, EducationItem, LanguageItem } from '../types/cv';
 import { fetchWebsiteHtml } from './htmlFetchHelper';
+import { extractTextFromPDF } from './pdfParser';
 
 export interface IngestionResult {
   sourceType: 'github' | 'linkedin' | 'website' | 'text' | 'file';
@@ -195,22 +196,27 @@ function extractContactMatches(rawText: string) {
 }
 
 function extractSkillsFromText(rawText: string): SkillCategory[] {
-  const detectedSkills: string[] = [];
-  const skillKeywords = ['react', 'typescript', 'javascript', 'node.js', 'python', 'docker', 'aws', 'sql', 'html', 'css', 'tailwind', 'graphql', 'git'];
+  const detectedSkills = new Set<string>();
+  const skillKeywords = [
+    'react', 'typescript', 'javascript', 'node.js', 'python', 'rust', 'docker', 
+    'kubernetes', 'aws', 'sql', 'postgresql', 'mongodb', 'html', 'css', 'tailwind', 
+    'graphql', 'git', 'next.js', 'vue', 'angular', 'c++', 'java', 'linux', 'ci/cd', 'redux'
+  ];
   const textLower = rawText.toLowerCase();
 
   skillKeywords.forEach(kw => {
-    if (textLower.includes(kw)) {
-      detectedSkills.push(kw.charAt(0).toUpperCase() + kw.slice(1));
+    const regex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (regex.test(textLower)) {
+      detectedSkills.add(kw.charAt(0).toUpperCase() + kw.slice(1));
     }
   });
 
-  if (detectedSkills.length === 0) return [];
+  if (detectedSkills.size === 0) return [];
   return [
     {
       id: `cat-extracted-${Date.now()}`,
       categoryName: { en: 'Extracted Skills' },
-      skills: detectedSkills.map((s, idx) => ({
+      skills: Array.from(detectedSkills).map((s, idx) => ({
         id: `skill-ext-${idx}`,
         name: s,
         tags: ['fullstack'],
@@ -226,7 +232,19 @@ function extractSkillsFromText(rawText: string): SkillCategory[] {
 export function parseRawResumeText(rawText: string): IngestionResult {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const contacts = extractContactMatches(rawText);
-  const detectedName = lines.length > 0 && lines[0].length < 40 && !lines[0].includes('@') ? lines[0] : '';
+
+  // Filter out any non-human header lines (e.g. PDF headers, URLs, emails)
+  const candidateNameLines = lines.filter(l => 
+    !l.startsWith('%') && 
+    !l.startsWith('/') && 
+    !l.startsWith('http') && 
+    !l.includes('@') &&
+    !/\b(?:obj|endobj|stream|endstream|xref|trailer|page|resume|cv)\b/i.test(l) &&
+    l.length >= 2 &&
+    l.length <= 40
+  );
+
+  const detectedName = candidateNameLines.length > 0 ? candidateNameLines[0] : '';
 
   return {
     sourceType: 'text',
@@ -241,14 +259,6 @@ export function parseRawResumeText(rawText: string): IngestionResult {
     education: [],
     languages: []
   };
-}
-
-export async function extractTextFromPDF(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const textDecoder = new TextDecoder('utf-8', { fatal: false });
-  const rawString = textDecoder.decode(bytes);
-  return rawString.replace(/[^\x20-\x7E\n\r\t]/g, ' ');
 }
 
 function parseJsonCVFile(parsed: Partial<CVData>): IngestionResult {
