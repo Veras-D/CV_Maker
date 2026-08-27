@@ -242,11 +242,17 @@ function parseJsonCVFile(parsed: Partial<CVData>): IngestionResult {
   };
 }
 
+const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'md', 'json'];
+
 /**
  * Ingest CV data from an uploaded file (.pdf, .txt, .md, .json)
  */
 export async function ingestFromFile(file: File): Promise<IngestionResult> {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new Error(`Unsupported file type ".${ext || 'unknown'}". Please upload a .pdf, .txt, .md, or .json file.`);
+  }
 
   if (ext === 'json') {
     const text = await file.text();

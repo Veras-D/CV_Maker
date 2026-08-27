@@ -104,6 +104,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <FileUploadTabContent
             selectedFile={selectedFile}
             onFileSelect={(f) => { setSelectedFile(f); setPreviewResult(null); setErrorMessage(''); }}
+            onError={(msg) => { setSelectedFile(null); setPreviewResult(null); setErrorMessage(msg); }}
             onParse={handleFetch}
             isProcessing={isProcessing}
           />

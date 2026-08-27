@@ -13,20 +13,32 @@ import {
 } from 'lucide-react';
 import { IngestionResult } from '../../utils/ingestionService';
 
+const ALLOWED_CV_EXTENSIONS = ['pdf', 'txt', 'md', 'json'];
+
 export const FileUploadTabContent: React.FC<{
   selectedFile: File | null;
   onFileSelect: (f: File) => void;
+  onError?: (msg: string) => void;
   onParse: () => void;
   isProcessing: boolean;
-}> = ({ selectedFile, onFileSelect, onParse, isProcessing }) => {
+}> = ({ selectedFile, onFileSelect, onError, onParse, isProcessing }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const validateAndSelectFile = (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !ALLOWED_CV_EXTENSIONS.includes(ext)) {
+      onError?.(`Invalid file format ".${ext || 'unknown'}". Only .pdf, .txt, .md, and .json files are supported.`);
+      return;
+    }
+    onFileSelect(file);
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
+      validateAndSelectFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -55,7 +67,7 @@ export const FileUploadTabContent: React.FC<{
           accept=".pdf,.txt,.md,.json"
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
-              onFileSelect(e.target.files[0]);
+              validateAndSelectFile(e.target.files[0]);
             }
           }}
           className="hidden"
