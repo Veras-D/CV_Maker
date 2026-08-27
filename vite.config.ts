@@ -17,7 +17,11 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_DEBUG,
     rollupOptions: {
       onwarn(warning, warn) {
-        // Enforce zero build warnings in CI quality gate
+        // Ignore internal circular dependencies inside third-party packages (e.g., pdf-lib)
+        if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message.includes('node_modules')) {
+          return;
+        }
+        // Enforce zero build/CSS warnings in CI quality gate
         if (process.env.CI) {
           throw new Error(`[CI Quality Gate Build Warning]: ${warning.message}`);
         }
