@@ -25,19 +25,41 @@ function parseJsonLd(doc: Document): JsonLdPerson | null {
   return null;
 }
 
-function extractMetaInfo(doc: Document, jsonLd: JsonLdPerson | null) {
-  const getMeta = (prop: string) => 
-    doc.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ||
-    doc.querySelector(`meta[name="${prop}"]`)?.getAttribute('content') || '';
+function getMetaContent(doc: Document, prop: string): string {
+  const byProp = doc.querySelector(`meta[property="${prop}"]`)?.getAttribute('content');
+  if (byProp) return byProp;
+  const byName = doc.querySelector(`meta[name="${prop}"]`)?.getAttribute('content');
+  return byName || '';
+}
 
-  const title = doc.querySelector('title')?.textContent || '';
+function resolvePageTitle(doc: Document): string {
+  const ogTitle = getMetaContent(doc, 'og:title');
+  if (ogTitle) return ogTitle;
+  const twTitle = getMetaContent(doc, 'twitter:title');
+  if (twTitle) return twTitle;
+  return doc.querySelector('title')?.textContent || '';
+}
+
+function resolvePageBio(doc: Document, jsonLd: JsonLdPerson | null): string {
+  if (jsonLd?.description) return jsonLd.description;
+  const ogDesc = getMetaContent(doc, 'og:description');
+  if (ogDesc) return ogDesc;
+  const metaDesc = getMetaContent(doc, 'description');
+  if (metaDesc) return metaDesc;
+  return doc.querySelector('p')?.textContent?.trim() || '';
+}
+
+function resolvePageName(doc: Document, jsonLd: JsonLdPerson | null, pageTitle: string): string {
+  if (jsonLd?.name) return jsonLd.name;
   const h1 = doc.querySelector('h1')?.textContent?.trim() || '';
-  const metaTitle = getMeta('og:title') || getMeta('twitter:title') || title;
-  const metaDesc = getMeta('og:description') || getMeta('twitter:description') || getMeta('description');
+  if (h1.length > 0 && h1.length < 35) return h1;
+  return pageTitle.split(/[-|–:]/)[0].trim();
+}
 
-  const detectedName = jsonLd?.name || (h1.length > 0 && h1.length < 35 ? h1 : metaTitle.split(/[-|–:]/)[0].trim());
-  const detectedBio = jsonLd?.description || metaDesc || doc.querySelector('p')?.textContent?.trim() || '';
-
+function extractMetaInfo(doc: Document, jsonLd: JsonLdPerson | null) {
+  const pageTitle = resolvePageTitle(doc);
+  const detectedName = resolvePageName(doc, jsonLd, pageTitle);
+  const detectedBio = resolvePageBio(doc, jsonLd);
   return { detectedName, detectedBio };
 }
 
