@@ -239,16 +239,25 @@ export function parseRawResumeText(rawText: string): IngestionResult {
     !l.startsWith('/') && 
     !l.startsWith('http') && 
     !l.includes('@') &&
-    !/\b(?:obj|endobj|stream|endstream|xref|trailer|page|resume|cv)\b/i.test(l) &&
+    !/\b(?:obj|endobj|stream|endstream|xref|trailer|page|resume|cv|curriculum|vitae)\b/i.test(l) &&
     l.length >= 2 &&
     l.length <= 40
   );
 
   const detectedName = candidateNameLines.length > 0 ? candidateNameLines[0] : '';
+  
+  // Detect summary/bio: first clean descriptive sentence/paragraph
+  const bioCandidates = lines.filter(l => 
+    l.length > 40 && 
+    !l.includes('@') && 
+    !l.startsWith('http') &&
+    !/\b(?:experience|education|skills|languages|projects)\b/i.test(l.slice(0, 15))
+  );
 
   return {
     sourceType: 'text',
     detectedName: detectedName || undefined,
+    detectedBio: bioCandidates.length > 0 ? bioCandidates[0] : undefined,
     detectedEmail: contacts.detectedEmail || undefined,
     detectedPhone: contacts.detectedPhone || undefined,
     detectedGithubUrl: contacts.detectedGithubUrl || undefined,
