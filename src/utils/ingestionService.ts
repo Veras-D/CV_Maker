@@ -127,21 +127,38 @@ export async function ingestFromWebsite(url: string): Promise<IngestionResult> {
  */
 export async function ingestFromLinkedin(inputUrlOrHandle: string): Promise<IngestionResult> {
   const clean = inputUrlOrHandle.trim().replace(/^@/, '');
-  const normalizedUrl = clean.startsWith('http')
-    ? clean
-    : `https://www.linkedin.com/in/${clean.replace(/^in\//, '')}`;
+  if (!clean) {
+    throw new Error('Please enter a LinkedIn profile URL or username.');
+  }
 
-  const html = await fetchWebsiteHtml(normalizedUrl);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const handle = clean
+    .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '')
+    .replace(/\/$/, '');
 
-  const pageTitle = doc.querySelector('title')?.innerText || '';
-  const metaTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
-  const metaDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
+  const normalizedUrl = `https://www.linkedin.com/in/${handle}`;
 
-  const titleToParse = metaTitle || pageTitle;
-  const detectedName = titleToParse.replace(/\s*[-–|].*$/, '').trim();
-  const detectedBio = metaDesc.replace(/\s*[-–|].*$/, '').trim();
+  let detectedName: string | undefined;
+  let detectedBio: string | undefined;
+
+  try {
+    const html = await fetchWebsiteHtml(normalizedUrl);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const metaTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+    const metaDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
+    const pageTitle = doc.querySelector('title')?.textContent || '';
+
+    const titleToParse = metaTitle || pageTitle;
+    detectedName = titleToParse ? titleToParse.replace(/\s*[-–|].*$/, '').trim() : undefined;
+    detectedBio = metaDesc ? metaDesc.replace(/\s*[-–|].*$/, '').trim() : undefined;
+  } catch {
+    // LinkedIn blocks automated bots with HTTP 999; fall back to handle-derived name
+    detectedName = handle
+      .split(/[-_]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
 
   return {
     sourceType: 'linkedin',
