@@ -15,5 +15,14 @@ export default defineConfig({
     target: ['es2021', 'chrome105', 'safari15'],
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Enforce zero build warnings in CI quality gate
+        if (process.env.CI) {
+          throw new Error(`[CI Quality Gate Build Warning]: ${warning.message}`);
+        }
+        warn(warning);
+      }
+    }
   },
 });
