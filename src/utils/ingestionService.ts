@@ -1,6 +1,7 @@
 import { CVData, WorkExperience, ProjectItem, SkillCategory, EducationItem, LanguageItem } from '../types/cv';
 import { fetchWebsiteHtml } from './htmlFetchHelper';
 import { extractTextFromPDF } from './pdfParser';
+import { scrapePortfolioFromHTML } from './websiteScraper';
 
 export interface IngestionResult {
   sourceType: 'github' | 'linkedin' | 'website' | 'text' | 'file';
@@ -118,33 +119,7 @@ export async function ingestFromGitHub(inputUrlOrUsername: string): Promise<Inge
 export async function ingestFromWebsite(url: string): Promise<IngestionResult> {
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
   const html = await fetchWebsiteHtml(normalizedUrl);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  const pageTitle = doc.querySelector('title')?.innerText || '';
-  const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-  const h1Text = doc.querySelector('h1')?.innerText?.trim() || '';
-
-  const paragraphs = Array.from(doc.querySelectorAll('p'))
-    .map(p => p.innerText.trim())
-    .filter(text => text.length > 30)
-    .slice(0, 5)
-    .join(' ');
-
-  const detectedName = h1Text.length > 0 && h1Text.length < 35 ? h1Text : pageTitle.split(/[-|]/)[0].trim();
-  const detectedBio = metaDesc || paragraphs.slice(0, 300);
-
-  return {
-    sourceType: 'website',
-    detectedName: detectedName || undefined,
-    detectedBio: detectedBio || undefined,
-    detectedPortfolioUrl: normalizedUrl,
-    experiences: [],
-    projects: [],
-    skillCategories: [],
-    education: [],
-    languages: []
-  };
+  return scrapePortfolioFromHTML(html, normalizedUrl);
 }
 
 /**
