@@ -8,7 +8,11 @@ echo "=========================================="
 # 1. Clean up old bundle directory
 rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage
 
-# 2. Build React web application assets and compile Rust executable binary
+# 2. Ensure all npm dependencies from package.json are up to date inside the container
+echo "Installing and syncing container npm dependencies..."
+npm install
+
+# 3. Build React web application assets and compile Rust executable binary
 npm run build
 cargo build --release --manifest-path /app/src-tauri/Cargo.toml
 
