@@ -7,15 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  quality-gate:
-    name: Automated Quality & Security Gate
+  code-quality-and-build:
+    name: Code Quality, Audit & Build Gates
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
@@ -24,7 +22,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --prefer-offline --no-audit
 
       - name: 'Gate 1: TypeScript Strict Typecheck'
         run: npm run typecheck
@@ -35,15 +33,23 @@ jobs:
       - name: 'Gate 3: Code Duplication & Clone Detection'
         run: npm run quality:duplication
 
-      - name: 'Gate 4: Security Gate (Dependencies & Secret Scanning)'
-        run: |
-          echo "Scanning dependencies for known CVEs and vulnerabilities..."
-          npm run quality:audit
-        
-      - name: 'Gate 4: Security Gate (Gitleaks Secret & Token Scanning)'
+      - name: 'Gate 4: Security Gate (Dependency CVE Audit)'
+        run: npm run quality:audit
+
+      - name: 'Gate 5: Production Build Verification'
+        run: npx vite build
+
+  security-secret-scan:
+    name: 'Gate 4: Security Gate (Gitleaks Secret Scanning)'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Full Git History
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan Repository for Secrets & Tokens
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 'Gate 5: Production Build Verification'
-        run: npm run build
