@@ -1,7 +1,7 @@
 import React from 'react';
-import { UploadCloud, Github, Globe, FileText } from 'lucide-react';
+import { UploadCloud, Github, Linkedin, Globe, FileText } from 'lucide-react';
 
-export type IngestionSourceType = 'file' | 'github' | 'website' | 'text';
+export type IngestionSourceType = 'file' | 'github' | 'linkedin' | 'website' | 'text';
 
 export interface IngestionSourceTabsProps {
   activeTab: IngestionSourceType;
@@ -31,6 +31,17 @@ export const IngestionSourceTabs: React.FC<IngestionSourceTabsProps> = ({ active
       >
         <Github className="w-3.5 h-3.5" />
         <span>GitHub</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onTabChange('linkedin')}
+        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+          activeTab === 'linkedin' ? 'bg-slate-800 text-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        <Linkedin className="w-3.5 h-3.5 text-sky-400" />
+        <span>LinkedIn</span>
       </button>
 
       <button

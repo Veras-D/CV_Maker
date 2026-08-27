@@ -4,6 +4,7 @@ import { useCV } from '../../context/CVContext';
 import { AlertCircle, X } from 'lucide-react';
 import { 
   ingestFromGitHub, 
+  ingestFromLinkedin,
   ingestFromWebsite, 
   parseRawResumeText,
   ingestFromFile, 
@@ -13,6 +14,7 @@ import { IngestionSourceTabs, IngestionSourceType } from './IngestionSourceTabs'
 import { 
   FileUploadTabContent,
   GitHubTabContent, 
+  LinkedinTabContent,
   WebsiteTabContent, 
   TextTabContent, 
   PreviewCard 
@@ -24,6 +26,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
   const [activeTab, setActiveTab] = useState<IngestionSourceType>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [githubInput, setGithubInput] = useState('');
+  const [linkedinInput, setLinkedinInput] = useState('');
   const [websiteInput, setWebsiteInput] = useState('');
   const [rawTextInput, setRawTextInput] = useState('');
   
@@ -45,6 +48,8 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         setPreviewResult(await ingestFromFile(selectedFile));
       } else if (activeTab === 'github') {
         setPreviewResult(await ingestFromGitHub(githubInput.trim()));
+      } else if (activeTab === 'linkedin') {
+        setPreviewResult(await ingestFromLinkedin(linkedinInput.trim()));
       } else if (activeTab === 'website') {
         setPreviewResult(await ingestFromWebsite(websiteInput.trim()));
       } else {
@@ -77,7 +82,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
             <h3 className="text-base font-bold text-white">Import & Scrape Profile Data</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Extract projects, skills, and bio locally from files, web, or text</p>
+            <p className="text-xs text-slate-400 mt-0.5">Extract projects, skills, and bio locally from files, LinkedIn, GitHub, web, or text</p>
           </div>
           <button 
             type="button"
@@ -115,6 +120,14 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
             setInput={setGithubInput} 
             onFetch={handleFetch} 
             isProcessing={isProcessing} 
+          />
+        )}
+        {activeTab === 'linkedin' && (
+          <LinkedinTabContent
+            input={linkedinInput}
+            setInput={setLinkedinInput}
+            onFetch={handleFetch}
+            isProcessing={isProcessing}
           />
         )}
         {activeTab === 'website' && (

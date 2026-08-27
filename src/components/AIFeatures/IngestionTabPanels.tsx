@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { 
   Github, 
+  Linkedin,
   Globe, 
   FileText, 
   UploadCloud, 
@@ -140,6 +141,41 @@ export const GitHubTabContent: React.FC<{
     </div>
     <p className="text-[11px] text-slate-500">
       Discovers your top repositories, primary languages, project descriptions, and bio without requiring login.
+    </p>
+  </div>
+);
+
+export const LinkedinTabContent: React.FC<{
+  input: string;
+  setInput: (v: string) => void;
+  onFetch: () => void;
+  isProcessing: boolean;
+}> = ({ input, setInput, onFetch, isProcessing }) => (
+  <div className="space-y-3">
+    <label className="block text-xs font-semibold text-slate-300">
+      LinkedIn Profile URL or Handle
+    </label>
+    <div className="flex gap-2">
+      <input
+        type="text"
+        placeholder="https://linkedin.com/in/username or username"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onFetch(); }}
+        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+      />
+      <button
+        type="button"
+        onClick={onFetch}
+        disabled={isProcessing}
+        className="bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow"
+      >
+        {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
+        <span>Fetch Profile</span>
+      </button>
+    </div>
+    <p className="text-[11px] text-slate-500">
+      Extracts your name, headline, bio, and LinkedIn URL. (You can also drop a LinkedIn PDF export in &quot;Upload CV File&quot;).
     </p>
   </div>
 );
