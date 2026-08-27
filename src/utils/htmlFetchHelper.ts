@@ -1,10 +1,8 @@
 /**
  * Multi-layer HTML fetcher: Native Tauri Rust command with browser proxy fallbacks
  */
-export async function fetchWebsiteHtml(url: string): Promise<string> {
-  const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
 
-  // 1. Native Tauri Desktop Invocation (bypasses browser CORS 100% on Linux/Mac/Windows)
+async function tryNativeTauriFetch(url: string): Promise<string | null> {
   try {
     const tauriWindow = window as unknown as {
       __TAURI_INTERNALS__?: {
@@ -13,45 +11,58 @@ export async function fetchWebsiteHtml(url: string): Promise<string> {
     };
 
     if (tauriWindow.__TAURI_INTERNALS__?.invoke) {
-      const nativeHtml = await tauriWindow.__TAURI_INTERNALS__.invoke('fetch_url_html', { url: normalizedUrl });
-      if (nativeHtml && nativeHtml.length > 0) {
-        return nativeHtml;
-      }
+      const html = await tauriWindow.__TAURI_INTERNALS__.invoke('fetch_url_html', { url });
+      if (html && html.trim().length > 0) return html;
     }
-  } catch (err: unknown) {
-    console.warn('Native Tauri HTTP fetch not available, attempting browser fetch:', err);
+  } catch {
+    // Native Tauri fetch unavailable in browser mode
   }
+  return null;
+}
 
-  // 2. Direct browser fetch
+async function tryDirectBrowserFetch(url: string): Promise<string | null> {
   try {
-    const directRes = await fetch(normalizedUrl);
-    if (directRes.ok) {
-      return await directRes.text();
-    }
-  } catch (_err) {
-    // Proceed to CORS proxy fallbacks
+    const res = await fetch(url);
+    if (res.ok) return await res.text();
+  } catch {
+    // Browser CORS blocked
   }
+  return null;
+}
 
-  // 3. Fallback CORS Proxies (for dev/web browser mode)
-  const proxyUrls = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(normalizedUrl)}`,
-    `https://corsproxy.io/?url=${encodeURIComponent(normalizedUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(normalizedUrl)}`
+async function tryProxyFetch(url: string): Promise<string | null> {
+  const proxyEndpoints = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
   ];
 
-  for (const proxy of proxyUrls) {
+  for (const proxyUrl of proxyEndpoints) {
     try {
-      const proxyRes = await fetch(proxy);
-      if (proxyRes.ok) {
-        const text = await proxyRes.text();
-        if (text && text.length > 50 && !text.includes('error code: 522')) {
-          return text;
-        }
+      const res = await fetch(proxyUrl);
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text.length > 50 && !text.includes('error code: 522')) {
+        return text;
       }
-    } catch (_err) {
-      // Continue to next proxy
+    } catch {
+      // Try next proxy
     }
   }
+  return null;
+}
+
+export async function fetchWebsiteHtml(url: string): Promise<string> {
+  const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+
+  const nativeHtml = await tryNativeTauriFetch(normalizedUrl);
+  if (nativeHtml) return nativeHtml;
+
+  const browserHtml = await tryDirectBrowserFetch(normalizedUrl);
+  if (browserHtml) return browserHtml;
+
+  const proxyHtml = await tryProxyFetch(normalizedUrl);
+  if (proxyHtml) return proxyHtml;
 
   throw new Error(`Unable to fetch website "${normalizedUrl}". Please check the URL or paste the resume text in the "Text" tab.`);
 }
