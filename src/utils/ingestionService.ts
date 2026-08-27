@@ -2,6 +2,7 @@ import { CVData, WorkExperience, ProjectItem, SkillCategory, EducationItem, Lang
 import { fetchWebsiteHtml } from './htmlFetchHelper';
 import { extractTextFromPDF } from './pdfParser';
 import { scrapePortfolioFromHTML } from './websiteScraper';
+import { parseFullResumeContent } from './resumeSectionParser';
 
 export interface IngestionResult {
   sourceType: 'github' | 'linkedin' | 'website' | 'text' | 'file';
@@ -34,7 +35,7 @@ function extractProjectsFromRepos(reposData: RawGitHubRepo[]): ProjectItem[] {
   if (!Array.isArray(reposData)) return [];
   return reposData
     .filter(r => !r.fork)
-    .slice(0, 5)
+    .slice(0, 6)
     .map(r => ({
       id: `gh-${r.id}`,
       title: r.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
@@ -63,7 +64,7 @@ function extractSkillsFromRepos(reposData: RawGitHubRepo[]): SkillCategory[] {
     {
       id: `cat-github-${Date.now()}`,
       categoryName: { en: 'Technologies & Frameworks' },
-      skills: Array.from(detected).slice(0, 12).map((s, idx) => ({
+      skills: Array.from(detected).slice(0, 14).map((s, idx) => ({
         id: `skill-gh-${idx}`,
         name: s.charAt(0).toUpperCase() + s.slice(1),
         tags: ['fullstack'],
@@ -153,7 +154,6 @@ export async function ingestFromLinkedin(inputUrlOrHandle: string): Promise<Inge
     detectedName = titleToParse ? titleToParse.replace(/\s*[-–|].*$/, '').trim() : undefined;
     detectedBio = metaDesc ? metaDesc.replace(/\s*[-–|].*$/, '').trim() : undefined;
   } catch {
-    // LinkedIn blocks automated bots with HTTP 999; fall back to handle-derived name
     detectedName = handle
       .split(/[-_]/)
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -173,93 +173,11 @@ export async function ingestFromLinkedin(inputUrlOrHandle: string): Promise<Inge
   };
 }
 
-function extractContactMatches(rawText: string) {
-  const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  const phoneMatch = rawText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-  const ghMatch = rawText.match(/https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9_-]+/);
-  const liMatch = rawText.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/);
-
-  return {
-    detectedEmail: emailMatch ? emailMatch[0] : '',
-    detectedPhone: phoneMatch ? phoneMatch[0] : '',
-    detectedGithubUrl: ghMatch ? ghMatch[0] : '',
-    detectedLinkedinUrl: liMatch ? liMatch[0] : ''
-  };
-}
-
-function extractSkillsFromText(rawText: string): SkillCategory[] {
-  const detectedSkills = new Set<string>();
-  const skillKeywords = [
-    'react', 'typescript', 'javascript', 'node.js', 'python', 'rust', 'docker', 
-    'kubernetes', 'aws', 'sql', 'postgresql', 'mongodb', 'html', 'css', 'tailwind', 
-    'graphql', 'git', 'next.js', 'vue', 'angular', 'c++', 'java', 'linux', 'ci/cd', 'redux'
-  ];
-  const textLower = rawText.toLowerCase();
-
-  skillKeywords.forEach(kw => {
-    const regex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (regex.test(textLower)) {
-      detectedSkills.add(kw.charAt(0).toUpperCase() + kw.slice(1));
-    }
-  });
-
-  if (detectedSkills.size === 0) return [];
-  return [
-    {
-      id: `cat-extracted-${Date.now()}`,
-      categoryName: { en: 'Extracted Skills' },
-      skills: Array.from(detectedSkills).map((s, idx) => ({
-        id: `skill-ext-${idx}`,
-        name: s,
-        tags: ['fullstack'],
-        enabled: true
-      }))
-    }
-  ];
-}
-
 /**
  * Parse raw resume text into structured CVData sections
  */
 export function parseRawResumeText(rawText: string): IngestionResult {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const contacts = extractContactMatches(rawText);
-
-  // Filter out any non-human header lines (e.g. PDF headers, URLs, emails)
-  const candidateNameLines = lines.filter(l => 
-    !l.startsWith('%') && 
-    !l.startsWith('/') && 
-    !l.startsWith('http') && 
-    !l.includes('@') &&
-    !/\b(?:obj|endobj|stream|endstream|xref|trailer|page|resume|cv|curriculum|vitae)\b/i.test(l) &&
-    l.length >= 2 &&
-    l.length <= 40
-  );
-
-  const detectedName = candidateNameLines.length > 0 ? candidateNameLines[0] : '';
-  
-  // Detect summary/bio: first clean descriptive sentence/paragraph
-  const bioCandidates = lines.filter(l => 
-    l.length > 40 && 
-    !l.includes('@') && 
-    !l.startsWith('http') &&
-    !/\b(?:experience|education|skills|languages|projects)\b/i.test(l.slice(0, 15))
-  );
-
-  return {
-    sourceType: 'text',
-    detectedName: detectedName || undefined,
-    detectedBio: bioCandidates.length > 0 ? bioCandidates[0] : undefined,
-    detectedEmail: contacts.detectedEmail || undefined,
-    detectedPhone: contacts.detectedPhone || undefined,
-    detectedGithubUrl: contacts.detectedGithubUrl || undefined,
-    detectedLinkedinUrl: contacts.detectedLinkedinUrl || undefined,
-    experiences: [],
-    projects: [],
-    skillCategories: extractSkillsFromText(rawText),
-    education: [],
-    languages: []
-  };
+  return parseFullResumeContent(rawText, 'text');
 }
 
 function parseJsonCVFile(parsed: Partial<CVData>): IngestionResult {
@@ -300,8 +218,7 @@ export async function ingestFromFile(file: File): Promise<IngestionResult> {
   }
 
   const rawText = ext === 'pdf' ? await extractTextFromPDF(file) : await file.text();
-  const result = parseRawResumeText(rawText);
-  return { ...result, sourceType: 'file' };
+  return parseFullResumeContent(rawText, 'file');
 }
 
 /**
@@ -321,6 +238,9 @@ export function mergeIngestionIntoCVData(current: CVData, result: IngestionResul
       linkedinUrl: result.detectedLinkedinUrl || current.profile.linkedinUrl,
       portfolioUrl: result.detectedPortfolioUrl || current.profile.portfolioUrl
     },
+    experiences: result.experiences.length > 0 ? [...result.experiences, ...current.experiences] : current.experiences,
+    education: result.education.length > 0 ? [...result.education, ...current.education] : current.education,
+    languages: result.languages.length > 0 ? [...result.languages, ...current.languages] : current.languages,
     projects: result.projects.length > 0 ? [...current.projects, ...result.projects] : current.projects,
     skillCategories: result.skillCategories.length > 0 
       ? (current.skillCategories.length === 0 ? result.skillCategories : [...current.skillCategories, ...result.skillCategories])
