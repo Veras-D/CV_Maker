@@ -116,27 +116,37 @@ function extractJobRoleAndCompany(line: string): { role?: string; company?: stri
   };
 }
 
+function extractRoleOrCompany(line: string, currentRole: string, currentCompany: string, dateRegex: RegExp) {
+  let role = currentRole;
+  let company = currentCompany;
+
+  const parsed = extractJobRoleAndCompany(line);
+  if (!role && parsed.role) {
+    role = parsed.role;
+    if (parsed.company) company = parsed.company;
+    return { role, company };
+  }
+
+  if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
+    company = line;
+  }
+
+  return { role, company };
+}
+
 function extractBlockDetails(lines: string[], dateRegex: RegExp) {
   const bullets: string[] = [];
   let role = '';
   let company = '';
 
   for (const line of lines) {
-    if (line.startsWith('●') || line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+    if (/^[●•\-*]/.test(line)) {
       bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
       continue;
     }
-    if (!role) {
-      const parsed = extractJobRoleAndCompany(line);
-      if (parsed.role) {
-        role = parsed.role;
-        if (parsed.company) company = parsed.company;
-        continue;
-      }
-    }
-    if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
-      company = line;
-    }
+    const updated = extractRoleOrCompany(line, role, company, dateRegex);
+    role = updated.role;
+    company = updated.company;
   }
 
   return { role, company, bullets };
