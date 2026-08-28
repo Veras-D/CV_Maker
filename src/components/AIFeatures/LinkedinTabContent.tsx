@@ -10,9 +10,6 @@ import {
 } from 'lucide-react';
 
 export interface LinkedinTabContentProps {
-  input: string;
-  setInput: (v: string) => void;
-  onFetchUrl: () => void;
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
   onParseFile: () => void;
@@ -78,9 +75,6 @@ const TutorialSteps: React.FC = () => (
 );
 
 export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
-  input,
-  setInput,
-  onFetchUrl,
   onFileSelect,
   selectedFile,
   onParseFile,
@@ -157,32 +151,6 @@ export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
             <span>Extract LinkedIn Experiences &amp; Skills</span>
           </button>
         )}
-      </div>
-
-      {/* Optional Profile URL Link */}
-      <div className="space-y-1.5 pt-2 border-t border-slate-800">
-        <label className="font-semibold text-slate-400 text-[11px]">
-          LinkedIn Profile URL (Optional — links to your CV header)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="https://www.linkedin.com/in/username"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onFetchUrl(); }}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
-          />
-          <button
-            type="button"
-            onClick={onFetchUrl}
-            disabled={!input.trim() || isProcessing}
-            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sky-400 border border-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>Link URL</span>
-          </button>
-        </div>
       </div>
     </div>
   );

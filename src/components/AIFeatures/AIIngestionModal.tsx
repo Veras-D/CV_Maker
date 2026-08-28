@@ -89,9 +89,6 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         )}
         {state.activeTab === 'linkedin' && (
           <LinkedinTabContent
-            input={state.linkedinInput}
-            setInput={state.setLinkedinInput}
-            onFetchUrl={state.handleFetch}
             onFileSelect={state.setLinkedinPdfFile}
             selectedFile={state.linkedinPdfFile}
             onParseFile={state.handleParseLinkedinPdf}

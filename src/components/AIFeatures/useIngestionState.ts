@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { IngestionSourceType } from './IngestionSourceTabs';
 import { 
-  ingestFromLinkedin, 
   ingestFromWebsite, 
   parseRawResumeText, 
   ingestFromFile, 
@@ -26,7 +25,6 @@ export function useIngestionState() {
   const [selectedRepoIds, setSelectedRepoIds] = useState<Set<number>>(new Set());
 
   // LinkedIn specific state
-  const [linkedinInput, setLinkedinInput] = useState('');
   const [linkedinPdfFile, setLinkedinPdfFile] = useState<File | null>(null);
 
   // Other tabs state
@@ -98,11 +96,6 @@ export function useIngestionState() {
     setIsProcessing(true);
     try {
       const result = await ingestFromFile(linkedinPdfFile);
-      if (linkedinInput.trim()) {
-        result.detectedLinkedinUrl = linkedinInput.trim().startsWith('http') 
-          ? linkedinInput.trim() 
-          : `https://www.linkedin.com/in/${linkedinInput.trim()}`;
-      }
       setPreviewResult(result);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to parse LinkedIn PDF file.';
@@ -118,7 +111,8 @@ export function useIngestionState() {
       return ingestFromFile(selectedFile);
     }
     if (activeTab === 'linkedin') {
-      return ingestFromLinkedin(linkedinInput.trim());
+      if (!linkedinPdfFile) throw new Error('Please select or drop your downloaded LinkedIn Profile.pdf first.');
+      return ingestFromFile(linkedinPdfFile);
     }
     if (activeTab === 'website') {
       return ingestFromWebsite(websiteInput.trim());
@@ -160,8 +154,6 @@ export function useIngestionState() {
     handleResetGitHub,
     handleConfirmGitHubImport,
     // LinkedIn
-    linkedinInput,
-    setLinkedinInput,
     linkedinPdfFile,
     setLinkedinPdfFile,
     handleParseLinkedinPdf,
