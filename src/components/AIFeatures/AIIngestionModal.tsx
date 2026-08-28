@@ -91,7 +91,10 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <LinkedinTabContent
             input={state.linkedinInput}
             setInput={state.setLinkedinInput}
-            onFetch={state.handleFetch}
+            onFetchUrl={state.handleFetch}
+            onFileSelect={state.setLinkedinPdfFile}
+            selectedFile={state.linkedinPdfFile}
+            onParseFile={state.handleParseLinkedinPdf}
             isProcessing={state.isProcessing}
           />
         )}

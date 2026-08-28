@@ -25,8 +25,11 @@ export function useIngestionState() {
   const [gitHubRepos, setGitHubRepos] = useState<GitHubUserRepo[]>([]);
   const [selectedRepoIds, setSelectedRepoIds] = useState<Set<number>>(new Set());
 
-  // Other tabs state
+  // LinkedIn specific state
   const [linkedinInput, setLinkedinInput] = useState('');
+  const [linkedinPdfFile, setLinkedinPdfFile] = useState<File | null>(null);
+
+  // Other tabs state
   const [websiteInput, setWebsiteInput] = useState('');
   const [rawTextInput, setRawTextInput] = useState('');
   
@@ -42,7 +45,6 @@ export function useIngestionState() {
       const { profile, repos } = await fetchUserGitHubRepos(githubUsernameInput);
       setGitHubProfile(profile);
       setGitHubRepos(repos);
-      // Pre-select non-fork repos (or all if none are non-fork)
       const nonForks = repos.filter(r => !r.fork).map(r => r.id);
       const initialSelected = nonForks.length > 0 ? nonForks : repos.map(r => r.id);
       setSelectedRepoIds(new Set(initialSelected));
@@ -88,6 +90,26 @@ export function useIngestionState() {
     const result = convertSelectedReposToIngestion(gitHubProfile, selected);
     setPreviewResult(result);
     setErrorMessage('');
+  };
+
+  const handleParseLinkedinPdf = async () => {
+    if (!linkedinPdfFile) return;
+    setErrorMessage('');
+    setIsProcessing(true);
+    try {
+      const result = await ingestFromFile(linkedinPdfFile);
+      if (linkedinInput.trim()) {
+        result.detectedLinkedinUrl = linkedinInput.trim().startsWith('http') 
+          ? linkedinInput.trim() 
+          : `https://www.linkedin.com/in/${linkedinInput.trim()}`;
+      }
+      setPreviewResult(result);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to parse LinkedIn PDF file.';
+      setErrorMessage(msg);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const executeTabFetch = async (): Promise<IngestionResult> => {
@@ -137,9 +159,13 @@ export function useIngestionState() {
     handleDeselectAllGitHubRepos,
     handleResetGitHub,
     handleConfirmGitHubImport,
-    // Other tabs
+    // LinkedIn
     linkedinInput,
     setLinkedinInput,
+    linkedinPdfFile,
+    setLinkedinPdfFile,
+    handleParseLinkedinPdf,
+    // Other tabs
     websiteInput,
     setWebsiteInput,
     rawTextInput,
