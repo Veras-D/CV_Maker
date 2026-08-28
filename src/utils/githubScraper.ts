@@ -145,7 +145,7 @@ function extractSkillCategoriesFromRepos(selectedRepos: GitHubUserRepo[]): Skill
   if (allSkills.size === 0) return [];
   return [{
     id: `cat-gh-${Date.now()}`,
-    categoryName: { en: 'Technologies & Frameworks' },
+    categoryName: { en: 'Technical Skills' },
     skills: Array.from(allSkills).slice(0, 14).map((s, idx) => ({
       id: `skill-gh-${idx}`,
       name: s.charAt(0).toUpperCase() + s.slice(1),

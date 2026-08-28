@@ -237,7 +237,7 @@ function finalizeSkills(skillsSet: Set<string>): SkillCategory[] {
   if (skillsSet.size === 0) return [];
   return [{
     id: `cat-web-${Date.now()}`,
-    categoryName: { en: 'Skills & Technologies' },
+    categoryName: { en: 'Technical Skills' },
     skills: Array.from(skillsSet).slice(0, 20).map((name, idx) => ({
       id: `skill-web-${idx}`,
       name,

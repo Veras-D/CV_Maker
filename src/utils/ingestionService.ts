@@ -116,10 +116,41 @@ function selectSectionList<T>(currentList: T[], incomingList: T[], isFullResume:
   return isFullResume ? incomingList : [...incomingList, ...currentList];
 }
 
+function collectExistingSkillNames(categories: SkillCategory[]): Set<string> {
+  const seen = new Set<string>();
+  categories.forEach(cat => {
+    cat.skills.forEach(s => seen.add(s.name.toLowerCase().trim()));
+  });
+  return seen;
+}
+
 function mergeSkillsList(currentSkills: SkillCategory[], incomingSkills: SkillCategory[], isFullResume: boolean): SkillCategory[] {
   if (incomingSkills.length === 0) return currentSkills;
   if (isFullResume || currentSkills.length === 0) return incomingSkills;
-  return [...currentSkills, ...incomingSkills];
+
+  const seenSkillNames = collectExistingSkillNames(currentSkills);
+  const updatedCategories = currentSkills.map(cat => ({
+    ...cat,
+    skills: [...cat.skills]
+  }));
+  const primaryCategory = updatedCategories[0];
+
+  incomingSkills.forEach(cat => {
+    cat.skills.forEach(skill => {
+      const lower = skill.name.toLowerCase().trim();
+      if (!seenSkillNames.has(lower) && primaryCategory) {
+        seenSkillNames.add(lower);
+        primaryCategory.skills.push({
+          id: `skill-${Date.now()}-${primaryCategory.skills.length}`,
+          name: skill.name,
+          tags: ['fullstack'],
+          enabled: true
+        });
+      }
+    });
+  });
+
+  return updatedCategories;
 }
 
 /**
