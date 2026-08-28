@@ -36,8 +36,8 @@ const SECTION_PATTERNS = [
 
 export function cleanSpecialPunctuation(str: string): string {
   return str
-    .replace(/^[\s|—–\-,/:;•*●]+/, '')
-    .replace(/[\s|—–\-,/:;•*●]+$/, '')
+    .replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '')
+    .replace(/[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+$/u, '')
     .trim();
 }
 

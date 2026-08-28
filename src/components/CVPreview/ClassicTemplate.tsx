@@ -157,7 +157,7 @@ const ResumeExperience: React.FC<{ experiences: WorkExperience[]; language: Lang
                 {exp.bullets.map(b => (
                   <div key={b.id} className="flex items-start">
                     <span className="mr-1.5 text-slate-800 font-bold shrink-0">•</span>
-                    <span>{b.text[language] || b.text.en}</span>
+                    <span>{(b.text[language] || b.text.en || '').replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '').trim()}</span>
                   </div>
                 ))}
               </div>
