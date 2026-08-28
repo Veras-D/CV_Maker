@@ -163,15 +163,25 @@ function mergeProfileFields(profile: CVData['profile'], result: IngestionResult)
  * Merge an IngestionResult into the active CVData state
  */
 export function mergeIngestionIntoCVData(current: CVData, result: IngestionResult): CVData {
+  const isFullResume = result.sourceType === 'file' || result.sourceType === 'text';
+
   return {
     ...current,
     profile: mergeProfileFields(current.profile, result),
-    experiences: result.experiences.length > 0 ? [...result.experiences, ...current.experiences] : current.experiences,
-    education: result.education.length > 0 ? [...result.education, ...current.education] : current.education,
-    languages: result.languages.length > 0 ? [...result.languages, ...current.languages] : current.languages,
-    projects: result.projects.length > 0 ? [...current.projects, ...result.projects] : current.projects,
+    experiences: result.experiences.length > 0 
+      ? (isFullResume ? result.experiences : [...result.experiences, ...current.experiences])
+      : current.experiences,
+    education: result.education.length > 0 
+      ? (isFullResume ? result.education : [...result.education, ...current.education])
+      : current.education,
+    languages: result.languages.length > 0 
+      ? (isFullResume ? result.languages : [...result.languages, ...current.languages])
+      : current.languages,
+    projects: result.projects.length > 0 
+      ? (isFullResume ? result.projects : [...current.projects, ...result.projects])
+      : current.projects,
     skillCategories: result.skillCategories.length > 0 
-      ? (current.skillCategories.length === 0 ? result.skillCategories : [...current.skillCategories, ...result.skillCategories])
+      ? (isFullResume || current.skillCategories.length === 0 ? result.skillCategories : [...current.skillCategories, ...result.skillCategories])
       : current.skillCategories
   };
 }

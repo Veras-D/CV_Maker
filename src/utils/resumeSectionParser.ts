@@ -5,7 +5,8 @@ const TECH_KEYWORD_LIST = [
   'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Rust', 'Docker',
   'Kubernetes', 'AWS', 'SQL', 'PostgreSQL', 'MongoDB', 'HTML', 'CSS', 'Tailwind',
   'GraphQL', 'Git', 'Next.js', 'Vue', 'Angular', 'C++', 'Java', 'Linux', 'Figma',
-  'Spring Boot', 'DevOps', 'CI/CD', 'Redux', 'Express', 'Django', 'Flask', 'Golang'
+  'Spring Boot', 'DevOps', 'CI/CD', 'Redux', 'Express', 'Django', 'Flask', 'Golang',
+  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET'
 ];
 
 const KNOWN_LANGUAGES = [
@@ -13,101 +14,184 @@ const KNOWN_LANGUAGES = [
   'Italian', 'Chinese', 'Japanese', 'Russian', 'Arabic', 'Polish', 'Dutch'
 ];
 
+interface RawSections {
+  header: string;
+  summary: string;
+  experience: string;
+  education: string;
+  skills: string;
+  languages: string;
+  projects: string;
+}
+
+const SECTION_PATTERNS = [
+  { key: 'summary', regex: /\b(?:about\s+me|sobre\s+mim|professional\s+summary|executive\s+profile|summary|profile|resumo|perfil)\b/i },
+  { key: 'experience', regex: /\b(?:work\s+experience|professional\s+experience|employment\s+history|experience|experiência\s+profissional|experiência|histórico\s+profissional)\b/i },
+  { key: 'education', regex: /\b(?:academic\s+background|education|formação\s+acadêmica|formação|educação)\b/i },
+  { key: 'skills', regex: /\b(?:technical\s+skills|core\s+competencies|skills\s+&\s+expertise|skills|habilidades|competências|tecnologias)\b/i },
+  { key: 'languages', regex: /\b(?:language\s+proficiency|languages|idiomas|línguas)\b/i },
+  { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projects|projetos)\b/i }
+];
+
+function segmentResumeText(rawText: string): RawSections {
+  const sections: RawSections = {
+    header: '',
+    summary: '',
+    experience: '',
+    education: '',
+    languages: '',
+    skills: '',
+    projects: ''
+  };
+
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let currentKey: keyof RawSections = 'header';
+  const headerLines: string[] = [];
+
+  for (const line of lines) {
+    let matchedHeader = false;
+    for (const { key, regex } of SECTION_PATTERNS) {
+      if (line.length <= 40 && regex.test(line)) {
+        currentKey = key as keyof RawSections;
+        matchedHeader = true;
+        break;
+      }
+    }
+
+    if (!matchedHeader) {
+      if (currentKey === 'header') {
+        headerLines.push(line);
+      } else {
+        sections[currentKey] += `\n${line}`;
+      }
+    }
+  }
+
+  sections.header = headerLines.join('\n');
+  return sections;
+}
+
 function extractContactDetails(rawText: string) {
   const email = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
-  const phone = rawText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)?.[0];
-  const github = rawText.match(/https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9_-]+/i)?.[0];
-  const linkedin = rawText.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0];
+  const phone = rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,3}\)?[-.\s]?\d{4,5}[-.\s]?\d{4}/)?.[0];
+  const github = rawText.match(/https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i)?.[0];
+  const linkedin = rawText.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0];
   const portfolio = rawText.match(/https?:\/\/[a-zA-Z0-9.-]+\.(?:dev|app|io|com|org|net|me)\b/i)?.[0];
 
   return { email, phone, github, linkedin, portfolio };
 }
 
-function parseExperiences(lines: string[]): WorkExperience[] {
-  const experiences: WorkExperience[] = [];
-  let current: Partial<WorkExperience> | null = null;
-  const dateRegex = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|\b\d{4})\s*[-–—to]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|\b\d{4}|Present|Current|Now)/i;
+function extractHeaderInfo(headerText: string, fullText: string) {
+  const lines = headerText.split('\n').map(l => l.trim()).filter(Boolean);
+  const contacts = extractContactDetails(fullText);
 
-  for (const line of lines) {
-    const dateMatch = line.match(dateRegex);
-    if (dateMatch) {
-      if (current?.company) {
-        experiences.push(finalizeExperience(current, experiences.length));
-      }
-      const beforeDate = line.slice(0, dateMatch.index).trim().replace(/[-|·,]$/, '').trim();
-      current = {
-        startDate: dateMatch[1].trim(),
-        endDate: dateMatch[2].trim(),
-        company: beforeDate || 'Company',
-        roleTitle: { en: 'Software Professional' },
-        bullets: []
-      };
-    } else if (current) {
-      processExpLine(current, line);
-    }
-  }
+  // Find candidate name (first non-URL line under 35 chars without email)
+  const nameLine = lines.find(l => 
+    !l.includes('@') && !l.startsWith('http') && !l.includes('.com') &&
+    !/\b(?:resume|cv|curriculum|developer|engineer|software)\b/i.test(l) &&
+    l.length >= 3 && l.length <= 35
+  ) || lines.find(l => !l.includes('@') && !l.startsWith('http') && l.length <= 35) || '';
 
-  if (current?.company) {
-    experiences.push(finalizeExperience(current, experiences.length));
-  }
+  const headlineCandidate = lines.find(l => 
+    l !== nameLine && 
+    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist)/i.test(l) &&
+    l.length <= 70
+  );
 
-  return experiences.slice(0, 8);
+  return {
+    detectedName: nameLine || undefined,
+    detectedHeadline: headlineCandidate || undefined,
+    contacts
+  };
 }
 
-function processExpLine(current: Partial<WorkExperience>, line: string) {
-  if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
-    const text = line.replace(/^[•\-*]\s*/, '').trim();
-    if (text) {
-      current.bullets = current.bullets || [];
-      current.bullets.push({
-        id: `b-${current.bullets.length}`,
-        text: { en: text },
+function parseExperienceEntries(expText: string): WorkExperience[] {
+  if (!expText.trim()) return [];
+
+  const rawBlocks = expText.split(/(?=\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}\s*[-–—])/i);
+  const experiences: WorkExperience[] = [];
+  const dateRegex = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4})\s*[-–—to]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}|Present|Current|Atual|Presente)/i;
+
+  for (const block of rawBlocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) continue;
+
+    const dateMatch = block.match(dateRegex);
+    const bullets: string[] = [];
+    let company = '';
+    let role = '';
+
+    for (const line of lines) {
+      if (line.startsWith('●') || line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+        bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
+      } else if (!role && /(?:Engineer|Developer|Researcher|Manager|Programmer|Analyst|Consultant|Desenvolvedor|Engenheiro|Gerente)/i.test(line)) {
+        const parts = line.split(/(?:\bat\b|@|\||—|–)/i).map(p => p.trim());
+        role = parts[0].slice(0, 50);
+        if (parts[1]) company = parts[1].slice(0, 45);
+      } else if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
+        company = line;
+      }
+    }
+
+    if (role || company) {
+      experiences.push({
+        id: `exp-${experiences.length}-${Date.now()}`,
+        company: (company || 'Company').replace(/\s*[-–—|].*$/, '').trim(),
+        roleTitle: { en: role || 'Software Developer' },
+        startDate: dateMatch ? dateMatch[1].trim() : '2022',
+        endDate: dateMatch ? dateMatch[2].trim() : 'Present',
+        bullets: bullets.map((b, idx) => ({
+          id: `b-${idx}`,
+          text: { en: b },
+          tags: ['fullstack'],
+          enabled: true
+        })),
         tags: ['fullstack'],
         enabled: true
       });
     }
-  } else if (!current.roleTitle || current.roleTitle.en === 'Software Professional') {
-    if (line.length < 50) current.roleTitle = { en: line };
   }
+
+  // Deduplicate experiences with same company & role
+  const seen = new Set<string>();
+  return experiences.filter(exp => {
+    const key = `${exp.company.toLowerCase()}-${exp.roleTitle.en.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 6);
 }
 
-function finalizeExperience(curr: Partial<WorkExperience>, idx: number): WorkExperience {
-  return {
-    id: `exp-parsed-${idx}-${Date.now()}`,
-    company: curr.company || 'Company',
-    roleTitle: curr.roleTitle || { en: 'Software Developer' },
-    startDate: curr.startDate || '2020',
-    endDate: curr.endDate || 'Present',
-    bullets: curr.bullets || [],
-    tags: ['fullstack'],
-    enabled: true
-  };
-}
+function parseEducationEntries(eduText: string): EducationItem[] {
+  if (!eduText.trim()) return [];
 
-function parseEducation(lines: string[]): EducationItem[] {
-  const education: EducationItem[] = [];
-  const degreeKeywords = /(Bachelor|Master|B\.S|B\.Sc|M\.S|Ph\.D|Associate|Diploma|Degree|Engineer|Faculty|University|College|School|Academy)/i;
+  const lines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
+  const items: EducationItem[] = [];
+  const dateRegex = /\b\d{4}\s*[-–—to]+\s*(\d{4}|Present|Current|Atual)?\b/i;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (degreeKeywords.test(line)) {
-      const dates = line.match(/\b\d{4}\s*[-–—to]+\s*(\d{4}|Present|Current)?\b/)?.[0] || 'Graduated';
-      const cleanTitle = line.replace(/\b\d{4}.*$/, '').replace(/[-|·,]$/, '').trim();
-      education.push({
-        id: `edu-parsed-${education.length}`,
-        institution: cleanTitle || 'Academic Institution',
-        program: { en: cleanTitle || 'Degree Program' },
+  for (const line of lines) {
+    if (line.length > 5 && !line.startsWith('●') && !line.startsWith('•')) {
+      const dates = line.match(dateRegex)?.[0] || 'Graduated';
+      const cleanLine = line.replace(dateRegex, '').replace(/[()—–-]/g, ' ').trim();
+      const parts = cleanLine.split(/(?:\||—|–|-)/).map(p => p.trim()).filter(Boolean);
+      const institution = parts[0] || 'Academic Institution';
+      const program = parts[1] || parts[0] || 'Degree Program';
+
+      items.push({
+        id: `edu-${items.length}`,
+        institution: institution.slice(0, 50),
+        program: { en: program.slice(0, 60) },
         dates,
         enabled: true
       });
     }
   }
-  return education.slice(0, 4);
+  return items.slice(0, 4);
 }
 
 function parseLanguages(rawText: string): LanguageItem[] {
   const detected: LanguageItem[] = [];
-  const proficiencyRegex = /(Native|Fluent|Bilingual|Professional|Intermediate|Elementary|C2|C1|B2|B1|A2|A1)/i;
+  const proficiencyRegex = /(Native|Fluent|Bilingual|Professional|Intermediate|Elementary|Natívo|Fluente|Avançado|C2|C1|B2|B1|A2|A1)/i;
 
   for (const lang of KNOWN_LANGUAGES) {
     const regex = new RegExp(`\\b${lang}\\b(?:[:\\s–-]+(${proficiencyRegex.source}))?`, 'i');
@@ -146,10 +230,13 @@ function parseSkills(rawText: string): SkillCategory[] {
   }];
 }
 
-function parseProjects(lines: string[]): ProjectItem[] {
+function parseProjects(projText: string): ProjectItem[] {
+  if (!projText.trim()) return [];
+  const lines = projText.split('\n').map(l => l.trim()).filter(Boolean);
   const titleSeparator = /[-|]|\s:\s/;
+
   return lines
-    .filter(l => l.length > 15 && l.length < 80 && !l.startsWith('•'))
+    .filter(l => l.length > 10 && l.length < 80 && !l.startsWith('●') && !l.startsWith('•'))
     .slice(0, 4)
     .map((line, idx) => ({
       id: `proj-parsed-${idx}`,
@@ -162,43 +249,31 @@ function parseProjects(lines: string[]): ProjectItem[] {
 }
 
 /**
- * Full semantic parser that extracts profiles, experiences, education, languages, and skills from resume text.
+ * Full semantic parser that cleanly segments resumes and extracts structured profile and experiences.
  */
 export function parseFullResumeContent(rawText: string, sourceType: 'file' | 'text' = 'file'): IngestionResult {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const contacts = extractContactDetails(rawText);
+  const sections = segmentResumeText(rawText);
+  const { detectedName, detectedHeadline, contacts } = extractHeaderInfo(sections.header, rawText);
 
-  // Extract name & role headline from top lines
-  const nameLine = lines.find(l => 
-    !l.startsWith('%') && !l.startsWith('/') && !l.startsWith('http') && 
-    !l.includes('@') && !/\b(?:resume|cv|curriculum|page)\b/i.test(l) &&
-    l.length >= 2 && l.length <= 40
-  );
-
-  const headlineCandidate = lines.find(l => 
-    l !== nameLine && l.length >= 5 && l.length <= 50 &&
-    /(Developer|Engineer|Architect|Designer|Manager|Consultant|Scientist|Specialist|Analyst)/i.test(l)
-  );
-
-  const bioCandidate = lines.find(l => 
-    l.length > 50 && !l.includes('@') && !l.startsWith('http') &&
-    !/(Experience|Education|Skills|Languages|Projects|Graduated)/i.test(l.slice(0, 15))
-  );
+  // Clean bio summary from the summary section or first descriptive sentence
+  const bioClean = sections.summary.trim()
+    ? sections.summary.replace(/^[●•\-*]\s*/gm, '').trim().slice(0, 350)
+    : undefined;
 
   return {
     sourceType,
-    detectedName: nameLine || undefined,
-    detectedHeadline: headlineCandidate || undefined,
-    detectedBio: bioCandidate || undefined,
+    detectedName,
+    detectedHeadline,
+    detectedBio: bioClean,
     detectedEmail: contacts.email,
     detectedPhone: contacts.phone,
     detectedGithubUrl: contacts.github,
     detectedLinkedinUrl: contacts.linkedin,
     detectedPortfolioUrl: contacts.portfolio,
-    experiences: parseExperiences(lines),
-    education: parseEducation(lines),
-    languages: parseLanguages(rawText),
-    skillCategories: parseSkills(rawText),
-    projects: parseProjects(lines)
+    experiences: parseExperienceEntries(sections.experience || rawText),
+    education: parseEducationEntries(sections.education),
+    languages: parseLanguages(sections.languages || rawText),
+    skillCategories: parseSkills(sections.skills || rawText),
+    projects: parseProjects(sections.projects)
   };
 }
