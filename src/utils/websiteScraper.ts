@@ -1,5 +1,7 @@
 import { IngestionResult } from './ingestionService';
-import { ProjectItem, SkillCategory } from '../types/cv';
+import { ProjectItem, SkillCategory, WorkExperience } from '../types/cv';
+import { fetchWebsiteHtml } from './htmlFetchHelper';
+import { parseFullResumeContent } from './resumeSectionParser';
 
 interface JsonLdPerson {
   '@type'?: string;
@@ -88,7 +90,7 @@ const TECH_KEYWORDS = [
   'Spring Boot', 'DevOps', 'QA', 'Data Science', 'UI Design', 'Frontend', 'Backend'
 ];
 
-function extractSkillsFromDOM(doc: Document, jsonLd: JsonLdPerson | null): SkillCategory[] {
+function extractSkillsFromDOM(doc: Document, jsonLd: JsonLdPerson | null): string[] {
   const detected = new Set<string>();
 
   if (jsonLd?.knowsAbout) {
@@ -110,30 +112,20 @@ function extractSkillsFromDOM(doc: Document, jsonLd: JsonLdPerson | null): Skill
     }
   });
 
-  if (detected.size === 0) return [];
-  return [{
-    id: `cat-web-${Date.now()}`,
-    categoryName: { en: 'Skills & Technologies' },
-    skills: Array.from(detected).slice(0, 16).map((name, idx) => ({
-      id: `skill-web-${idx}`,
-      name,
-      tags: ['fullstack'],
-      enabled: true
-    }))
-  }];
+  return Array.from(detected);
 }
 
 function extractProjectsFromDOM(doc: Document, originUrl: string): ProjectItem[] {
-  const cards = doc.querySelectorAll('.project-card, [class*="project"], article, .portfolio-item');
+  const cards = doc.querySelectorAll('.project-card, [class*="project"], article, .portfolio-item, .card');
   const projects: ProjectItem[] = [];
 
   cards.forEach((card, idx) => {
-    if (idx >= 6) return;
-    const title = card.querySelector('h3, h4, h2, strong')?.textContent?.trim();
-    const desc = card.querySelector('p')?.textContent?.trim();
+    if (idx >= 12) return;
+    const title = card.querySelector('h3, h4, h2, strong, .title')?.textContent?.trim();
+    const desc = card.querySelector('p, .description')?.textContent?.trim();
     const link = card.querySelector('a[href]')?.getAttribute('href') || originUrl;
     
-    if (title && title.length < 50 && !/^(my skills|about me|contact|projects)$/i.test(title)) {
+    if (title && title.length < 50 && !/^(my skills|about me|contact|projects|home|skills)$/i.test(title)) {
       projects.push({
         id: `proj-web-${idx}-${Date.now()}`,
         title,
@@ -149,18 +141,115 @@ function extractProjectsFromDOM(doc: Document, originUrl: string): ProjectItem[]
   return projects;
 }
 
+const RELEVANT_SUBPAGE_REGEX = /(?:projects?|portfolio|work|works|about|bio|experience|career|resume|cv|contact|projetos|sobre)/i;
+
+function findInternalSubpageUrls(doc: Document, baseUrl: string): string[] {
+  const subpages = new Set<string>();
+  let baseDomain = '';
+  try {
+    baseDomain = new URL(baseUrl).hostname;
+  } catch {
+    return [];
+  }
+
+  const links = doc.querySelectorAll('a[href]');
+  for (const a of links) {
+    const href = a.getAttribute('href')?.trim();
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) {
+      continue;
+    }
+
+    try {
+      const resolved = new URL(href, baseUrl);
+      const path = resolved.pathname.toLowerCase();
+      const linkText = (a.textContent || '').trim().toLowerCase();
+
+      if (resolved.hostname === baseDomain && path !== '/' && (RELEVANT_SUBPAGE_REGEX.test(path) || RELEVANT_SUBPAGE_REGEX.test(linkText))) {
+        subpages.add(resolved.href);
+      }
+    } catch {
+      // Ignore invalid URL
+    }
+  }
+
+  return Array.from(subpages).slice(0, 6);
+}
+
+interface AggregateData {
+  projects: ProjectItem[];
+  skills: Set<string>;
+  experiences: WorkExperience[];
+}
+
+function processSubpage(doc: Document, subUrl: string, aggregate: AggregateData) {
+  extractSkillsFromDOM(doc, null).forEach(s => aggregate.skills.add(s));
+  const subProjects = extractProjectsFromDOM(doc, subUrl);
+  aggregate.projects.push(...subProjects);
+
+  const parsed = parseFullResumeContent(doc.body?.textContent || '', 'website');
+  if (parsed.experiences.length > 0) {
+    aggregate.experiences.push(...parsed.experiences);
+  }
+}
+
+async function crawlAndAggregateSubpages(doc: Document, url: string): Promise<AggregateData> {
+  const subpageUrls = findInternalSubpageUrls(doc, url);
+  const aggregate: AggregateData = {
+    projects: extractProjectsFromDOM(doc, url),
+    skills: new Set(extractSkillsFromDOM(doc, null)),
+    experiences: []
+  };
+
+  if (subpageUrls.length > 0) {
+    const parser = new DOMParser();
+    const settled = await Promise.allSettled(subpageUrls.map(u => fetchWebsiteHtml(u)));
+
+    settled.forEach((result, idx) => {
+      if (result.status === 'fulfilled' && result.value) {
+        const subDoc = parser.parseFromString(result.value, 'text/html');
+        processSubpage(subDoc, subpageUrls[idx], aggregate);
+      }
+    });
+  }
+
+  return aggregate;
+}
+
+function finalizeSkills(skillsSet: Set<string>): SkillCategory[] {
+  if (skillsSet.size === 0) return [];
+  return [{
+    id: `cat-web-${Date.now()}`,
+    categoryName: { en: 'Skills & Technologies' },
+    skills: Array.from(skillsSet).slice(0, 20).map((name, idx) => ({
+      id: `skill-web-${idx}`,
+      name,
+      tags: ['fullstack'],
+      enabled: true
+    }))
+  }];
+}
+
 /**
- * Scrapes rich metadata, contact info, skills, and projects from a website's HTML DOM
+ * Scrapes rich metadata, contact info, skills, and projects by crawling the homepage and all relevant internal subpages
  */
-export function scrapePortfolioFromHTML(html: string, url: string): IngestionResult {
+export async function scrapePortfolioFromHTML(html: string, url: string): Promise<IngestionResult> {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const jsonLd = parseJsonLd(doc);
 
   const { detectedName, detectedBio } = extractMetaInfo(doc, jsonLd);
   const { detectedGithubUrl, detectedLinkedinUrl, detectedPhone } = extractSocialLinks(doc, jsonLd);
-  const skillCategories = extractSkillsFromDOM(doc, jsonLd);
-  const projects = extractProjectsFromDOM(doc, url);
+
+  const aggregated = await crawlAndAggregateSubpages(doc, url);
+
+  // Deduplicate projects by title
+  const seenProj = new Set<string>();
+  const deduplicatedProjects = aggregated.projects.filter(p => {
+    const key = p.title.toLowerCase();
+    if (seenProj.has(key)) return false;
+    seenProj.add(key);
+    return true;
+  });
 
   return {
     sourceType: 'website',
@@ -170,9 +259,9 @@ export function scrapePortfolioFromHTML(html: string, url: string): IngestionRes
     detectedGithubUrl,
     detectedLinkedinUrl,
     detectedPhone,
-    experiences: [],
-    projects,
-    skillCategories,
+    experiences: aggregated.experiences.slice(0, 5),
+    projects: deduplicatedProjects.slice(0, 10),
+    skillCategories: finalizeSkills(aggregated.skills),
     education: [],
     languages: []
   };

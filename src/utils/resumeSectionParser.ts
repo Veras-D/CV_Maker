@@ -288,7 +288,10 @@ function parseProjects(projText: string): ProjectItem[] {
 /**
  * Full semantic parser that cleanly segments resumes and extracts structured profile and experiences.
  */
-export function parseFullResumeContent(rawText: string, sourceType: 'file' | 'text' = 'file'): IngestionResult {
+export function parseFullResumeContent(
+  rawText: string, 
+  sourceType: IngestionResult['sourceType'] = 'file'
+): IngestionResult {
   const sections = segmentResumeText(rawText);
   const { detectedName, detectedHeadline, contacts } = extractHeaderInfo(sections.header, rawText);
 
