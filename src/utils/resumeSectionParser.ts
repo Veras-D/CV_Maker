@@ -34,6 +34,13 @@ const SECTION_PATTERNS = [
   { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projects|projetos)\b/i }
 ];
 
+export function cleanSpecialPunctuation(str: string): string {
+  return str
+    .replace(/^[\s|—–\-,/:;•*●]+/, '')
+    .replace(/[\s|—–\-,/:;•*●]+$/, '')
+    .trim();
+}
+
 function segmentResumeText(rawText: string): RawSections {
   const sections: RawSections = {
     header: '',
@@ -50,21 +57,18 @@ function segmentResumeText(rawText: string): RawSections {
   const headerLines: string[] = [];
 
   for (const line of lines) {
-    let matchedHeader = false;
+    let matched = false;
     for (const { key, regex } of SECTION_PATTERNS) {
       if (line.length <= 45 && regex.test(line)) {
         currentKey = key as keyof RawSections;
-        matchedHeader = true;
+        matched = true;
         break;
       }
     }
 
-    if (!matchedHeader) {
-      if (currentKey === 'header') {
-        headerLines.push(line);
-      } else {
-        sections[currentKey] += `\n${line}`;
-      }
+    if (!matched) {
+      if (currentKey === 'header') headerLines.push(line);
+      else sections[currentKey] += `\n${line}`;
     }
   }
 
@@ -85,7 +89,7 @@ function extractContactDetails(rawText: string) {
 function extractCandidateName(lines: string[]): string | undefined {
   for (const line of lines) {
     if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
-    const clean = line.split(/[•|—–\-/:]/)[0].trim();
+    const clean = cleanSpecialPunctuation(line.split(/[•|—–\-/:]/)[0]);
     if (clean.length >= 3 && clean.length <= 35 && !/^(resume|cv|curriculum|profile)$/i.test(clean)) {
       return clean;
     }
@@ -106,7 +110,7 @@ function extractHeaderInfo(headerText: string, fullText: string) {
 
   return {
     detectedName,
-    detectedHeadline: headlineCandidate || undefined,
+    detectedHeadline: headlineCandidate ? cleanSpecialPunctuation(headlineCandidate) : undefined,
     contacts
   };
 }
@@ -124,24 +128,20 @@ interface ExtractedExp {
 }
 
 function extractRoleAndCompanyFromLine(lineWithoutDate: string): { role: string; company: string } {
-  // Check for explicit separators with surrounding spaces (never split on hyphens inside words like Full-Stack)
-  const sepMatch = lineWithoutDate.split(/\s+(?:at|@|—|–|\||\/|,|\s-\s)\s+/i).map(p => p.trim()).filter(Boolean);
+  const sepMatch = lineWithoutDate.split(/\s+(?:at|@|—|–|\||\/|,|\s-\s)\s+/i).map(p => cleanSpecialPunctuation(p)).filter(Boolean);
   if (sepMatch.length >= 2) {
     return { role: sepMatch[0], company: sepMatch[1] };
   }
 
-  // Check if role is at the beginning of the string
   const roleMatch = lineWithoutDate.match(ROLE_PREFIX_REGEX);
   if (roleMatch && roleMatch[0]) {
-    const matchedRole = roleMatch[0].trim();
-    const remainingCompany = lineWithoutDate.slice(roleMatch[0].length).trim().replace(/^[—–\-,|]\s*/, '');
-    if (remainingCompany) {
-      return { role: matchedRole, company: remainingCompany };
-    }
-    return { role: matchedRole, company: '' };
+    const matchedRole = cleanSpecialPunctuation(roleMatch[0]);
+    const rawComp = lineWithoutDate.slice(roleMatch[0].length);
+    const company = cleanSpecialPunctuation(rawComp);
+    return { role: matchedRole, company };
   }
 
-  return { role: lineWithoutDate || 'Software Professional', company: '' };
+  return { role: cleanSpecialPunctuation(lineWithoutDate) || 'Software Professional', company: '' };
 }
 
 function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): ExtractedExp {
@@ -157,12 +157,15 @@ function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): Extracted
 }
 
 function processExpLineItem(line: string, current: ExtractedExp) {
+  const cleaned = cleanSpecialPunctuation(line);
+  if (!cleaned) return;
+
   if (/^[●•\-*]/.test(line)) {
-    current.bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
-  } else if (!current.company && line.length < 50 && !/^(about|experience|education|skills)/i.test(line)) {
-    current.company = line;
-  } else if (line.length > 20 && !current.role.includes(line)) {
-    current.bullets.push(line);
+    current.bullets.push(cleaned);
+  } else if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
+    current.company = cleaned;
+  } else if (cleaned.length > 20 && !current.role.includes(cleaned)) {
+    current.bullets.push(cleaned);
   }
 }
 
@@ -201,13 +204,13 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
     .slice(0, 6)
     .map((e, idx) => ({
       id: `exp-${idx}-${Date.now()}`,
-      company: e.company.slice(0, 45) || 'Software House',
-      roleTitle: { en: e.role.slice(0, 50) },
+      company: cleanSpecialPunctuation(e.company) || 'Software House',
+      roleTitle: { en: cleanSpecialPunctuation(e.role).slice(0, 50) },
       startDate: e.startDate,
       endDate: e.endDate,
       bullets: e.bullets.map((b, bIdx) => ({
         id: `b-${bIdx}`,
-        text: { en: b },
+        text: { en: cleanSpecialPunctuation(b) },
         tags: ['fullstack'],
         enabled: true
       })),
@@ -235,7 +238,7 @@ function parseEducationEntries(eduText: string): EducationItem[] {
     if (hasAcademic || hasDates) {
       const dates = line.match(dateRegex)?.[0] || 'Graduated';
       const cleanLine = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
-      const parts = cleanLine.split(/\s+(?:—|–|\||\/|,|\s-\s)\s+/).map(p => p.trim()).filter(Boolean);
+      const parts = cleanLine.split(/\s+(?:—|–|\||\/|,|\s-\s)\s+/).map(p => cleanSpecialPunctuation(p)).filter(Boolean);
       const institution = parts[0] || 'Academic Institution';
       const program = parts[1] || parts[0] || 'Degree Program';
 
@@ -253,10 +256,10 @@ function parseEducationEntries(eduText: string): EducationItem[] {
 
 function parseLanguages(rawText: string): LanguageItem[] {
   const detected: LanguageItem[] = [];
-  const proficiencyRegex = /(Native|Fluent|Bilingual|Professional|Intermediate|Elementary|Natívo|Fluente|Avançado|C2|C1|B2|B1|A2|A1)/i;
+  const profRegex = /(Native|Fluent|Bilingual|Professional|Intermediate|Elementary|Natívo|Fluente|Avançado|C2|C1|B2|B1|A2|A1)/i;
 
   for (const lang of KNOWN_LANGUAGES) {
-    const regex = new RegExp(`\\b${lang}\\b(?:[:\\s–-]+(${proficiencyRegex.source}))?`, 'i');
+    const regex = new RegExp(`\\b${lang}\\b(?:[:\\s–-]+(${profRegex.source}))?`, 'i');
     const match = rawText.match(regex);
     if (match) {
       detected.push({
@@ -302,8 +305,8 @@ function parseProjects(projText: string): ProjectItem[] {
     .slice(0, 4)
     .map((line, idx) => ({
       id: `proj-parsed-${idx}`,
-      title: line.split(titleSeparator)[0].trim(),
-      description: { en: line },
+      title: cleanSpecialPunctuation(line.split(titleSeparator)[0]),
+      description: { en: cleanSpecialPunctuation(line) },
       techStack: [],
       tags: ['fullstack'],
       enabled: true
@@ -321,7 +324,7 @@ export function parseFullResumeContent(
   const { detectedName, detectedHeadline, contacts } = extractHeaderInfo(sections.header, rawText);
 
   const bioClean = sections.summary.trim()
-    ? sections.summary.replace(/^[●•\-*]\s*/gm, '').trim().slice(0, 350)
+    ? cleanSpecialPunctuation(sections.summary.replace(/^[●•\-*]\s*/gm, '')).slice(0, 350)
     : undefined;
 
   return {
