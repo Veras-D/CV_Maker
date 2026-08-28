@@ -22,12 +22,58 @@ export interface GitHubUserProfile {
   html_url: string;
 }
 
+interface GitHubCommitItem {
+  author?: {
+    email?: string;
+    name?: string;
+  };
+}
+
+interface GitHubEventItem {
+  type: string;
+  payload?: {
+    commits?: GitHubCommitItem[];
+  };
+}
+
 export function extractGitHubUsername(input: string): string {
   return input
     .trim()
     .replace(/^https?:\/\/github\.com\//i, '')
     .replace(/\/$/, '')
     .split('/')[0];
+}
+
+async function findEmailFromPublicEvents(username: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}/events/public`);
+    if (!res.ok) return undefined;
+    const events: GitHubEventItem[] = await res.json();
+    if (!Array.isArray(events)) return undefined;
+
+    for (const ev of events) {
+      if (ev.type !== 'PushEvent' || !Array.isArray(ev.payload?.commits)) continue;
+      const match = ev.payload.commits.find(c => {
+        const email = c.author?.email;
+        return email && !email.includes('noreply.github.com') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      });
+      if (match?.author?.email) {
+        return match.author.email;
+      }
+    }
+  } catch {
+    // Continue if events fetch fails
+  }
+  return undefined;
+}
+
+function resolveProfileEmail(profile: GitHubUserProfile, eventEmail?: string): string | undefined {
+  if (profile.email) return profile.email;
+  if (profile.bio) {
+    const match = profile.bio.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (match) return match[0];
+  }
+  return eventEmail;
 }
 
 /**
@@ -42,19 +88,25 @@ export async function fetchUserGitHubRepos(usernameOrUrl: string): Promise<{
     throw new Error('Please enter a valid GitHub profile URL or username.');
   }
 
-  const userRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`);
+  const [userRes, reposRes] = await Promise.all([
+    fetch(`https://api.github.com/users/${encodeURIComponent(username)}`),
+    fetch(`https://api.github.com/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=100`)
+  ]);
+
   if (!userRes.ok) {
     throw new Error(`GitHub user "${username}" not found (${userRes.status}).`);
   }
-  const profile: GitHubUserProfile = await userRes.json();
-
-  const reposRes = await fetch(
-    `https://api.github.com/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=100`
-  );
   if (!reposRes.ok) {
     throw new Error(`Failed to load repositories for "${username}" (${reposRes.status}).`);
   }
+
+  const profile: GitHubUserProfile = await userRes.json();
   const allRepos: GitHubUserRepo[] = await reposRes.json();
+
+  if (!profile.email) {
+    const eventEmail = await findEmailFromPublicEvents(username);
+    profile.email = resolveProfileEmail(profile, eventEmail) || null;
+  }
 
   // Return non-fork repositories first, but allow all
   const sorted = Array.isArray(allRepos)
