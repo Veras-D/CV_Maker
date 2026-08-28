@@ -1,29 +1,13 @@
 import React from 'react';
-import { Zap, Globe, Sparkles } from 'lucide-react';
-import { CustomSelect, SelectOption } from '../Common/CustomSelect';
-
-const LANGUAGE_OPTIONS: SelectOption[] = [
-  { value: 'en', label: 'English (EN)' },
-  { value: 'cs', label: 'Čeština (CS)', isPro: true },
-  { value: 'de', label: 'Deutsch (DE)', isPro: true },
-  { value: 'fr', label: 'Français (FR)', isPro: true },
-  { value: 'es', label: 'Español (ES)', isPro: true },
-  { value: 'pt', label: 'Português (PT)', isPro: true }
-];
+import { Zap, Sparkles } from 'lucide-react';
 
 export interface AIRoleTailorHeaderProps {
-  activeLanguage: string;
   isMasterEmpty: boolean;
-  onLanguageChange: (lang: string) => void;
-  onOpenProModal: () => void;
   onOpenIngestionModal: () => void;
 }
 
 export const AIRoleTailorHeader: React.FC<AIRoleTailorHeaderProps> = ({
-  activeLanguage,
   isMasterEmpty,
-  onLanguageChange,
-  onOpenProModal,
   onOpenIngestionModal
 }) => {
   return (
@@ -37,20 +21,6 @@ export const AIRoleTailorHeader: React.FC<AIRoleTailorHeaderProps> = ({
           <p className="text-xs text-slate-400">
             Semantic ATS matching, bullet re-ranking, and cover letter synthesis
           </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap">
-            <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span>Target Language:</span>
-          </span>
-          <CustomSelect
-            options={LANGUAGE_OPTIONS}
-            value={activeLanguage}
-            onChange={onLanguageChange}
-            onProClick={onOpenProModal}
-            className="min-w-[130px]"
-          />
         </div>
       </div>
 

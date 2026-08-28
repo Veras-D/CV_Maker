@@ -9,7 +9,7 @@ import { VacancyDetailsForm } from './VacancyDetailsForm';
 import { TailoredOutputView } from './TailoredOutputView';
 
 export const AIRoleTailor: React.FC = () => {
-  const { cvData, activeLanguage, setLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
+  const { cvData, activeLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
   
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -86,10 +86,7 @@ export const AIRoleTailor: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <AIRoleTailorHeader
-        activeLanguage={activeLanguage}
         isMasterEmpty={isMasterEmpty}
-        onLanguageChange={setLanguage}
-        onOpenProModal={() => setIsProModalOpen(true)}
         onOpenIngestionModal={openIngestionModal}
       />
 
