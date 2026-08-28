@@ -6,9 +6,7 @@ import {
   FileText, 
   UploadCloud, 
   Loader2, 
-  FileCheck,
-  Plus,
-  Trash2
+  FileCheck 
 } from 'lucide-react';
 
 const ALLOWED_CV_EXTENSIONS = ['pdf', 'txt', 'md', 'json'];
@@ -107,88 +105,8 @@ export const FileUploadTabContent: React.FC<{
   );
 };
 
-export const GitHubTabContent: React.FC<{
-  repoList: string[];
-  currentInput: string;
-  setCurrentInput: (v: string) => void;
-  onAddRepo: () => void;
-  onRemoveRepo: (index: number) => void;
-  onFetch: () => void;
-  isProcessing: boolean;
-}> = ({
-  repoList,
-  currentInput,
-  setCurrentInput,
-  onAddRepo,
-  onRemoveRepo,
-  onFetch,
-  isProcessing
-}) => (
-  <div className="space-y-3">
-    <label className="block text-xs font-semibold text-slate-300">
-      Add Specific GitHub Project Links
-    </label>
-    <div className="flex gap-2">
-      <input
-        type="text"
-        placeholder="e.g. owner/repo or https://github.com/owner/repo"
-        value={currentInput}
-        onChange={(e) => setCurrentInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onAddRepo();
-          }
-        }}
-        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
-      />
-      <button
-        type="button"
-        onClick={onAddRepo}
-        className="bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        <span>Add</span>
-      </button>
-    </div>
-
-    {repoList.length > 0 ? (
-      <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-        <span className="text-[10px] font-semibold text-slate-400 block">
-          Projects to Import ({repoList.length}):
-        </span>
-        {repoList.map((repo, idx) => (
-          <div key={idx} className="flex items-center justify-between bg-slate-950 p-2 rounded-lg border border-slate-800 text-xs">
-            <span className="font-mono text-sky-300 truncate max-w-[280px]">{repo}</span>
-            <button
-              type="button"
-              onClick={() => onRemoveRepo(idx)}
-              className="text-slate-500 hover:text-red-400 p-1 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-[11px] text-slate-500">
-        Enter your individual repository URLs or slugs (e.g. <code>facebook/react</code>, <code>Veras-D/CV_Maker</code>) to selectively fetch each project description, tech stack, and tags.
-      </p>
-    )}
-
-    <button
-      type="button"
-      onClick={onFetch}
-      disabled={(repoList.length === 0 && !currentInput.trim()) || isProcessing}
-      className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow"
-    >
-      {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Github className="w-3.5 h-3.5" />}
-      <span>
-        Fetch {repoList.length > 0 ? `${repoList.length} Selected Project${repoList.length > 1 ? 's' : ''}` : 'Project'}
-      </span>
-    </button>
-  </div>
-);
+export { GitHubTabContent } from './GitHubTabContent';
+export type { GitHubTabContentProps } from './GitHubTabContent';
 
 export const LinkedinTabContent: React.FC<{
   input: string;

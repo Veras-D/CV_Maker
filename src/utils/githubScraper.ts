@@ -1,85 +1,97 @@
 import { ProjectItem, SkillCategory } from '../types/cv';
 import { IngestionResult } from './ingestionService';
 
-interface GitHubRepoResponse {
+export interface GitHubUserRepo {
   id: number;
   name: string;
   description: string | null;
   language: string | null;
   topics?: string[];
   html_url: string;
-  owner?: {
-    login: string;
-    html_url: string;
-  };
+  stargazers_count?: number;
+  fork?: boolean;
 }
 
-function parseRepoSlug(input: string): { owner: string; repo: string } | null {
-  const clean = input
+export interface GitHubUserProfile {
+  login: string;
+  name?: string | null;
+  bio?: string | null;
+  email?: string | null;
+  location?: string | null;
+  blog?: string | null;
+  html_url: string;
+}
+
+export function extractGitHubUsername(input: string): string {
+  return input
     .trim()
     .replace(/^https?:\/\/github\.com\//i, '')
-    .replace(/\/$/, '');
-  
-  const parts = clean.split('/');
-  if (parts.length >= 2 && parts[0] && parts[1]) {
-    return { owner: parts[0], repo: parts[1] };
-  }
-  return null;
-}
-
-async function fetchSingleRepo(repoInput: string): Promise<{ project: ProjectItem; repo: GitHubRepoResponse }> {
-  const parsed = parseRepoSlug(repoInput);
-  if (!parsed) {
-    throw new Error(`Invalid GitHub repository format: "${repoInput}". Please use "owner/repo" or "https://github.com/owner/repo".`);
-  }
-
-  const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`);
-  if (!res.ok) {
-    throw new Error(`GitHub repository "${parsed.owner}/${parsed.repo}" not found or private (${res.status}).`);
-  }
-
-  const data: GitHubRepoResponse = await res.json();
-  const title = data.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const techStack = [data.language, ...(data.topics || [])].filter(Boolean) as string[];
-
-  const project: ProjectItem = {
-    id: `gh-${data.id}`,
-    title,
-    description: {
-      en: data.description || `Open-source ${data.language || 'software'} project developed on GitHub.`
-    },
-    techStack,
-    url: data.html_url,
-    tags: ['fullstack'],
-    enabled: true
-  };
-
-  return { project, repo: data };
+    .replace(/\/$/, '')
+    .split('/')[0];
 }
 
 /**
- * Fetch specific individual GitHub project repositories and extract metadata & skills
+ * Fetch a GitHub user's profile and all their public repositories
  */
-export async function ingestFromGitHubRepos(repoInputs: string[]): Promise<IngestionResult> {
-  const validInputs = repoInputs.map(r => r.trim()).filter(Boolean);
-  if (validInputs.length === 0) {
-    throw new Error('Please add at least one GitHub project repository URL or slug (e.g. owner/repo).');
+export async function fetchUserGitHubRepos(usernameOrUrl: string): Promise<{
+  profile: GitHubUserProfile;
+  repos: GitHubUserRepo[];
+}> {
+  const username = extractGitHubUsername(usernameOrUrl);
+  if (!username) {
+    throw new Error('Please enter a valid GitHub profile URL or username.');
   }
 
-  const projects: ProjectItem[] = [];
+  const userRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`);
+  if (!userRes.ok) {
+    throw new Error(`GitHub user "${username}" not found (${userRes.status}).`);
+  }
+  const profile: GitHubUserProfile = await userRes.json();
+
+  const reposRes = await fetch(
+    `https://api.github.com/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=100`
+  );
+  if (!reposRes.ok) {
+    throw new Error(`Failed to load repositories for "${username}" (${reposRes.status}).`);
+  }
+  const allRepos: GitHubUserRepo[] = await reposRes.json();
+
+  // Return non-fork repositories first, but allow all
+  const sorted = Array.isArray(allRepos)
+    ? allRepos.sort((a, b) => (a.fork === b.fork ? 0 : a.fork ? 1 : -1))
+    : [];
+
+  return { profile, repos: sorted };
+}
+
+function buildProjectFromRepo(repo: GitHubUserRepo): ProjectItem {
+  const title = repo.name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const techStack = [repo.language, ...(repo.topics || [])].filter(Boolean) as string[];
+
+  return {
+    id: `gh-${repo.id}`,
+    title,
+    description: {
+      en: repo.description || `Open-source ${repo.language || 'software'} project developed on GitHub.`
+    },
+    techStack,
+    url: repo.html_url,
+    tags: ['fullstack'],
+    enabled: true
+  };
+}
+
+function extractSkillCategoriesFromRepos(selectedRepos: GitHubUserRepo[]): SkillCategory[] {
   const allSkills = new Set<string>();
-  let primaryGithubUrl: string | undefined;
-
-  for (const input of validInputs) {
-    const { project, repo } = await fetchSingleRepo(input);
-    projects.push(project);
-    project.techStack.forEach(t => allSkills.add(t));
-    if (!primaryGithubUrl && repo.owner?.html_url) {
-      primaryGithubUrl = repo.owner.html_url;
+  selectedRepos.forEach(repo => {
+    if (repo.language) allSkills.add(repo.language);
+    if (Array.isArray(repo.topics)) {
+      repo.topics.forEach(t => allSkills.add(t));
     }
-  }
+  });
 
-  const skillCategories: SkillCategory[] = allSkills.size > 0 ? [{
+  if (allSkills.size === 0) return [];
+  return [{
     id: `cat-gh-${Date.now()}`,
     categoryName: { en: 'Technologies & Frameworks' },
     skills: Array.from(allSkills).slice(0, 14).map((s, idx) => ({
@@ -88,11 +100,30 @@ export async function ingestFromGitHubRepos(repoInputs: string[]): Promise<Inges
       tags: ['fullstack'],
       enabled: true
     }))
-  }] : [];
+  }];
+}
+
+/**
+ * Convert user-selected repositories and profile data into an IngestionResult
+ */
+export function convertSelectedReposToIngestion(
+  profile: GitHubUserProfile,
+  selectedRepos: GitHubUserRepo[]
+): IngestionResult {
+  const projects = selectedRepos.map(buildProjectFromRepo);
+  const skillCategories = extractSkillCategoriesFromRepos(selectedRepos);
+  const normalizedBlog = profile.blog
+    ? (profile.blog.startsWith('http') ? profile.blog : `https://${profile.blog}`)
+    : undefined;
 
   return {
     sourceType: 'github',
-    detectedGithubUrl: primaryGithubUrl,
+    detectedName: profile.name || profile.login,
+    detectedBio: profile.bio || undefined,
+    detectedEmail: profile.email || undefined,
+    detectedLocation: profile.location || undefined,
+    detectedPortfolioUrl: normalizedBlog,
+    detectedGithubUrl: profile.html_url || `https://github.com/${profile.login}`,
     experiences: [],
     projects,
     skillCategories,

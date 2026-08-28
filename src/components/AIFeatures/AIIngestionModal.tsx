@@ -72,13 +72,19 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         )}
         {state.activeTab === 'github' && (
           <GitHubTabContent 
-            repoList={state.githubRepos}
-            currentInput={state.githubInput} 
-            setCurrentInput={state.setGithubInput}
-            onAddRepo={state.handleAddGitHubRepo}
-            onRemoveRepo={state.handleRemoveGitHubRepo}
-            onFetch={state.handleFetch} 
-            isProcessing={state.isProcessing} 
+            usernameInput={state.githubUsernameInput}
+            setUsernameInput={state.setGithubUsernameInput}
+            isLoadingRepos={state.isLoadingGitHubRepos}
+            profile={state.gitHubProfile}
+            repos={state.gitHubRepos}
+            selectedRepoIds={state.selectedRepoIds}
+            onLoadRepos={state.handleLoadGitHubRepos}
+            onToggleRepo={state.handleToggleGitHubRepo}
+            onSelectAll={state.handleSelectAllGitHubRepos}
+            onDeselectAll={state.handleDeselectAllGitHubRepos}
+            onConfirmImport={state.handleConfirmGitHubImport}
+            onReset={state.handleResetGitHub}
+            isProcessing={state.isProcessing}
           />
         )}
         {state.activeTab === 'linkedin' && (

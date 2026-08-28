@@ -160,7 +160,7 @@ export const IngestionPreviewCard: React.FC<{
   isSuccess: boolean;
   onApply: () => void;
 }> = ({ preview, isSuccess, onApply }) => {
-  const totalSkills = preview.skillCategories.flatMap(c => c.skills).length;
+  const totalSkills = preview.skillCategories.flatMap((c: SkillCategory) => c.skills).length;
 
   return (
     <div className="bg-slate-950 border border-sky-800/40 rounded-xl p-4 space-y-3 text-xs text-slate-200">
