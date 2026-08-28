@@ -1,7 +1,6 @@
 import { IngestionResult } from './ingestionService';
-import { ProjectItem, SkillCategory, WorkExperience } from '../types/cv';
+import { ProjectItem, SkillCategory } from '../types/cv';
 import { fetchWebsiteHtml } from './htmlFetchHelper';
-import { parseFullResumeContent } from './resumeSectionParser';
 
 interface JsonLdPerson {
   '@type'?: string;
@@ -54,7 +53,7 @@ function resolvePageBio(doc: Document, jsonLd: JsonLdPerson | null): string {
 function resolvePageName(doc: Document, jsonLd: JsonLdPerson | null, pageTitle: string): string {
   if (jsonLd?.name) return jsonLd.name;
   const h1 = doc.querySelector('h1')?.textContent?.trim() || '';
-  if (h1.length > 0 && h1.length < 35) return h1;
+  if (h1.length > 0 && h1.length < 35 && !/^(home|welcome|portfolio)$/i.test(h1)) return h1;
   return pageTitle.split(/[-|–]|\s:\s/)[0].trim();
 }
 
@@ -115,27 +114,39 @@ function extractSkillsFromDOM(doc: Document, jsonLd: JsonLdPerson | null): strin
   return Array.from(detected);
 }
 
+function parseCardProject(card: Element, originUrl: string, idx: number): ProjectItem | null {
+  const titleEl = card.querySelector('h1, h2, h3, h4, strong, .title, [class*="title"]');
+  const title = titleEl?.textContent?.trim();
+  if (!title || title.length > 50 || /^(my skills|about me|contact|projects|home|skills|navigation)$/i.test(title)) {
+    return null;
+  }
+
+  const desc = card.querySelector('p, .description, [class*="desc"]')?.textContent?.trim();
+  const link = card.querySelector('a[href]')?.getAttribute('href') || originUrl;
+  const techBadges = Array.from(card.querySelectorAll('.tag, .badge, .tech, [class*="tag"], [class*="chip"]'))
+    .map(t => t.textContent?.trim() || '')
+    .filter(t => t.length > 1 && t.length < 20);
+
+  return {
+    id: `proj-web-${idx}-${Date.now()}`,
+    title,
+    description: { en: desc || `Featured project on portfolio (${title}).` },
+    techStack: techBadges.slice(0, 5),
+    url: link.startsWith('http') ? link : `${originUrl.replace(/\/$/, '')}/${link.replace(/^\//, '')}`,
+    tags: ['fullstack'],
+    enabled: true
+  };
+}
+
 function extractProjectsFromDOM(doc: Document, originUrl: string): ProjectItem[] {
-  const cards = doc.querySelectorAll('.project-card, [class*="project"], article, .portfolio-item, .card');
+  const selectors = '.project-card, [class*="project"], article, .portfolio-item, .card, [class*="portfolio"], .grid > div';
+  const cards = doc.querySelectorAll(selectors);
   const projects: ProjectItem[] = [];
 
   cards.forEach((card, idx) => {
-    if (idx >= 12) return;
-    const title = card.querySelector('h3, h4, h2, strong, .title')?.textContent?.trim();
-    const desc = card.querySelector('p, .description')?.textContent?.trim();
-    const link = card.querySelector('a[href]')?.getAttribute('href') || originUrl;
-    
-    if (title && title.length < 50 && !/^(my skills|about me|contact|projects|home|skills)$/i.test(title)) {
-      projects.push({
-        id: `proj-web-${idx}-${Date.now()}`,
-        title,
-        description: { en: desc || `Featured project on portfolio (${title}).` },
-        techStack: [],
-        url: link.startsWith('http') ? link : `${originUrl.replace(/\/$/, '')}/${link.replace(/^\//, '')}`,
-        tags: ['fullstack'],
-        enabled: true
-      });
-    }
+    if (projects.length >= 15) return;
+    const proj = parseCardProject(card, originUrl, idx);
+    if (proj) projects.push(proj);
   });
 
   return projects;
@@ -183,7 +194,7 @@ function findInternalSubpageUrls(doc: Document, baseUrl: string): string[] {
 interface AggregateData {
   projects: ProjectItem[];
   skills: Set<string>;
-  experiences: WorkExperience[];
+  aboutBio?: string;
 }
 
 function processSubpage(doc: Document, subUrl: string, aggregate: AggregateData) {
@@ -191,9 +202,12 @@ function processSubpage(doc: Document, subUrl: string, aggregate: AggregateData)
   const subProjects = extractProjectsFromDOM(doc, subUrl);
   aggregate.projects.push(...subProjects);
 
-  const parsed = parseFullResumeContent(doc.body?.textContent || '', 'website');
-  if (parsed.experiences.length > 0) {
-    aggregate.experiences.push(...parsed.experiences);
+  // If this is an about page, extract clean bio paragraph
+  if (/(about|bio|sobre)/i.test(subUrl)) {
+    const p = doc.querySelector('main p, article p, .about p, .content p')?.textContent?.trim();
+    if (p && p.length > 40 && p.length < 400 && !aggregate.aboutBio) {
+      aggregate.aboutBio = p;
+    }
   }
 }
 
@@ -201,8 +215,7 @@ async function crawlAndAggregateSubpages(doc: Document, url: string): Promise<Ag
   const subpageUrls = findInternalSubpageUrls(doc, url);
   const aggregate: AggregateData = {
     projects: extractProjectsFromDOM(doc, url),
-    skills: new Set(extractSkillsFromDOM(doc, null)),
-    experiences: []
+    skills: new Set(extractSkillsFromDOM(doc, null))
   };
 
   if (subpageUrls.length > 0) {
@@ -259,13 +272,13 @@ export async function scrapePortfolioFromHTML(html: string, url: string): Promis
   return {
     sourceType: 'website',
     detectedName: detectedName || undefined,
-    detectedBio: detectedBio || undefined,
+    detectedBio: aggregated.aboutBio || detectedBio || undefined,
     detectedPortfolioUrl: url,
     detectedGithubUrl,
     detectedLinkedinUrl,
     detectedPhone,
-    experiences: aggregated.experiences.slice(0, 5),
-    projects: deduplicatedProjects.slice(0, 10),
+    experiences: [],
+    projects: deduplicatedProjects.slice(0, 12),
     skillCategories: finalizeSkills(aggregated.skills),
     education: [],
     languages: []
