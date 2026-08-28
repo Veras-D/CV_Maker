@@ -83,6 +83,6 @@ jobs:
             - Drag-and-Drop Role Tracking Kanban Board
             - AI Keyword & Role Tailoring Engine
             - Dark Slate UI with Custom Date & Currency Controls
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
