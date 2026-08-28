@@ -105,54 +105,81 @@ function extractHeaderInfo(headerText: string, fullText: string) {
   };
 }
 
+function extractJobRoleAndCompany(line: string): { role?: string; company?: string } {
+  if (!/(?:Engineer|Developer|Researcher|Manager|Programmer|Analyst|Consultant|Desenvolvedor|Engenheiro|Gerente)/i.test(line)) {
+    return {};
+  }
+  const parts = line.split(/(?:\bat\b|@|\||—|–)/i).map(p => p.trim());
+  return {
+    role: parts[0].slice(0, 50),
+    company: parts[1] ? parts[1].slice(0, 45) : undefined
+  };
+}
+
+function extractBlockDetails(lines: string[], dateRegex: RegExp) {
+  const bullets: string[] = [];
+  let role = '';
+  let company = '';
+
+  for (const line of lines) {
+    if (line.startsWith('●') || line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+      bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
+      continue;
+    }
+    if (!role) {
+      const parsed = extractJobRoleAndCompany(line);
+      if (parsed.role) {
+        role = parsed.role;
+        if (parsed.company) company = parsed.company;
+        continue;
+      }
+    }
+    if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
+      company = line;
+    }
+  }
+
+  return { role, company, bullets };
+}
+
+function parseSingleExpBlock(block: string, dateRegex: RegExp, index: number): WorkExperience | null {
+  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+
+  const dateMatch = block.match(dateRegex);
+  const { role, company, bullets } = extractBlockDetails(lines, dateRegex);
+
+  if (!role && !company) return null;
+
+  return {
+    id: `exp-${index}-${Date.now()}`,
+    company: (company || 'Company').replace(/\s*[-–—|].*$/, '').trim(),
+    roleTitle: { en: role || 'Software Developer' },
+    startDate: dateMatch ? dateMatch[1].trim() : '2022',
+    endDate: dateMatch ? dateMatch[2].trim() : 'Present',
+    bullets: bullets.map((b, idx) => ({
+      id: `b-${idx}`,
+      text: { en: b },
+      tags: ['fullstack'],
+      enabled: true
+    })),
+    tags: ['fullstack'],
+    enabled: true
+  };
+}
+
 function parseExperienceEntries(expText: string): WorkExperience[] {
   if (!expText.trim()) return [];
 
   const rawBlocks = expText.split(/(?=\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}\s*[-–—])/i);
-  const experiences: WorkExperience[] = [];
   const dateRegex = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4})\s*[-–—to]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}|Present|Current|Atual|Presente)/i;
 
-  for (const block of rawBlocks) {
-    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length === 0) continue;
+  const experiences: WorkExperience[] = [];
+  rawBlocks.forEach((block, idx) => {
+    const exp = parseSingleExpBlock(block, dateRegex, idx);
+    if (exp) experiences.push(exp);
+  });
 
-    const dateMatch = block.match(dateRegex);
-    const bullets: string[] = [];
-    let company = '';
-    let role = '';
-
-    for (const line of lines) {
-      if (line.startsWith('●') || line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
-        bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
-      } else if (!role && /(?:Engineer|Developer|Researcher|Manager|Programmer|Analyst|Consultant|Desenvolvedor|Engenheiro|Gerente)/i.test(line)) {
-        const parts = line.split(/(?:\bat\b|@|\||—|–)/i).map(p => p.trim());
-        role = parts[0].slice(0, 50);
-        if (parts[1]) company = parts[1].slice(0, 45);
-      } else if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
-        company = line;
-      }
-    }
-
-    if (role || company) {
-      experiences.push({
-        id: `exp-${experiences.length}-${Date.now()}`,
-        company: (company || 'Company').replace(/\s*[-–—|].*$/, '').trim(),
-        roleTitle: { en: role || 'Software Developer' },
-        startDate: dateMatch ? dateMatch[1].trim() : '2022',
-        endDate: dateMatch ? dateMatch[2].trim() : 'Present',
-        bullets: bullets.map((b, idx) => ({
-          id: `b-${idx}`,
-          text: { en: b },
-          tags: ['fullstack'],
-          enabled: true
-        })),
-        tags: ['fullstack'],
-        enabled: true
-      });
-    }
-  }
-
-  // Deduplicate experiences with same company & role
   const seen = new Set<string>();
   return experiences.filter(exp => {
     const key = `${exp.company.toLowerCase()}-${exp.roleTitle.en.toLowerCase()}`;

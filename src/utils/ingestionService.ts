@@ -159,29 +159,30 @@ function mergeProfileFields(profile: CVData['profile'], result: IngestionResult)
   };
 }
 
+function selectSectionList<T>(currentList: T[], incomingList: T[], isFullResume: boolean): T[] {
+  if (incomingList.length === 0) return currentList;
+  return isFullResume ? incomingList : [...incomingList, ...currentList];
+}
+
+function mergeSkillsList(currentSkills: SkillCategory[], incomingSkills: SkillCategory[], isFullResume: boolean): SkillCategory[] {
+  if (incomingSkills.length === 0) return currentSkills;
+  if (isFullResume || currentSkills.length === 0) return incomingSkills;
+  return [...currentSkills, ...incomingSkills];
+}
+
 /**
  * Merge an IngestionResult into the active CVData state
  */
 export function mergeIngestionIntoCVData(current: CVData, result: IngestionResult): CVData {
-  const isFullResume = result.sourceType === 'file' || result.sourceType === 'text';
+  const isFull = result.sourceType === 'file' || result.sourceType === 'text';
 
   return {
     ...current,
     profile: mergeProfileFields(current.profile, result),
-    experiences: result.experiences.length > 0 
-      ? (isFullResume ? result.experiences : [...result.experiences, ...current.experiences])
-      : current.experiences,
-    education: result.education.length > 0 
-      ? (isFullResume ? result.education : [...result.education, ...current.education])
-      : current.education,
-    languages: result.languages.length > 0 
-      ? (isFullResume ? result.languages : [...result.languages, ...current.languages])
-      : current.languages,
-    projects: result.projects.length > 0 
-      ? (isFullResume ? result.projects : [...current.projects, ...result.projects])
-      : current.projects,
-    skillCategories: result.skillCategories.length > 0 
-      ? (isFullResume || current.skillCategories.length === 0 ? result.skillCategories : [...current.skillCategories, ...result.skillCategories])
-      : current.skillCategories
+    experiences: selectSectionList(current.experiences, result.experiences, isFull),
+    education: selectSectionList(current.education, result.education, isFull),
+    languages: selectSectionList(current.languages, result.languages, isFull),
+    projects: isFull && result.projects.length > 0 ? result.projects : [...current.projects, ...result.projects],
+    skillCategories: mergeSkillsList(current.skillCategories, result.skillCategories, isFull)
   };
 }
