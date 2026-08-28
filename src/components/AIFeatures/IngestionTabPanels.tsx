@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { 
-  Github, 
   Linkedin,
   Globe, 
   FileText, 
