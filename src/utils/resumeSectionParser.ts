@@ -122,37 +122,49 @@ interface ExtractedExp {
   bullets: string[];
 }
 
-function parseExperienceEntries(expText: string): WorkExperience[] {
-  if (!expText.trim()) return [];
+function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): ExtractedExp {
+  const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()—–|]/g, ' ').trim();
+  const parts = textWithoutDate.split(/(?:\bat\b|@|\||—|–|-)/i).map(p => p.trim()).filter(Boolean);
+  return {
+    role: parts[0] || 'Software Professional',
+    company: parts[1] || 'Company',
+    startDate: dateMatch[1].trim(),
+    endDate: dateMatch[2].trim(),
+    bullets: []
+  };
+}
 
-  const lines = expText.split('\n').map(l => l.trim()).filter(Boolean);
+function processExpLineItem(line: string, current: ExtractedExp) {
+  if (/^[●•\-*]/.test(line)) {
+    current.bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
+  } else if (line.length > 20 && !current.role.includes(line)) {
+    current.bullets.push(line);
+  }
+}
+
+function collectExpEntries(lines: string[]): ExtractedExp[] {
   const exps: ExtractedExp[] = [];
   let current: ExtractedExp | null = null;
 
   for (const line of lines) {
     const dateMatch = line.match(DATE_RANGE_REGEX);
-    const isBullet = /^[●•\-*]/.test(line);
-
     if (dateMatch) {
       if (current && (current.role || current.company)) exps.push(current);
-      const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()—–|]/g, ' ').trim();
-      const parts = textWithoutDate.split(/(?:\bat\b|@|\||—|–|-)/i).map(p => p.trim()).filter(Boolean);
-      
-      current = {
-        role: parts[0] || 'Software Professional',
-        company: parts[1] || 'Company',
-        startDate: dateMatch[1].trim(),
-        endDate: dateMatch[2].trim(),
-        bullets: []
-      };
-    } else if (isBullet && current) {
-      current.bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
-    } else if (current && line.length > 20 && !current.role.includes(line)) {
-      current.bullets.push(line);
+      current = createNewExpEntry(line, dateMatch);
+    } else if (current) {
+      processExpLineItem(line, current);
     }
   }
 
   if (current && (current.role || current.company)) exps.push(current);
+  return exps;
+}
+
+function parseExperienceEntries(expText: string): WorkExperience[] {
+  if (!expText.trim()) return [];
+
+  const lines = expText.split('\n').map(l => l.trim()).filter(Boolean);
+  const exps = collectExpEntries(lines);
 
   const seen = new Set<string>();
   return exps

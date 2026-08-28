@@ -10,6 +10,18 @@ interface PDFTextItem {
   transform?: number[];
 }
 
+function appendItemToPage(str: string, isNewline: boolean, hasEOL: boolean, pageText: string): string {
+  if (isNewline) {
+    return `${pageText}\n${str}`;
+  }
+  if (hasEOL) {
+    const prefix = pageText.endsWith('\n') ? '' : ' ';
+    return `${pageText}${prefix}${str}\n`;
+  }
+  const prefix = pageText.length === 0 || pageText.endsWith('\n') ? '' : ' ';
+  return `${pageText}${prefix}${str}`;
+}
+
 function processPageItems(items: PDFTextItem[]): string {
   let pageText = '';
   let lastY: number | null = null;
@@ -21,14 +33,9 @@ function processPageItems(items: PDFTextItem[]): string {
     if (!str) continue;
 
     const currentY = item.transform && item.transform.length >= 6 ? item.transform[5] : null;
+    const isNewline = lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 4;
 
-    if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 4) {
-      pageText += '\n' + str;
-    } else if (item.hasEOL) {
-      pageText += (pageText.endsWith('\n') ? '' : ' ') + str + '\n';
-    } else {
-      pageText += (pageText.length === 0 || pageText.endsWith('\n') ? '' : ' ') + str;
-    }
+    pageText = appendItemToPage(str, isNewline, Boolean(item.hasEOL), pageText);
 
     if (currentY !== null) {
       lastY = currentY;
