@@ -6,7 +6,8 @@ const TECH_KEYWORD_LIST = [
   'Kubernetes', 'AWS', 'SQL', 'PostgreSQL', 'MongoDB', 'HTML', 'CSS', 'Tailwind',
   'GraphQL', 'Git', 'Next.js', 'Vue', 'Angular', 'C++', 'Java', 'Linux', 'Figma',
   'Spring Boot', 'DevOps', 'CI/CD', 'Redux', 'Express', 'Django', 'Flask', 'Golang',
-  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET', 'Keras', 'scikit-learn'
+  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET', 'Keras', 'scikit-learn',
+  'Prisma', 'Redis', 'JIRA', 'Testing Library'
 ];
 
 const KNOWN_LANGUAGES = [
@@ -84,8 +85,6 @@ function extractContactDetails(rawText: string) {
 function extractCandidateName(lines: string[]): string | undefined {
   for (const line of lines) {
     if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
-    
-    // If line has name + title separated by bullet/pipe/hyphen, extract first part
     const clean = line.split(/[•|—–\-/:]/)[0].trim();
     if (clean.length >= 3 && clean.length <= 35 && !/^(resume|cv|curriculum|profile)$/i.test(clean)) {
       return clean;
@@ -114,6 +113,8 @@ function extractHeaderInfo(headerText: string, fullText: string) {
 
 const DATE_RANGE_REGEX = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4})\s*[-–—to/\s]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4}|Present|Current|Atual|Presente|Now)/i;
 
+const ROLE_PREFIX_REGEX = /^(?:Senior|Junior|Lead|Principal|Chief|Undergraduate|Graduate|Staff|Full-Stack|Frontend|Backend|Software|Web|Mobile|DevOps|Data|QA)?\s*(?:Engineer|Developer|Architect|Designer|Manager|Programmer|Researcher|Scientist|Analyst|Consultant|Specialist|Intern|Fellow|Desenvolvedor|Gerente|Engenheiro)(?:\s+(?:Team|Lead|Manager))?/i;
+
 interface ExtractedExp {
   role: string;
   company: string;
@@ -122,12 +123,33 @@ interface ExtractedExp {
   bullets: string[];
 }
 
+function extractRoleAndCompanyFromLine(lineWithoutDate: string): { role: string; company: string } {
+  // Check for explicit separators with surrounding spaces (never split on hyphens inside words like Full-Stack)
+  const sepMatch = lineWithoutDate.split(/\s+(?:at|@|—|–|\||\/|,|\s-\s)\s+/i).map(p => p.trim()).filter(Boolean);
+  if (sepMatch.length >= 2) {
+    return { role: sepMatch[0], company: sepMatch[1] };
+  }
+
+  // Check if role is at the beginning of the string
+  const roleMatch = lineWithoutDate.match(ROLE_PREFIX_REGEX);
+  if (roleMatch && roleMatch[0]) {
+    const matchedRole = roleMatch[0].trim();
+    const remainingCompany = lineWithoutDate.slice(roleMatch[0].length).trim().replace(/^[—–\-,|]\s*/, '');
+    if (remainingCompany) {
+      return { role: matchedRole, company: remainingCompany };
+    }
+    return { role: matchedRole, company: '' };
+  }
+
+  return { role: lineWithoutDate || 'Software Professional', company: '' };
+}
+
 function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): ExtractedExp {
-  const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()—–|]/g, ' ').trim();
-  const parts = textWithoutDate.split(/(?:\bat\b|@|\||—|–|-)/i).map(p => p.trim()).filter(Boolean);
+  const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()]/g, ' ').trim();
+  const { role, company } = extractRoleAndCompanyFromLine(textWithoutDate);
   return {
-    role: parts[0] || 'Software Professional',
-    company: parts[1] || 'Company',
+    role: role || 'Software Professional',
+    company,
     startDate: dateMatch[1].trim(),
     endDate: dateMatch[2].trim(),
     bullets: []
@@ -137,6 +159,8 @@ function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): Extracted
 function processExpLineItem(line: string, current: ExtractedExp) {
   if (/^[●•\-*]/.test(line)) {
     current.bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
+  } else if (!current.company && line.length < 50 && !/^(about|experience|education|skills)/i.test(line)) {
+    current.company = line;
   } else if (line.length > 20 && !current.role.includes(line)) {
     current.bullets.push(line);
   }
@@ -177,7 +201,7 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
     .slice(0, 6)
     .map((e, idx) => ({
       id: `exp-${idx}-${Date.now()}`,
-      company: e.company.slice(0, 45),
+      company: e.company.slice(0, 45) || 'Software House',
       roleTitle: { en: e.role.slice(0, 50) },
       startDate: e.startDate,
       endDate: e.endDate,
@@ -192,6 +216,8 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
     }));
 }
 
+const ACADEMIC_KEYWORDS = /(?:University|College|School|Academy|Program|Degree|Bachelor|Master|B\.S|B\.Sc|M\.S|Ph\.D|Faculty|Faculdade|Universidade|Instituto|Recode|Bootcamp)/i;
+
 function parseEducationEntries(eduText: string): EducationItem[] {
   if (!eduText.trim()) return [];
 
@@ -200,10 +226,16 @@ function parseEducationEntries(eduText: string): EducationItem[] {
   const dateRegex = /\b\d{4}\s*[-–—to]+\s*(\d{4}|Present|Current|Atual)?\b/i;
 
   for (const line of lines) {
-    if (line.length > 5 && !/^[●•\-*]/.test(line)) {
+    if (line.startsWith('●') || line.startsWith('•') || /^(Technologies|Skills|Stack|Courses|MongoDB|HTML|CSS|React|Node)/i.test(line)) {
+      continue;
+    }
+    const hasAcademic = ACADEMIC_KEYWORDS.test(line);
+    const hasDates = dateRegex.test(line);
+
+    if (hasAcademic || hasDates) {
       const dates = line.match(dateRegex)?.[0] || 'Graduated';
-      const cleanLine = line.replace(dateRegex, '').replace(/[()—–-]/g, ' ').trim();
-      const parts = cleanLine.split(/(?:\||—|–|-)/).map(p => p.trim()).filter(Boolean);
+      const cleanLine = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
+      const parts = cleanLine.split(/\s+(?:—|–|\||\/|,|\s-\s)\s+/).map(p => p.trim()).filter(Boolean);
       const institution = parts[0] || 'Academic Institution';
       const program = parts[1] || parts[0] || 'Degree Program';
 
