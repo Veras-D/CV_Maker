@@ -17,20 +17,22 @@ echo "Cleaning local app testing cache (~/.local/share/com.veras.cvmaker)..."
 rm -rf "$HOME/.local/share/com.veras.cvmaker" "$HOME/.config/com.veras.cvmaker" "$HOME/.cache/com.veras.cvmaker" 2>/dev/null || true
 
 # Clean old bundle folders using Docker container privileges
-$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
+$DOCKER_CMD run --rm desktop-builder rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_*_amd64.AppImage 2>/dev/null || true
 
 # Build standalone Desktop App image inside Docker
 $DOCKER_CMD run --rm desktop-builder ./build_app.sh
 
 # Fix host permissions on generated files
-$DOCKER_CMD run --rm desktop-builder chmod -R 777 /app/src-tauri/target/ /app/CV_Maker_1.0.0_amd64.AppImage 2>/dev/null || true
+$DOCKER_CMD run --rm desktop-builder chmod -R 777 /app/src-tauri/target/ /app/CV_Maker_*_amd64.AppImage 2>/dev/null || true
 
-if [ -f "./CV_Maker_1.0.0_amd64.AppImage" ]; then
+APPIMAGE_FILE=$(ls ./CV_Maker_*_amd64.AppImage 2>/dev/null | head -n 1)
+
+if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
     echo "=========================================="
     echo " SUCCESS! Desktop AppImage generated in root folder:"
-    echo " ./CV_Maker_1.0.0_amd64.AppImage"
+    echo " $APPIMAGE_FILE"
     echo " (Local test storage was reset for a fresh start)"
     echo "=========================================="
 else
-    echo "Build complete. Check root directory for ./CV_Maker_1.0.0_amd64.AppImage"
+    echo "Build complete. Check root directory for generated AppImage."
 fi

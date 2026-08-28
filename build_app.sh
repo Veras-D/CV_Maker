@@ -5,8 +5,10 @@ echo "=========================================="
 echo " Building Clean Standalone AppImage... "
 echo "=========================================="
 
+APP_VERSION=$(node -p "require('./package.json').version")
+
 # 1. Clean up old bundle directory
-rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_1.0.0_amd64.AppImage
+rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_*_amd64.AppImage
 
 # 2. Ensure all npm dependencies from package.json are up to date inside the container
 echo "Installing and syncing container npm dependencies..."
@@ -19,8 +21,8 @@ cargo build --release --manifest-path /app/src-tauri/Cargo.toml
 # 4. Prepare target AppImage directory
 OUTPUT_DIR="/app/src-tauri/target/release/bundle/appimage"
 mkdir -p "$OUTPUT_DIR"
-APPIMAGE_PATH="$OUTPUT_DIR/CV_Maker_1.0.0_amd64.AppImage"
-ROOT_APPIMAGE_PATH="/app/CV_Maker_1.0.0_amd64.AppImage"
+APPIMAGE_PATH="$OUTPUT_DIR/CV_Maker_${APP_VERSION}_amd64.AppImage"
+ROOT_APPIMAGE_PATH="/app/CV_Maker_${APP_VERSION}_amd64.AppImage"
 
 # 5. Download appimagetool cleanly if not present
 if [ ! -f /tmp/appimagetool ]; then
@@ -46,25 +48,23 @@ mkdir -p "$BUILD_DIR/usr/bin" \
 cp /app/src-tauri/target/release/cv-maker "$BUILD_DIR/usr/bin/cv-maker"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps/cv-maker.png"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/cv-maker.png"
-cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/.DirIcon"
 
-# Write desktop launcher file inside usr/share/applications/
-cat << 'EOF' > "$BUILD_DIR/usr/share/applications/cv-maker.desktop"
+# Copy system libraries from debian container
+cp /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libsoup-3.0.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+
+# Generate Desktop Entry
+cat << 'EOF' > "$BUILD_DIR/cv-maker.desktop"
 [Desktop Entry]
 Name=CV Maker & Role Tracker
 Exec=cv-maker
 Icon=cv-maker
 Type=Application
-Terminal=false
-Categories=Utility;
+Categories=Office;Utility;Development;
 EOF
 
-# Symlink desktop file to root of AppDir (Required by AppImage runtime)
-cd "$BUILD_DIR"
-ln -sf usr/share/applications/cv-maker.desktop cv-maker.desktop
-cd /app
-
-# Write AppRun entrypoint
+# Generate AppRun launcher
 cat << 'EOF' > "$BUILD_DIR/AppRun"
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "${0}")")"
@@ -83,5 +83,5 @@ chmod 777 "$APPIMAGE_PATH" "$ROOT_APPIMAGE_PATH"
 
 echo "=========================================="
 echo " SUCCESS! Standalone AppImage Created:"
-echo " ./CV_Maker_1.0.0_amd64.AppImage"
+echo " ./CV_Maker_${APP_VERSION}_amd64.AppImage"
 echo "=========================================="
