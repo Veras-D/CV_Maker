@@ -4,8 +4,9 @@ import {
   Loader2, 
   UploadCloud, 
   FileCheck, 
-  Info, 
-  ExternalLink 
+  ExternalLink,
+  MousePointerClick,
+  FileDown
 } from 'lucide-react';
 
 export interface LinkedinTabContentProps {
@@ -17,6 +18,64 @@ export interface LinkedinTabContentProps {
   onParseFile: () => void;
   isProcessing: boolean;
 }
+
+const TutorialSteps: React.FC = () => (
+  <div className="space-y-2">
+    <div className="flex items-center justify-between">
+      <span className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
+        <FileDown className="w-3.5 h-3.5 text-sky-400" />
+        <span>How to Export Your Complete LinkedIn Data (3 Clicks):</span>
+      </span>
+      <a
+        href="https://www.linkedin.com/in/me/"
+        target="_blank"
+        rel="noreferrer"
+        className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-semibold underline"
+      >
+        <span>Open LinkedIn</span>
+        <ExternalLink className="w-2.5 h-2.5" />
+      </a>
+    </div>
+
+    <div className="grid grid-cols-3 gap-2 text-[11px]">
+      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl space-y-1">
+        <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+          <span className="w-4 h-4 rounded-full bg-sky-900/60 text-sky-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+            1
+          </span>
+          <span>Open Profile</span>
+        </div>
+        <p className="text-[10px] text-slate-400">
+          Go to your LinkedIn profile page (<code className="text-sky-300 font-mono text-[9px]">/in/me</code>).
+        </p>
+      </div>
+
+      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl space-y-1">
+        <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+          <span className="w-4 h-4 rounded-full bg-sky-900/60 text-sky-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+            2
+          </span>
+          <span>Click &quot;More&quot;</span>
+        </div>
+        <p className="text-[10px] text-slate-400">
+          Under your name &amp; photo, click the <strong>More</strong> (<MousePointerClick className="w-2.5 h-2.5 inline" />) button.
+        </p>
+      </div>
+
+      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl space-y-1">
+        <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+          <span className="w-4 h-4 rounded-full bg-emerald-900/60 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+            3
+          </span>
+          <span>Save to PDF</span>
+        </div>
+        <p className="text-[10px] text-slate-400">
+          Select <strong>&quot;Save to PDF&quot;</strong> to download your full work history instantly.
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
   input,
@@ -39,28 +98,12 @@ export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
   };
 
   return (
-    <div className="space-y-4 text-xs">
-      {/* Notice Banner */}
-      <div className="bg-sky-950/40 border border-sky-800/60 p-3 rounded-xl flex items-start gap-2.5 text-slate-300">
-        <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <span className="font-semibold text-sky-300 block text-[11px]">How LinkedIn Import Works</span>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            LinkedIn protects personal data behind login authentication and blocks web scrapers (<code className="text-sky-300 font-mono">HTTP 999</code>). To import 100% of your work history, dates, and skills, export your profile PDF or link your URL below.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-3.5 text-xs">
+      {/* Visual Step-by-Step Tutorial */}
+      <TutorialSteps />
 
-      {/* Option 1: Drop LinkedIn Export PDF */}
+      {/* PDF Dropzone */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="font-semibold text-slate-200 flex items-center gap-1.5">
-            <span className="bg-sky-900/60 text-sky-400 w-4 h-4 rounded-full inline-flex items-center justify-center text-[10px] font-bold">1</span>
-            <span>Import Full LinkedIn Profile PDF (Recommended)</span>
-          </label>
-          <span className="text-[10px] text-emerald-400 font-medium">Extracts 100% of Jobs & Skills</span>
-        </div>
-
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
@@ -93,11 +136,11 @@ export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
           ) : (
             <div className="space-y-1">
               <UploadCloud className="w-6 h-6 text-sky-400 mx-auto" />
-              <p className="text-slate-300 font-medium">
-                Drop your exported LinkedIn PDF here, or <span className="text-sky-400 underline">browse</span>
+              <p className="text-slate-300 font-medium text-[11px]">
+                Drop your downloaded <code className="text-sky-300 font-mono">Profile.pdf</code> here, or <span className="text-sky-400 underline">browse</span>
               </p>
               <p className="text-[10px] text-slate-500">
-                On LinkedIn: Go to Profile → <strong>More</strong> (...) → <strong>Save to PDF</strong>
+                Extracts 100% of your work experiences, dates, bullets, education, and skills.
               </p>
             </div>
           )}
@@ -111,33 +154,32 @@ export const LinkedinTabContent: React.FC<LinkedinTabContentProps> = ({
             className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow"
           >
             {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
-            <span>Extract LinkedIn PDF Experiences & Skills</span>
+            <span>Extract LinkedIn Experiences &amp; Skills</span>
           </button>
         )}
       </div>
 
-      {/* Option 2: Link Profile URL */}
-      <div className="space-y-2 pt-2 border-t border-slate-800">
-        <label className="font-semibold text-slate-300 flex items-center gap-1.5">
-          <span className="bg-slate-800 text-slate-400 w-4 h-4 rounded-full inline-flex items-center justify-center text-[10px] font-bold">2</span>
-          <span>Or Attach LinkedIn Profile URL to CV Header</span>
+      {/* Optional Profile URL Link */}
+      <div className="space-y-1.5 pt-2 border-t border-slate-800">
+        <label className="font-semibold text-slate-400 text-[11px]">
+          LinkedIn Profile URL (Optional — links to your CV header)
         </label>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="https://www.linkedin.com/in/username or username"
+            placeholder="https://www.linkedin.com/in/username"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') onFetchUrl(); }}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
           />
           <button
             type="button"
             onClick={onFetchUrl}
             disabled={!input.trim() || isProcessing}
-            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sky-400 border border-slate-700 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-sky-400 border border-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
           >
-            {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+            <ExternalLink className="w-3.5 h-3.5" />
             <span>Link URL</span>
           </button>
         </div>
