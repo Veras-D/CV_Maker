@@ -6,7 +6,7 @@ const TECH_KEYWORD_LIST = [
   'Kubernetes', 'AWS', 'SQL', 'PostgreSQL', 'MongoDB', 'HTML', 'CSS', 'Tailwind',
   'GraphQL', 'Git', 'Next.js', 'Vue', 'Angular', 'C++', 'Java', 'Linux', 'Figma',
   'Spring Boot', 'DevOps', 'CI/CD', 'Redux', 'Express', 'Django', 'Flask', 'Golang',
-  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET'
+  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET', 'Keras', 'scikit-learn'
 ];
 
 const KNOWN_LANGUAGES = [
@@ -51,7 +51,7 @@ function segmentResumeText(rawText: string): RawSections {
   for (const line of lines) {
     let matchedHeader = false;
     for (const { key, regex } of SECTION_PATTERNS) {
-      if (line.length <= 40 && regex.test(line)) {
+      if (line.length <= 45 && regex.test(line)) {
         currentKey = key as keyof RawSections;
         matchedHeader = true;
         break;
@@ -81,122 +81,103 @@ function extractContactDetails(rawText: string) {
   return { email, phone, github, linkedin, portfolio };
 }
 
+function extractCandidateName(lines: string[]): string | undefined {
+  for (const line of lines) {
+    if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
+    
+    // If line has name + title separated by bullet/pipe/hyphen, extract first part
+    const clean = line.split(/[•|—–\-/:]/)[0].trim();
+    if (clean.length >= 3 && clean.length <= 35 && !/^(resume|cv|curriculum|profile)$/i.test(clean)) {
+      return clean;
+    }
+  }
+  return undefined;
+}
+
 function extractHeaderInfo(headerText: string, fullText: string) {
   const lines = headerText.split('\n').map(l => l.trim()).filter(Boolean);
   const contacts = extractContactDetails(fullText);
-
-  // Find candidate name (first non-URL line under 35 chars without email)
-  const nameLine = lines.find(l => 
-    !l.includes('@') && !l.startsWith('http') && !l.includes('.com') &&
-    !/\b(?:resume|cv|curriculum|developer|engineer|software)\b/i.test(l) &&
-    l.length >= 3 && l.length <= 35
-  ) || lines.find(l => !l.includes('@') && !l.startsWith('http') && l.length <= 35) || '';
+  const detectedName = extractCandidateName(lines);
 
   const headlineCandidate = lines.find(l => 
-    l !== nameLine && 
-    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist)/i.test(l) &&
+    l !== detectedName && 
+    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor)/i.test(l) &&
     l.length <= 70
   );
 
   return {
-    detectedName: nameLine || undefined,
+    detectedName,
     detectedHeadline: headlineCandidate || undefined,
     contacts
   };
 }
 
-function extractJobRoleAndCompany(line: string): { role?: string; company?: string } {
-  if (!/(?:Engineer|Developer|Researcher|Manager|Programmer|Analyst|Consultant|Desenvolvedor|Engenheiro|Gerente)/i.test(line)) {
-    return {};
-  }
-  const parts = line.split(/(?:\bat\b|@|\||—|–)/i).map(p => p.trim());
-  return {
-    role: parts[0].slice(0, 50),
-    company: parts[1] ? parts[1].slice(0, 45) : undefined
-  };
-}
+const DATE_RANGE_REGEX = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4})\s*[-–—to/\s]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4}|Present|Current|Atual|Presente|Now)/i;
 
-function extractRoleOrCompany(line: string, currentRole: string, currentCompany: string, dateRegex: RegExp) {
-  let role = currentRole;
-  let company = currentCompany;
-
-  const parsed = extractJobRoleAndCompany(line);
-  if (!role && parsed.role) {
-    role = parsed.role;
-    if (parsed.company) company = parsed.company;
-    return { role, company };
-  }
-
-  if (!company && line.length < 45 && !dateRegex.test(line) && !line.includes('@')) {
-    company = line;
-  }
-
-  return { role, company };
-}
-
-function extractBlockDetails(lines: string[], dateRegex: RegExp) {
-  const bullets: string[] = [];
-  let role = '';
-  let company = '';
-
-  for (const line of lines) {
-    if (/^[●•\-*]/.test(line)) {
-      bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
-      continue;
-    }
-    const updated = extractRoleOrCompany(line, role, company, dateRegex);
-    role = updated.role;
-    company = updated.company;
-  }
-
-  return { role, company, bullets };
-}
-
-function parseSingleExpBlock(block: string, dateRegex: RegExp, index: number): WorkExperience | null {
-  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-  if (lines.length === 0) return null;
-
-  const dateMatch = block.match(dateRegex);
-  const { role, company, bullets } = extractBlockDetails(lines, dateRegex);
-
-  if (!role && !company) return null;
-
-  return {
-    id: `exp-${index}-${Date.now()}`,
-    company: (company || 'Company').replace(/\s*[-–—|].*$/, '').trim(),
-    roleTitle: { en: role || 'Software Developer' },
-    startDate: dateMatch ? dateMatch[1].trim() : '2022',
-    endDate: dateMatch ? dateMatch[2].trim() : 'Present',
-    bullets: bullets.map((b, idx) => ({
-      id: `b-${idx}`,
-      text: { en: b },
-      tags: ['fullstack'],
-      enabled: true
-    })),
-    tags: ['fullstack'],
-    enabled: true
-  };
+interface ExtractedExp {
+  role: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  bullets: string[];
 }
 
 function parseExperienceEntries(expText: string): WorkExperience[] {
   if (!expText.trim()) return [];
 
-  const rawBlocks = expText.split(/(?=\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}\s*[-–—])/i);
-  const dateRegex = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4})\s*[-–—to]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez)[a-z]*\s+\d{4}|\b\d{4}|Present|Current|Atual|Presente)/i;
+  const lines = expText.split('\n').map(l => l.trim()).filter(Boolean);
+  const exps: ExtractedExp[] = [];
+  let current: ExtractedExp | null = null;
 
-  const experiences: WorkExperience[] = [];
-  rawBlocks.forEach((block, idx) => {
-    const exp = parseSingleExpBlock(block, dateRegex, idx);
-    if (exp) experiences.push(exp);
-  });
+  for (const line of lines) {
+    const dateMatch = line.match(DATE_RANGE_REGEX);
+    const isBullet = /^[●•\-*]/.test(line);
+
+    if (dateMatch) {
+      if (current && (current.role || current.company)) exps.push(current);
+      const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()—–|]/g, ' ').trim();
+      const parts = textWithoutDate.split(/(?:\bat\b|@|\||—|–|-)/i).map(p => p.trim()).filter(Boolean);
+      
+      current = {
+        role: parts[0] || 'Software Professional',
+        company: parts[1] || 'Company',
+        startDate: dateMatch[1].trim(),
+        endDate: dateMatch[2].trim(),
+        bullets: []
+      };
+    } else if (isBullet && current) {
+      current.bullets.push(line.replace(/^[●•\-*]\s*/, '').trim());
+    } else if (current && line.length > 20 && !current.role.includes(line)) {
+      current.bullets.push(line);
+    }
+  }
+
+  if (current && (current.role || current.company)) exps.push(current);
 
   const seen = new Set<string>();
-  return experiences.filter(exp => {
-    const key = `${exp.company.toLowerCase()}-${exp.roleTitle.en.toLowerCase()}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 6);
+  return exps
+    .filter(e => {
+      const key = `${e.company.toLowerCase()}-${e.role.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 6)
+    .map((e, idx) => ({
+      id: `exp-${idx}-${Date.now()}`,
+      company: e.company.slice(0, 45),
+      roleTitle: { en: e.role.slice(0, 50) },
+      startDate: e.startDate,
+      endDate: e.endDate,
+      bullets: e.bullets.map((b, bIdx) => ({
+        id: `b-${bIdx}`,
+        text: { en: b },
+        tags: ['fullstack'],
+        enabled: true
+      })),
+      tags: ['fullstack'],
+      enabled: true
+    }));
 }
 
 function parseEducationEntries(eduText: string): EducationItem[] {
@@ -207,7 +188,7 @@ function parseEducationEntries(eduText: string): EducationItem[] {
   const dateRegex = /\b\d{4}\s*[-–—to]+\s*(\d{4}|Present|Current|Atual)?\b/i;
 
   for (const line of lines) {
-    if (line.length > 5 && !line.startsWith('●') && !line.startsWith('•')) {
+    if (line.length > 5 && !/^[●•\-*]/.test(line)) {
       const dates = line.match(dateRegex)?.[0] || 'Graduated';
       const cleanLine = line.replace(dateRegex, '').replace(/[()—–-]/g, ' ').trim();
       const parts = cleanLine.split(/(?:\||—|–|-)/).map(p => p.trim()).filter(Boolean);
@@ -273,7 +254,7 @@ function parseProjects(projText: string): ProjectItem[] {
   const titleSeparator = /[-|]|\s:\s/;
 
   return lines
-    .filter(l => l.length > 10 && l.length < 80 && !l.startsWith('●') && !l.startsWith('•'))
+    .filter(l => l.length > 10 && l.length < 80 && !/^[●•\-*]/.test(l))
     .slice(0, 4)
     .map((line, idx) => ({
       id: `proj-parsed-${idx}`,
@@ -295,7 +276,6 @@ export function parseFullResumeContent(
   const sections = segmentResumeText(rawText);
   const { detectedName, detectedHeadline, contacts } = extractHeaderInfo(sections.header, rawText);
 
-  // Clean bio summary from the summary section or first descriptive sentence
   const bioClean = sections.summary.trim()
     ? sections.summary.replace(/^[●•\-*]\s*/gm, '').trim().slice(0, 350)
     : undefined;
