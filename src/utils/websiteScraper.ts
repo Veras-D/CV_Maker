@@ -143,8 +143,24 @@ function extractProjectsFromDOM(doc: Document, originUrl: string): ProjectItem[]
 
 const RELEVANT_SUBPAGE_REGEX = /(?:projects?|portfolio|work|works|about|bio|experience|career|resume|cv|contact|projetos|sobre)/i;
 
+function resolveSubpageUrl(href: string, linkText: string, baseUrl: string, baseDomain: string): string | null {
+  if (!href || href.startsWith('#') || /^(mailto|tel|javascript):/i.test(href)) {
+    return null;
+  }
+  try {
+    const resolved = new URL(href, baseUrl);
+    const path = resolved.pathname.toLowerCase();
+    const isTarget = RELEVANT_SUBPAGE_REGEX.test(path) || RELEVANT_SUBPAGE_REGEX.test(linkText);
+    if (resolved.hostname === baseDomain && path !== '/' && isTarget) {
+      return resolved.href;
+    }
+  } catch {
+    // Ignore invalid URL
+  }
+  return null;
+}
+
 function findInternalSubpageUrls(doc: Document, baseUrl: string): string[] {
-  const subpages = new Set<string>();
   let baseDomain = '';
   try {
     baseDomain = new URL(baseUrl).hostname;
@@ -152,24 +168,13 @@ function findInternalSubpageUrls(doc: Document, baseUrl: string): string[] {
     return [];
   }
 
+  const subpages = new Set<string>();
   const links = doc.querySelectorAll('a[href]');
   for (const a of links) {
-    const href = a.getAttribute('href')?.trim();
-    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) {
-      continue;
-    }
-
-    try {
-      const resolved = new URL(href, baseUrl);
-      const path = resolved.pathname.toLowerCase();
-      const linkText = (a.textContent || '').trim().toLowerCase();
-
-      if (resolved.hostname === baseDomain && path !== '/' && (RELEVANT_SUBPAGE_REGEX.test(path) || RELEVANT_SUBPAGE_REGEX.test(linkText))) {
-        subpages.add(resolved.href);
-      }
-    } catch {
-      // Ignore invalid URL
-    }
+    const href = a.getAttribute('href')?.trim() || '';
+    const text = (a.textContent || '').trim().toLowerCase();
+    const resolved = resolveSubpageUrl(href, text, baseUrl, baseDomain);
+    if (resolved) subpages.add(resolved);
   }
 
   return Array.from(subpages).slice(0, 6);
