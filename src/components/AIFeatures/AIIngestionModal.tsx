@@ -3,13 +3,13 @@ import ReactDOM from 'react-dom';
 import { useCV } from '../../context/CVContext';
 import { AlertCircle, X } from 'lucide-react';
 import { 
-  ingestFromGitHub, 
   ingestFromLinkedin,
   ingestFromWebsite, 
   parseRawResumeText,
   ingestFromFile, 
   IngestionResult 
 } from '../../utils/ingestionService';
+import { ingestFromGitHubRepos } from '../../utils/githubScraper';
 import { IngestionSourceTabs, IngestionSourceType } from './IngestionSourceTabs';
 import { 
   FileUploadTabContent,
@@ -25,6 +25,7 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
   
   const [activeTab, setActiveTab] = useState<IngestionSourceType>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [githubRepos, setGithubRepos] = useState<string[]>([]);
   const [githubInput, setGithubInput] = useState('');
   const [linkedinInput, setLinkedinInput] = useState('');
   const [websiteInput, setWebsiteInput] = useState('');
@@ -37,24 +38,48 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
 
   if (!isOpen) return null;
 
+  const handleAddGitHubRepo = () => {
+    const trimmed = githubInput.trim();
+    if (trimmed && !githubRepos.includes(trimmed)) {
+      setGithubRepos(prev => [...prev, trimmed]);
+      setGithubInput('');
+      setErrorMessage('');
+    }
+  };
+
+  const handleRemoveGitHubRepo = (idx: number) => {
+    setGithubRepos(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const executeTabFetch = async (): Promise<IngestionResult> => {
+    if (activeTab === 'file') {
+      if (!selectedFile) throw new Error('Please select or drop a CV file first.');
+      return ingestFromFile(selectedFile);
+    }
+    if (activeTab === 'github') {
+      const trimmed = githubInput.trim();
+      const reposToFetch = trimmed && !githubRepos.includes(trimmed) ? [...githubRepos, trimmed] : githubRepos;
+      if (reposToFetch.length === 0) {
+        throw new Error('Please add at least one GitHub project repository (e.g. owner/repo).');
+      }
+      return ingestFromGitHubRepos(reposToFetch);
+    }
+    if (activeTab === 'linkedin') {
+      return ingestFromLinkedin(linkedinInput.trim());
+    }
+    if (activeTab === 'website') {
+      return ingestFromWebsite(websiteInput.trim());
+    }
+    return parseRawResumeText(rawTextInput.trim());
+  };
+
   const handleFetch = async () => {
     setErrorMessage('');
     setPreviewResult(null);
     setIsProcessing(true);
 
     try {
-      if (activeTab === 'file') {
-        if (!selectedFile) throw new Error('Please select or drop a CV file first.');
-        setPreviewResult(await ingestFromFile(selectedFile));
-      } else if (activeTab === 'github') {
-        setPreviewResult(await ingestFromGitHub(githubInput.trim()));
-      } else if (activeTab === 'linkedin') {
-        setPreviewResult(await ingestFromLinkedin(linkedinInput.trim()));
-      } else if (activeTab === 'website') {
-        setPreviewResult(await ingestFromWebsite(websiteInput.trim()));
-      } else {
-        setPreviewResult(parseRawResumeText(rawTextInput.trim()));
-      }
+      setPreviewResult(await executeTabFetch());
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An error occurred during ingestion.';
       setErrorMessage(msg);
@@ -116,8 +141,11 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
         )}
         {activeTab === 'github' && (
           <GitHubTabContent 
-            input={githubInput} 
-            setInput={setGithubInput} 
+            repoList={githubRepos}
+            currentInput={githubInput} 
+            setCurrentInput={setGithubInput}
+            onAddRepo={handleAddGitHubRepo}
+            onRemoveRepo={handleRemoveGitHubRepo}
             onFetch={handleFetch} 
             isProcessing={isProcessing} 
           />
@@ -159,14 +187,14 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <button
             type="button"
             onClick={resetToDefaultData}
-            className="hover:text-slate-300 underline cursor-pointer text-[11px]"
+            className="text-slate-500 hover:text-red-400 underline transition-colors cursor-pointer"
           >
             Clear / Reset Master Data
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all cursor-pointer"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
             Close
           </button>

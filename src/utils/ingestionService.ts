@@ -3,6 +3,7 @@ import { fetchWebsiteHtml } from './htmlFetchHelper';
 import { extractTextFromPDF } from './pdfParser';
 import { scrapePortfolioFromHTML } from './websiteScraper';
 import { parseFullResumeContent } from './resumeSectionParser';
+export { ingestFromGitHubRepos } from './githubScraper';
 
 export interface IngestionResult {
   sourceType: 'github' | 'linkedin' | 'website' | 'text' | 'file';
