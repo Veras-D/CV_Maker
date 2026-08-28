@@ -49,10 +49,15 @@ cp /app/src-tauri/target/release/cv-maker "$BUILD_DIR/usr/bin/cv-maker"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps/cv-maker.png"
 cp /app/src-tauri/icons/128x128.png "$BUILD_DIR/cv-maker.png"
 
-# Copy system libraries from debian container
+# Copy system libraries and dependencies from container (including WebKit, JavaScriptCore, ICU, Soup, etc.)
 cp /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
 cp /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
 cp /usr/lib/x86_64-linux-gnu/libsoup-3.0.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libicu*.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libwoff2*.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libhyphen.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libsecret-1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
+cp /usr/lib/x86_64-linux-gnu/libmanette-0.2.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
 
 # Generate Desktop Entry
 cat << 'EOF' > "$BUILD_DIR/cv-maker.desktop"
