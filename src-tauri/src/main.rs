@@ -24,6 +24,11 @@ async fn fetch_url_html(url: String) -> Result<String, String> {
 }
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![fetch_url_html])
         .run(tauri::generate_context!())

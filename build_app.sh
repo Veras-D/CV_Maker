@@ -41,6 +41,7 @@ BUILD_DIR="/tmp/AppDir"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/usr/bin" \
          "$BUILD_DIR/usr/lib" \
+         "$BUILD_DIR/usr/lib/webkit2gtk-4.1" \
          "$BUILD_DIR/usr/share/icons/hicolor/128x128/apps" \
          "$BUILD_DIR/usr/share/applications"
 
@@ -59,6 +60,9 @@ cp /usr/lib/x86_64-linux-gnu/libhyphen.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || 
 cp /usr/lib/x86_64-linux-gnu/libsecret-1.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
 cp /usr/lib/x86_64-linux-gnu/libmanette-0.2.so* "$BUILD_DIR/usr/lib/" 2>/dev/null || true
 
+# Copy WebKit helper processes (WebKitWebProcess, WebKitNetworkProcess)
+cp -r /usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/* "$BUILD_DIR/usr/lib/webkit2gtk-4.1/" 2>/dev/null || true
+
 # Generate Desktop Entry
 cat << 'EOF' > "$BUILD_DIR/cv-maker.desktop"
 [Desktop Entry]
@@ -75,6 +79,9 @@ cat << 'EOF' > "$BUILD_DIR/AppRun"
 HERE="$(dirname "$(readlink -f "${0}")")"
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+export WEBKIT_EXEC_PATH="${HERE}/usr/lib/webkit2gtk-4.1"
+export WEBKIT_INJECTED_BUNDLE_PATH="${HERE}/usr/lib/webkit2gtk-4.1"
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
 exec "${HERE}/usr/bin/cv-maker" "$@"
 EOF
 chmod +x "$BUILD_DIR/AppRun"
