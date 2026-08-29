@@ -137,6 +137,37 @@ function processExpLineItem(line: string, current: ExtractedExp) {
   }
 }
 
+function tryAssignRoleAndCompany(current: ExtractedExp, line: string): boolean {
+  if (/^[●•\-*]/.test(line)) return false;
+  const { role, company } = extractRoleAndCompanyFromLine(line);
+  if (role && role !== 'Software Professional') {
+    current.role = role;
+    if (company) current.company = company;
+    return true;
+  }
+  return false;
+}
+
+function handleDateLine(line: string, dateMatch: RegExpMatchArray, lastNonDateLine: string): ExtractedExp {
+  const entry = createNewExpEntry(line, dateMatch);
+  if ((!entry.role || entry.role === 'Software Professional') && lastNonDateLine) {
+    const { role, company } = extractRoleAndCompanyFromLine(lastNonDateLine);
+    if (role && role !== 'Software Professional') {
+      entry.role = role;
+      if (company) entry.company = company;
+    }
+  }
+  return entry;
+}
+
+function handleNonDateLine(line: string, current: ExtractedExp) {
+  const needsRoleOrCompany = !current.role || current.role === 'Software Professional' || !current.company;
+  if (needsRoleOrCompany && tryAssignRoleAndCompany(current, line)) {
+    return;
+  }
+  processExpLineItem(line, current);
+}
+
 function collectExpEntries(lines: string[]): ExtractedExp[] {
   const exps: ExtractedExp[] = [];
   let current: ExtractedExp | null = null;
@@ -146,26 +177,9 @@ function collectExpEntries(lines: string[]): ExtractedExp[] {
     const dateMatch = line.match(DATE_RANGE_REGEX);
     if (dateMatch) {
       if (current && (current.role || current.company)) exps.push(current);
-      current = createNewExpEntry(line, dateMatch);
-      if ((!current.role || current.role === 'Software Professional') && lastNonDateLine) {
-        const { role, company } = extractRoleAndCompanyFromLine(lastNonDateLine);
-        if (role && role !== 'Software Professional') {
-          current.role = role;
-          if (company) current.company = company;
-        }
-      }
+      current = handleDateLine(line, dateMatch, lastNonDateLine);
     } else if (current) {
-      if ((!current.role || current.role === 'Software Professional' || !current.company) && !/^[●•\-*]/.test(line)) {
-        const { role, company } = extractRoleAndCompanyFromLine(line);
-        if (role && role !== 'Software Professional') {
-          current.role = role;
-          if (company) current.company = company;
-        } else {
-          processExpLineItem(line, current);
-        }
-      } else {
-        processExpLineItem(line, current);
-      }
+      handleNonDateLine(line, current);
       lastNonDateLine = line;
     } else {
       lastNonDateLine = line;
@@ -208,58 +222,60 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
     }));
 }
 
+interface EduState {
+  institution: string;
+  program: string;
+  dates: string;
+}
+
+function flushEduState(items: EducationItem[], state: EduState) {
+  if (!state.institution && !state.program) return;
+  items.push({
+    id: `edu-${items.length}`,
+    institution: (state.institution || state.program).slice(0, 50),
+    program: { en: (state.program || state.institution).slice(0, 60) },
+    dates: state.dates || 'Graduated',
+    enabled: true
+  });
+  state.institution = '';
+  state.program = '';
+  state.dates = '';
+}
+
+function processEduLine(line: string, items: EducationItem[], state: EduState, dateRegex: RegExp) {
+  const dateMatch = line.match(dateRegex);
+  if (dateMatch) {
+    flushEduState(items, state);
+    state.dates = dateMatch[0];
+    const cleanWithoutDate = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
+    if (cleanWithoutDate) state.institution = cleanWithoutDate;
+    return;
+  }
+
+  if (ACADEMIC_KEYWORDS.test(line)) {
+    if (!state.institution) state.institution = cleanSpecialPunctuation(line);
+    else if (!state.program) state.program = cleanSpecialPunctuation(line);
+  } else if (state.institution && !state.program && line.length < 70) {
+    state.program = cleanSpecialPunctuation(line);
+  }
+}
+
 function parseEducationEntries(eduText: string): EducationItem[] {
   if (!eduText.trim()) return [];
 
   const lines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
   const items: EducationItem[] = [];
   const dateRegex = /(\b\d{4}\s*[-–—to/\s]+\s*(\d{4}|Present|Current|Atual)?\b|\b\d{1,2}\/\d{4}\s*[-–—to/\s]+\s*(\d{1,2}\/\d{4}|Present|Current|Atual)?\b)/i;
-
-  let currentInstitution = '';
-  let currentProgram = '';
-  let currentDates = '';
+  const state: EduState = { institution: '', program: '', dates: '' };
 
   for (const line of lines) {
     if (line.startsWith('●') || line.startsWith('•') || /^(Technologies|Skills|Stack|Courses|MongoDB|HTML|CSS|React|Node)/i.test(line)) {
       continue;
     }
-
-    const dateMatch = line.match(dateRegex);
-    const hasAcademic = ACADEMIC_KEYWORDS.test(line);
-
-    if (dateMatch) {
-      if (currentInstitution || currentProgram) {
-        items.push({
-          id: `edu-${items.length}`,
-          institution: (currentInstitution || currentProgram).slice(0, 50),
-          program: { en: (currentProgram || currentInstitution).slice(0, 60) },
-          dates: currentDates || 'Graduated',
-          enabled: true
-        });
-        currentInstitution = '';
-        currentProgram = '';
-      }
-      currentDates = dateMatch[0];
-      const cleanWithoutDate = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
-      if (cleanWithoutDate) currentInstitution = cleanWithoutDate;
-    } else if (hasAcademic) {
-      if (!currentInstitution) currentInstitution = cleanSpecialPunctuation(line);
-      else if (!currentProgram) currentProgram = cleanSpecialPunctuation(line);
-    } else if (currentInstitution && !currentProgram && line.length < 70) {
-      currentProgram = cleanSpecialPunctuation(line);
-    }
+    processEduLine(line, items, state, dateRegex);
   }
 
-  if (currentInstitution || currentProgram) {
-    items.push({
-      id: `edu-${items.length}`,
-      institution: (currentInstitution || currentProgram).slice(0, 50),
-      program: { en: (currentProgram || currentInstitution).slice(0, 60) },
-      dates: currentDates || 'Graduated',
-      enabled: true
-    });
-  }
-
+  flushEduState(items, state);
   return items.slice(0, 5);
 }
 
