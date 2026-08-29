@@ -59,24 +59,28 @@ function segmentResumeText(rawText: string): RawSections {
 }
 
 function extractCandidateName(lines: string[]): string | undefined {
+  const candidates: string[] = [];
   for (const line of lines) {
     if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
     const clean = cleanSpecialPunctuation(line.split(/[•|—–\-/:]/)[0]);
-    if (clean.length >= 3 && clean.length <= 35 && !/^(resume|cv|curriculum|profile)$/i.test(clean)) {
-      return clean;
+    if (clean.length >= 2 && clean.length <= 40 && !/^(resume|cv|curriculum|profile|sobre|experiência|education|habilidades)$/i.test(clean)) {
+      candidates.push(clean);
     }
   }
-  return undefined;
+  if (candidates.length >= 2 && candidates[0].split(/\s+/).length === 1 && candidates[1].split(/\s+/).length === 1) {
+    return `${candidates[0]} ${candidates[1]}`;
+  }
+  return candidates[0];
 }
 
 function extractHeaderInfo(headerText: string, fullText: string) {
-  const lines = headerText.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = (headerText || fullText).split('\n').map(l => l.trim()).filter(Boolean).slice(0, 10);
   const contacts = extractContactDetails(fullText);
   const detectedName = extractCandidateName(lines);
 
   const headlineCandidate = lines.find(l => 
     l !== detectedName && 
-    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor)/i.test(l) &&
+    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor|Analista)/i.test(l) &&
     l.length <= 70
   );
 
@@ -133,6 +137,13 @@ function processExpLineItem(line: string, current: ExtractedExp) {
   } else if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
     current.company = cleaned;
   } else if (cleaned.length > 20 && !current.role.includes(cleaned)) {
+    if (cleaned.includes('. ') && !/^[A-Z0-9._%+-]+@/i.test(cleaned)) {
+      const subSentences = cleaned.split(/\.\s+/).map(s => cleanSpecialPunctuation(s)).filter(s => s.length > 10);
+      if (subSentences.length > 1) {
+        subSentences.forEach(s => current.bullets.push(s));
+        return;
+      }
+    }
     current.bullets.push(cleaned);
   }
 }
@@ -308,7 +319,7 @@ export function parseFullResumeContent(
   const { detectedName, detectedHeadline, contacts } = extractHeaderInfo(sections.header, rawText);
 
   const bioClean = sections.summary.trim()
-    ? cleanSpecialPunctuation(sections.summary.replace(/^[●•\-*]\s*/gm, '')).slice(0, 350)
+    ? cleanSpecialPunctuation(sections.summary.replace(/^[●•\-*]\s*/gm, ''))
     : undefined;
 
   return {

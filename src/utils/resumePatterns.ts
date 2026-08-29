@@ -28,7 +28,11 @@ export const SECTION_PATTERNS: SectionPattern[] = [
   { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projects|projetos)\b/i }
 ];
 
-export const DATE_RANGE_REGEX = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4})\s*[-–—to/\s]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4}|Present|Current|Atual|Presente|Now)/i;
+const MONTHS_PT_EN = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December';
+const DATE_TOKEN_START = `(?:(?:${MONTHS_PT_EN})[a-z]*\\.?\\s+\\d{4}|\\b(?:\\d{1,2}[\\/.-])?\\d{1,2}[\\/.-]\\d{4}\\b|\\b\\d{4}\\b)`;
+const DATE_TOKEN_END = `(?:(?:${MONTHS_PT_EN})[a-z]*\\.?\\s+\\d{4}|\\b(?:\\d{1,2}[\\/.-])?\\d{1,2}[\\/.-]\\d{4}\\b|\\b\\d{4}\\b|Present|Current|Atual|Atualmente|Presente|Now)`;
+
+export const DATE_RANGE_REGEX = new RegExp(`(${DATE_TOKEN_START})\\s*[-–—to/\\s]+\\s*(${DATE_TOKEN_END})`, 'i');
 
 export const ROLE_PREFIX_REGEX = /^(?:Senior|Junior|Lead|Principal|Chief|Undergraduate|Graduate|Staff|Full-Stack|Frontend|Backend|Software|Web|Mobile|DevOps|Data|QA)?\s*(?:Engineer|Developer|Architect|Designer|Manager|Programmer|Researcher|Scientist|Analyst|Consultant|Specialist|Intern|Fellow|Desenvolvedor|Gerente|Engenheiro)(?:\s+(?:Team|Lead|Manager))?/i;
 
