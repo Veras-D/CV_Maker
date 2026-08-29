@@ -1,19 +1,17 @@
-import { WorkExperience, EducationItem, LanguageItem, SkillCategory, ProjectItem } from '../types/cv';
+import { WorkExperience, EducationItem, ProjectItem } from '../types/cv';
 import { IngestionResult } from './ingestionService';
+import { 
+  SECTION_PATTERNS, 
+  DATE_RANGE_REGEX, 
+  ROLE_PREFIX_REGEX, 
+  ACADEMIC_KEYWORDS,
+  cleanSpecialPunctuation,
+  extractContactDetails,
+  parseLanguages,
+  parseSkills
+} from './resumePatterns';
 
-const TECH_KEYWORD_LIST = [
-  'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Rust', 'Docker',
-  'Kubernetes', 'AWS', 'SQL', 'PostgreSQL', 'MongoDB', 'HTML', 'CSS', 'Tailwind',
-  'GraphQL', 'Git', 'Next.js', 'Vue', 'Angular', 'C++', 'Java', 'Linux', 'Figma',
-  'Spring Boot', 'DevOps', 'CI/CD', 'Redux', 'Express', 'Django', 'Flask', 'Golang',
-  '.NET', 'Terraform', 'Bootstrap', 'MySQL', 'C#', 'ASP.NET', 'Keras', 'scikit-learn',
-  'Prisma', 'Redis', 'JIRA', 'Testing Library'
-];
-
-const KNOWN_LANGUAGES = [
-  'English', 'Portuguese', 'Spanish', 'French', 'German', 'Czech',
-  'Italian', 'Chinese', 'Japanese', 'Russian', 'Arabic', 'Polish', 'Dutch'
-];
+export { cleanSpecialPunctuation };
 
 interface RawSections {
   header: string;
@@ -23,22 +21,6 @@ interface RawSections {
   skills: string;
   languages: string;
   projects: string;
-}
-
-const SECTION_PATTERNS = [
-  { key: 'summary', regex: /\b(?:about\s+me|sobre\s+mim|professional\s+summary|executive\s+profile|summary|profile|resumo|perfil)\b/i },
-  { key: 'experience', regex: /\b(?:work\s+experience|professional\s+experience|employment\s+history|experience|experiência\s+profissional|experiência|histórico\s+profissional)\b/i },
-  { key: 'education', regex: /\b(?:academic\s+background|education|formação\s+acadêmica|formação|educação)\b/i },
-  { key: 'skills', regex: /\b(?:technical\s+skills|core\s+competencies|skills\s+&\s+expertise|skills|habilidades|competências|tecnologias)\b/i },
-  { key: 'languages', regex: /\b(?:language\s+proficiency|languages|idiomas|línguas)\b/i },
-  { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projects|projetos)\b/i }
-];
-
-export function cleanSpecialPunctuation(str: string): string {
-  return str
-    .replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '')
-    .replace(/[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+$/u, '')
-    .trim();
 }
 
 function segmentResumeText(rawText: string): RawSections {
@@ -76,16 +58,6 @@ function segmentResumeText(rawText: string): RawSections {
   return sections;
 }
 
-function extractContactDetails(rawText: string) {
-  const email = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
-  const phone = rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,3}\)?[-.\s]?\d{4,5}[-.\s]?\d{4}/)?.[0];
-  const github = rawText.match(/https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i)?.[0];
-  const linkedin = rawText.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0];
-  const portfolio = rawText.match(/https?:\/\/[a-zA-Z0-9.-]+\.(?:dev|app|io|com|org|net|me)\b/i)?.[0];
-
-  return { email, phone, github, linkedin, portfolio };
-}
-
 function extractCandidateName(lines: string[]): string | undefined {
   for (const line of lines) {
     if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
@@ -114,10 +86,6 @@ function extractHeaderInfo(headerText: string, fullText: string) {
     contacts
   };
 }
-
-const DATE_RANGE_REGEX = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4})\s*[-–—to/\s]+\s*(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December)[a-z]*\.?\s+\d{4}|\b\d{1,2}\/\d{4}|\b\d{4}|Present|Current|Atual|Presente|Now)/i;
-
-const ROLE_PREFIX_REGEX = /^(?:Senior|Junior|Lead|Principal|Chief|Undergraduate|Graduate|Staff|Full-Stack|Frontend|Backend|Software|Web|Mobile|DevOps|Data|QA)?\s*(?:Engineer|Developer|Architect|Designer|Manager|Programmer|Researcher|Scientist|Analyst|Consultant|Specialist|Intern|Fellow|Desenvolvedor|Gerente|Engenheiro)(?:\s+(?:Team|Lead|Manager))?/i;
 
 interface ExtractedExp {
   role: string;
@@ -172,14 +140,35 @@ function processExpLineItem(line: string, current: ExtractedExp) {
 function collectExpEntries(lines: string[]): ExtractedExp[] {
   const exps: ExtractedExp[] = [];
   let current: ExtractedExp | null = null;
+  let lastNonDateLine = '';
 
   for (const line of lines) {
     const dateMatch = line.match(DATE_RANGE_REGEX);
     if (dateMatch) {
       if (current && (current.role || current.company)) exps.push(current);
       current = createNewExpEntry(line, dateMatch);
+      if ((!current.role || current.role === 'Software Professional') && lastNonDateLine) {
+        const { role, company } = extractRoleAndCompanyFromLine(lastNonDateLine);
+        if (role && role !== 'Software Professional') {
+          current.role = role;
+          if (company) current.company = company;
+        }
+      }
     } else if (current) {
-      processExpLineItem(line, current);
+      if ((!current.role || current.role === 'Software Professional' || !current.company) && !/^[●•\-*]/.test(line)) {
+        const { role, company } = extractRoleAndCompanyFromLine(line);
+        if (role && role !== 'Software Professional') {
+          current.role = role;
+          if (company) current.company = company;
+        } else {
+          processExpLineItem(line, current);
+        }
+      } else {
+        processExpLineItem(line, current);
+      }
+      lastNonDateLine = line;
+    } else {
+      lastNonDateLine = line;
     }
   }
 
@@ -219,80 +208,59 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
     }));
 }
 
-const ACADEMIC_KEYWORDS = /(?:University|College|School|Academy|Program|Degree|Bachelor|Master|B\.S|B\.Sc|M\.S|Ph\.D|Faculty|Faculdade|Universidade|Instituto|Recode|Bootcamp)/i;
-
 function parseEducationEntries(eduText: string): EducationItem[] {
   if (!eduText.trim()) return [];
 
   const lines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
   const items: EducationItem[] = [];
-  const dateRegex = /\b\d{4}\s*[-–—to]+\s*(\d{4}|Present|Current|Atual)?\b/i;
+  const dateRegex = /(\b\d{4}\s*[-–—to/\s]+\s*(\d{4}|Present|Current|Atual)?\b|\b\d{1,2}\/\d{4}\s*[-–—to/\s]+\s*(\d{1,2}\/\d{4}|Present|Current|Atual)?\b)/i;
+
+  let currentInstitution = '';
+  let currentProgram = '';
+  let currentDates = '';
 
   for (const line of lines) {
     if (line.startsWith('●') || line.startsWith('•') || /^(Technologies|Skills|Stack|Courses|MongoDB|HTML|CSS|React|Node)/i.test(line)) {
       continue;
     }
+
+    const dateMatch = line.match(dateRegex);
     const hasAcademic = ACADEMIC_KEYWORDS.test(line);
-    const hasDates = dateRegex.test(line);
 
-    if (hasAcademic || hasDates) {
-      const dates = line.match(dateRegex)?.[0] || 'Graduated';
-      const cleanLine = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
-      const parts = cleanLine.split(/\s+(?:—|–|\||\/|,|\s-\s)\s+/).map(p => cleanSpecialPunctuation(p)).filter(Boolean);
-      const institution = parts[0] || 'Academic Institution';
-      const program = parts[1] || parts[0] || 'Degree Program';
-
-      items.push({
-        id: `edu-${items.length}`,
-        institution: institution.slice(0, 50),
-        program: { en: program.slice(0, 60) },
-        dates,
-        enabled: true
-      });
+    if (dateMatch) {
+      if (currentInstitution || currentProgram) {
+        items.push({
+          id: `edu-${items.length}`,
+          institution: (currentInstitution || currentProgram).slice(0, 50),
+          program: { en: (currentProgram || currentInstitution).slice(0, 60) },
+          dates: currentDates || 'Graduated',
+          enabled: true
+        });
+        currentInstitution = '';
+        currentProgram = '';
+      }
+      currentDates = dateMatch[0];
+      const cleanWithoutDate = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
+      if (cleanWithoutDate) currentInstitution = cleanWithoutDate;
+    } else if (hasAcademic) {
+      if (!currentInstitution) currentInstitution = cleanSpecialPunctuation(line);
+      else if (!currentProgram) currentProgram = cleanSpecialPunctuation(line);
+    } else if (currentInstitution && !currentProgram && line.length < 70) {
+      currentProgram = cleanSpecialPunctuation(line);
     }
   }
-  return items.slice(0, 4);
-}
 
-function parseLanguages(rawText: string): LanguageItem[] {
-  const detected: LanguageItem[] = [];
-  const profRegex = /(Native|Fluent|Bilingual|Professional|Intermediate|Elementary|Natívo|Fluente|Avançado|C2|C1|B2|B1|A2|A1)/i;
-
-  for (const lang of KNOWN_LANGUAGES) {
-    const regex = new RegExp(`\\b${lang}\\b(?:[:\\s–-]+(${profRegex.source}))?`, 'i');
-    const match = rawText.match(regex);
-    if (match) {
-      detected.push({
-        id: `lang-${detected.length}`,
-        language: { en: lang },
-        proficiency: { en: match[1] || 'Professional Working' },
-        enabled: true
-      });
-    }
-  }
-  return detected;
-}
-
-function parseSkills(rawText: string): SkillCategory[] {
-  const detected = new Set<string>();
-  const lower = rawText.toLowerCase();
-
-  TECH_KEYWORD_LIST.forEach(tech => {
-    const regex = new RegExp(`\\b${tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (regex.test(lower)) detected.add(tech);
-  });
-
-  if (detected.size === 0) return [];
-  return [{
-    id: `cat-skills-${Date.now()}`,
-    categoryName: { en: 'Technical Skills' },
-    skills: Array.from(detected).map((name, idx) => ({
-      id: `skill-${idx}`,
-      name,
-      tags: ['fullstack'],
+  if (currentInstitution || currentProgram) {
+    items.push({
+      id: `edu-${items.length}`,
+      institution: (currentInstitution || currentProgram).slice(0, 50),
+      program: { en: (currentProgram || currentInstitution).slice(0, 60) },
+      dates: currentDates || 'Graduated',
       enabled: true
-    }))
-  }];
+    });
+  }
+
+  return items.slice(0, 5);
 }
 
 function parseProjects(projText: string): ProjectItem[] {
