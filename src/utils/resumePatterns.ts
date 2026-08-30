@@ -52,6 +52,7 @@ export function cleanSpecialPunctuation(str: string): string {
 export function isLikelyCandidateName(str: string): boolean {
   const clean = cleanSpecialPunctuation(str.split(/[•|—–\-/:]/)[0]);
   if (clean.length < 2 || clean.length > 35) return false;
+  if (/\d/.test(clean)) return false;
   if (FORBIDDEN_NAME_PATTERNS.test(clean)) return false;
   if (/^(?:como|sou|tenho|with|i\s+am|experienced|a\s+|o\s+|the\s+|curriculo|curriculum)/i.test(clean)) return false;
   if (/[,;:.!?]/.test(clean)) return false;
@@ -63,7 +64,7 @@ export function isLikelyCandidateName(str: string): boolean {
 export function extractCandidateName(lines: string[]): string | undefined {
   const candidates: string[] = [];
   for (const line of lines) {
-    if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
+    if (line.includes('@') || line.startsWith('http') || /\d/.test(line)) continue;
     const clean = cleanSpecialPunctuation(line.split(/[•|—–\-/:]/)[0]);
     if (isLikelyCandidateName(clean)) {
       candidates.push(clean);
@@ -77,7 +78,7 @@ export function extractCandidateName(lines: string[]): string | undefined {
 
 export function extractContactDetails(rawText: string) {
   const email = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
-  const phone = rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,3}\)?[-.\s]?\d{4,5}[-.\s]?\d{4}/)?.[0];
+  const phone = rawText.match(/(?:(?:\+|00)\d{1,4}[-.\s]?)?(?:\(?\d{1,4}\)?[-.\s]?)?\d{3,5}[-.\s]?\d{3,5}(?:[-.\s]?\d{1,4})?/)?.[0];
   const github = rawText.match(/https?:\/\/(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i)?.[0];
   const linkedin = rawText.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0];
   const portfolio = rawText.match(/https?:\/\/[a-zA-Z0-9.-]+\.(?:dev|app|io|com|org|net|me)\b/i)?.[0];
