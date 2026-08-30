@@ -42,7 +42,7 @@ const GitHubInputForm: React.FC<{
     <div className="flex gap-2">
       <input
         type="text"
-        placeholder="e.g. veras-d or https://github.com/veras-d"
+        placeholder="e.g. username or https://github.com/username"
         value={usernameInput}
         onChange={(e) => setUsernameInput(e.target.value)}
         onKeyDown={(e) => {
