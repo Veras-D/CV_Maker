@@ -95,7 +95,7 @@ export function useIngestionState() {
     setErrorMessage('');
     setIsProcessing(true);
     try {
-      const result = await ingestFromFile(linkedinPdfFile);
+      const result = await ingestFromFile(linkedinPdfFile, 'linkedin');
       setPreviewResult(result);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to parse LinkedIn PDF file.';
@@ -112,7 +112,7 @@ export function useIngestionState() {
     }
     if (activeTab === 'linkedin') {
       if (!linkedinPdfFile) throw new Error('Please select or drop your downloaded LinkedIn Profile.pdf first.');
-      return ingestFromFile(linkedinPdfFile);
+      return ingestFromFile(linkedinPdfFile, 'linkedin');
     }
     if (activeTab === 'website') {
       return ingestFromWebsite(websiteInput.trim());

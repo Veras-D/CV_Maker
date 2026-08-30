@@ -4,6 +4,7 @@ import { extractTextFromPDF } from './pdfParser';
 import { scrapePortfolioFromHTML } from './websiteScraper';
 import { parseFullResumeContent } from './resumeSectionParser';
 import { fetchUserGitHubRepos, convertSelectedReposToIngestion } from './githubScraper';
+import { isLinkedInProfileText, parseLinkedInPdfContent } from './linkedinParser';
 
 export { 
   fetchUserGitHubRepos, 
@@ -77,10 +78,10 @@ function parseJsonCVFile(parsed: Partial<CVData>): IngestionResult {
 
 const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'md', 'json'];
 
-/**
- * Ingest CV data from an uploaded file (.pdf, .txt, .md, .json)
- */
-export async function ingestFromFile(file: File): Promise<IngestionResult> {
+export async function ingestFromFile(
+  file: File, 
+  explicitSourceType?: IngestionResult['sourceType']
+): Promise<IngestionResult> {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
@@ -93,6 +94,11 @@ export async function ingestFromFile(file: File): Promise<IngestionResult> {
   }
 
   const rawText = ext === 'pdf' ? await extractTextFromPDF(file) : await file.text();
+  
+  if (explicitSourceType === 'linkedin' || isLinkedInProfileText(rawText) || file.name.toLowerCase().includes('profile')) {
+    return parseLinkedInPdfContent(rawText);
+  }
+
   return parseFullResumeContent(rawText, 'file');
 }
 
