@@ -1,4 +1,4 @@
-import { WorkExperience, EducationItem, ProjectItem } from '../types/cv';
+import { WorkExperience, EducationItem } from '../types/cv';
 import { IngestionResult } from './ingestionService';
 import { 
   SECTION_PATTERNS, 
@@ -10,7 +10,8 @@ import {
   extractCandidateName,
   extractContactDetails,
   parseLanguages,
-  parseSkills
+  parseSkills,
+  parseProjects
 } from './resumePatterns';
 
 export { cleanSpecialPunctuation };
@@ -104,50 +105,76 @@ function extractRoleAndCompanyFromLine(lineWithoutDate: string): { role: string;
   return { role: cleanSpecialPunctuation(lineWithoutDate) || 'Software Professional', company: '' };
 }
 
+function inferFromDateText(textWithoutDate: string, prevLines: string[]): { role: string; company: string } | null {
+  if (!textWithoutDate || prevLines.length === 0) return null;
+  const prev1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
+  if (prev1 && !DATE_RANGE_REGEX.test(prev1)) {
+    return { role: prev1, company: cleanSpecialPunctuation(textWithoutDate) || 'Software House' };
+  }
+  return null;
+}
+
+function inferFromPrevLines(prevLines: string[]): { role: string; company: string } | null {
+  if (prevLines.length < 2) return null;
+  const p1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
+  const p2 = cleanSpecialPunctuation(prevLines[prevLines.length - 2]);
+  if (p1 && p2 && !DATE_RANGE_REGEX.test(p1) && !DATE_RANGE_REGEX.test(p2)) {
+    return { role: p1, company: p2 };
+  }
+  return null;
+}
+
 function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: string[]): ExtractedExp {
   const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()]/g, ' ').trim();
   const startDate = dateMatch[1].trim();
   const endDate = dateMatch[2].trim();
 
-  if (textWithoutDate && prevLines.length > 0) {
-    const prev1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
-    const prev2 = prevLines.length > 1 ? cleanSpecialPunctuation(prevLines[prevLines.length - 2]) : '';
-    if (prev1 && !DATE_RANGE_REGEX.test(prev1)) {
-      return {
-        role: prev1,
-        company: cleanSpecialPunctuation(textWithoutDate) || 'Software House',
-        startDate,
-        endDate,
-        bullets: []
-      };
-    }
-    if (prev2 && !DATE_RANGE_REGEX.test(prev2)) {
-      return {
-        role: prev1,
-        company: prev2,
-        startDate,
-        endDate,
-        bullets: []
-      };
-    }
+  const fromDateText = inferFromDateText(textWithoutDate, prevLines);
+  if (fromDateText) {
+    return { ...fromDateText, startDate, endDate, bullets: [] };
   }
 
-  if (!textWithoutDate && prevLines.length >= 2) {
-    const p1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
-    const p2 = cleanSpecialPunctuation(prevLines[prevLines.length - 2]);
-    if (p1 && p2 && !DATE_RANGE_REGEX.test(p1) && !DATE_RANGE_REGEX.test(p2)) {
-      return { role: p1, company: p2, startDate, endDate, bullets: [] };
-    }
+  const fromPrev = inferFromPrevLines(prevLines);
+  if (!textWithoutDate && fromPrev) {
+    return { ...fromPrev, startDate, endDate, bullets: [] };
   }
 
-  const { role, company } = extractRoleAndCompanyFromLine(textWithoutDate);
+  const fallback = extractRoleAndCompanyFromLine(textWithoutDate);
+  const fallbackRole = fallback.role || (prevLines.length > 0 ? cleanSpecialPunctuation(prevLines[prevLines.length - 1]) : 'Software Professional');
   return {
-    role: role || (prevLines.length > 0 ? cleanSpecialPunctuation(prevLines[prevLines.length - 1]) : 'Software Professional'),
-    company,
+    role: fallbackRole,
+    company: fallback.company,
     startDate,
     endDate,
     bullets: []
   };
+}
+
+function tryAssignMissingRoleOrComp(current: ExtractedExp, line: string, cleaned: string): boolean {
+  if (current.role && current.role !== 'Software Professional' && current.company) {
+    return false;
+  }
+  const { role, company } = extractRoleAndCompanyFromLine(line);
+  if (role && role !== 'Software Professional') {
+    current.role = role;
+    if (company) current.company = company;
+    return true;
+  }
+  if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
+    current.company = cleaned;
+    return true;
+  }
+  return false;
+}
+
+function appendSplitSentences(current: ExtractedExp, cleaned: string): boolean {
+  if (!cleaned.includes('. ') || /^[A-Z0-9._%+-]+@/i.test(cleaned)) return false;
+  const subSentences = cleaned.split(/\.\s+/).map(s => cleanSpecialPunctuation(s)).filter(s => s.length > 8);
+  if (subSentences.length > 1) {
+    subSentences.forEach(s => current.bullets.push(s));
+    return true;
+  }
+  return false;
 }
 
 function processExpLineItem(line: string, current: ExtractedExp) {
@@ -159,25 +186,12 @@ function processExpLineItem(line: string, current: ExtractedExp) {
     return;
   }
 
-  if (!current.role || current.role === 'Software Professional' || !current.company) {
-    const { role, company } = extractRoleAndCompanyFromLine(line);
-    if (role && role !== 'Software Professional') {
-      current.role = role;
-      if (company) current.company = company;
-      return;
-    }
-    if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
-      current.company = cleaned;
-      return;
-    }
+  if (tryAssignMissingRoleOrComp(current, line, cleaned)) {
+    return;
   }
 
-  if (cleaned.includes('. ') && !/^[A-Z0-9._%+-]+@/i.test(cleaned)) {
-    const subSentences = cleaned.split(/\.\s+/).map(s => cleanSpecialPunctuation(s)).filter(s => s.length > 8);
-    if (subSentences.length > 1) {
-      subSentences.forEach(s => current.bullets.push(s));
-      return;
-    }
+  if (appendSplitSentences(current, cleaned)) {
+    return;
   }
 
   current.bullets.push(cleaned);
@@ -292,24 +306,6 @@ function parseEducationEntries(eduText: string): EducationItem[] {
 
   flushEduState(items, state);
   return items.slice(0, 5);
-}
-
-function parseProjects(projText: string): ProjectItem[] {
-  if (!projText.trim()) return [];
-  const lines = projText.split('\n').map(l => l.trim()).filter(Boolean);
-  const titleSeparator = /[-|]|\s:\s/;
-
-  return lines
-    .filter(l => l.length > 10 && l.length < 80 && !/^[●•\-*]/.test(l))
-    .slice(0, 4)
-    .map((line, idx) => ({
-      id: `proj-parsed-${idx}`,
-      title: cleanSpecialPunctuation(line.split(titleSeparator)[0]),
-      description: { en: cleanSpecialPunctuation(line) },
-      techStack: [],
-      tags: ['fullstack'],
-      enabled: true
-    }));
 }
 
 /**

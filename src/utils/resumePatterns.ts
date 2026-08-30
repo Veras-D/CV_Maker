@@ -1,4 +1,4 @@
-import { LanguageItem, SkillCategory } from '../types/cv';
+import { LanguageItem, SkillCategory, ProjectItem } from '../types/cv';
 
 export const TECH_KEYWORD_LIST = [
   'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Rust', 'Docker',
@@ -121,4 +121,22 @@ export function parseSkills(rawText: string): SkillCategory[] {
       enabled: true
     }))
   }];
+}
+
+export function parseProjects(projText: string): ProjectItem[] {
+  if (!projText.trim()) return [];
+  const lines = projText.split('\n').map(l => l.trim()).filter(Boolean);
+  const titleSeparator = /[-|]|\s:\s/;
+
+  return lines
+    .filter(l => l.length > 10 && l.length < 80 && !/^[●•\-*]/.test(l))
+    .slice(0, 4)
+    .map((line, idx) => ({
+      id: `proj-parsed-${idx}`,
+      title: cleanSpecialPunctuation(line.split(titleSeparator)[0]),
+      description: { en: cleanSpecialPunctuation(line) },
+      techStack: [],
+      tags: ['fullstack'],
+      enabled: true
+    }));
 }
