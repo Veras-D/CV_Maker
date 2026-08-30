@@ -5,7 +5,9 @@ import {
   DATE_RANGE_REGEX, 
   ROLE_PREFIX_REGEX, 
   ACADEMIC_KEYWORDS,
+  FORBIDDEN_NAME_PATTERNS,
   cleanSpecialPunctuation,
+  extractCandidateName,
   extractContactDetails,
   parseLanguages,
   parseSkills
@@ -58,29 +60,15 @@ function segmentResumeText(rawText: string): RawSections {
   return sections;
 }
 
-function extractCandidateName(lines: string[]): string | undefined {
-  const candidates: string[] = [];
-  for (const line of lines) {
-    if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
-    const clean = cleanSpecialPunctuation(line.split(/[•|—–\-/:]/)[0]);
-    if (clean.length >= 2 && clean.length <= 40 && !/^(resume|cv|curriculum|profile|sobre|experiência|education|habilidades)$/i.test(clean)) {
-      candidates.push(clean);
-    }
-  }
-  if (candidates.length >= 2 && candidates[0].split(/\s+/).length === 1 && candidates[1].split(/\s+/).length === 1) {
-    return `${candidates[0]} ${candidates[1]}`;
-  }
-  return candidates[0];
-}
-
 function extractHeaderInfo(headerText: string, fullText: string) {
-  const lines = (headerText || fullText).split('\n').map(l => l.trim()).filter(Boolean).slice(0, 10);
+  const lines = (headerText || fullText).split('\n').map(l => l.trim()).filter(Boolean).slice(0, 15);
   const contacts = extractContactDetails(fullText);
   const detectedName = extractCandidateName(lines);
 
   const headlineCandidate = lines.find(l => 
     l !== detectedName && 
-    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor|Analista)/i.test(l) &&
+    !FORBIDDEN_NAME_PATTERNS.test(l) &&
+    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor|Programador|Analista|Automação)/i.test(l) &&
     l.length <= 70
   );
 
@@ -116,14 +104,48 @@ function extractRoleAndCompanyFromLine(lineWithoutDate: string): { role: string;
   return { role: cleanSpecialPunctuation(lineWithoutDate) || 'Software Professional', company: '' };
 }
 
-function createNewExpEntry(line: string, dateMatch: RegExpMatchArray): ExtractedExp {
+function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: string[]): ExtractedExp {
   const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()]/g, ' ').trim();
+  const startDate = dateMatch[1].trim();
+  const endDate = dateMatch[2].trim();
+
+  if (textWithoutDate && prevLines.length > 0) {
+    const prev1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
+    const prev2 = prevLines.length > 1 ? cleanSpecialPunctuation(prevLines[prevLines.length - 2]) : '';
+    if (prev1 && !DATE_RANGE_REGEX.test(prev1)) {
+      return {
+        role: prev1,
+        company: cleanSpecialPunctuation(textWithoutDate) || 'Software House',
+        startDate,
+        endDate,
+        bullets: []
+      };
+    }
+    if (prev2 && !DATE_RANGE_REGEX.test(prev2)) {
+      return {
+        role: prev1,
+        company: prev2,
+        startDate,
+        endDate,
+        bullets: []
+      };
+    }
+  }
+
+  if (!textWithoutDate && prevLines.length >= 2) {
+    const p1 = cleanSpecialPunctuation(prevLines[prevLines.length - 1]);
+    const p2 = cleanSpecialPunctuation(prevLines[prevLines.length - 2]);
+    if (p1 && p2 && !DATE_RANGE_REGEX.test(p1) && !DATE_RANGE_REGEX.test(p2)) {
+      return { role: p1, company: p2, startDate, endDate, bullets: [] };
+    }
+  }
+
   const { role, company } = extractRoleAndCompanyFromLine(textWithoutDate);
   return {
-    role: role || 'Software Professional',
+    role: role || (prevLines.length > 0 ? cleanSpecialPunctuation(prevLines[prevLines.length - 1]) : 'Software Professional'),
     company,
-    startDate: dateMatch[1].trim(),
-    endDate: dateMatch[2].trim(),
+    startDate,
+    endDate,
     bullets: []
   };
 }
@@ -134,66 +156,48 @@ function processExpLineItem(line: string, current: ExtractedExp) {
 
   if (/^[●•\-*]/.test(line)) {
     current.bullets.push(cleaned);
-  } else if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
-    current.company = cleaned;
-  } else if (cleaned.length > 20 && !current.role.includes(cleaned)) {
-    if (cleaned.includes('. ') && !/^[A-Z0-9._%+-]+@/i.test(cleaned)) {
-      const subSentences = cleaned.split(/\.\s+/).map(s => cleanSpecialPunctuation(s)).filter(s => s.length > 10);
-      if (subSentences.length > 1) {
-        subSentences.forEach(s => current.bullets.push(s));
-        return;
-      }
-    }
-    current.bullets.push(cleaned);
-  }
-}
-
-function tryAssignRoleAndCompany(current: ExtractedExp, line: string): boolean {
-  if (/^[●•\-*]/.test(line)) return false;
-  const { role, company } = extractRoleAndCompanyFromLine(line);
-  if (role && role !== 'Software Professional') {
-    current.role = role;
-    if (company) current.company = company;
-    return true;
-  }
-  return false;
-}
-
-function handleDateLine(line: string, dateMatch: RegExpMatchArray, lastNonDateLine: string): ExtractedExp {
-  const entry = createNewExpEntry(line, dateMatch);
-  if ((!entry.role || entry.role === 'Software Professional') && lastNonDateLine) {
-    const { role, company } = extractRoleAndCompanyFromLine(lastNonDateLine);
-    if (role && role !== 'Software Professional') {
-      entry.role = role;
-      if (company) entry.company = company;
-    }
-  }
-  return entry;
-}
-
-function handleNonDateLine(line: string, current: ExtractedExp) {
-  const needsRoleOrCompany = !current.role || current.role === 'Software Professional' || !current.company;
-  if (needsRoleOrCompany && tryAssignRoleAndCompany(current, line)) {
     return;
   }
-  processExpLineItem(line, current);
+
+  if (!current.role || current.role === 'Software Professional' || !current.company) {
+    const { role, company } = extractRoleAndCompanyFromLine(line);
+    if (role && role !== 'Software Professional') {
+      current.role = role;
+      if (company) current.company = company;
+      return;
+    }
+    if (!current.company && cleaned.length < 50 && !/^(about|experience|education|skills)/i.test(cleaned)) {
+      current.company = cleaned;
+      return;
+    }
+  }
+
+  if (cleaned.includes('. ') && !/^[A-Z0-9._%+-]+@/i.test(cleaned)) {
+    const subSentences = cleaned.split(/\.\s+/).map(s => cleanSpecialPunctuation(s)).filter(s => s.length > 8);
+    if (subSentences.length > 1) {
+      subSentences.forEach(s => current.bullets.push(s));
+      return;
+    }
+  }
+
+  current.bullets.push(cleaned);
 }
 
 function collectExpEntries(lines: string[]): ExtractedExp[] {
   const exps: ExtractedExp[] = [];
   let current: ExtractedExp | null = null;
-  let lastNonDateLine = '';
+  const recentLines: string[] = [];
 
   for (const line of lines) {
     const dateMatch = line.match(DATE_RANGE_REGEX);
     if (dateMatch) {
       if (current && (current.role || current.company)) exps.push(current);
-      current = handleDateLine(line, dateMatch, lastNonDateLine);
+      current = handleDateLine(line, dateMatch, recentLines);
     } else if (current) {
-      handleNonDateLine(line, current);
-      lastNonDateLine = line;
+      processExpLineItem(line, current);
+      recentLines.push(line);
     } else {
-      lastNonDateLine = line;
+      recentLines.push(line);
     }
   }
 
