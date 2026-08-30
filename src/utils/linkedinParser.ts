@@ -124,6 +124,10 @@ function appendLinkedInBullet(current: RawExpEntry, line: string) {
   }
 }
 
+function shouldSkipLocation(lines: string[], nextIdx: number): boolean {
+  return nextIdx < lines.length && !lines[nextIdx].startsWith('-') && lines[nextIdx].length < 40;
+}
+
 function processLinkedInExpLines(lines: string[]): RawExpEntry[] {
   const entries: RawExpEntry[] = [];
   let current: RawExpEntry | null = null;
@@ -131,20 +135,13 @@ function processLinkedInExpLines(lines: string[]): RawExpEntry[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const dateMatch = line.match(LI_DATE_REGEX);
+    const created = dateMatch ? tryCreateNewLinkedInExp(lines, i, dateMatch) : null;
 
-    if (dateMatch) {
-      const created = tryCreateNewLinkedInExp(lines, i, dateMatch);
-      if (created) {
-        if (current) entries.push(current);
-        current = created;
-        if (i + 1 < lines.length && !lines[i + 1].startsWith('-') && lines[i + 1].length < 40) {
-          i++;
-        }
-        continue;
-      }
-    }
-
-    if (current) {
+    if (created) {
+      if (current) entries.push(current);
+      current = created;
+      if (shouldSkipLocation(lines, i + 1)) i++;
+    } else if (current) {
       appendLinkedInBullet(current, line);
     }
   }
