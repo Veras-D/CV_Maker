@@ -9,6 +9,8 @@ import {
   FileDown
 } from 'lucide-react';
 
+import { openExternalUrl } from '../../utils/urlHelper';
+
 export interface LinkedinTabContentProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
@@ -23,15 +25,14 @@ const TutorialSteps: React.FC = () => (
         <FileDown className="w-3.5 h-3.5 text-sky-400" />
         <span>How to Export Your Complete LinkedIn Data (3 Clicks):</span>
       </span>
-      <a
-        href="https://www.linkedin.com/in/me/"
-        target="_blank"
-        rel="noreferrer"
-        className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-semibold underline"
+      <button
+        type="button"
+        onClick={() => openExternalUrl('https://www.linkedin.com/in/me/')}
+        className="text-[10px] text-sky-400 hover:text-sky-300 flex items-center gap-1 font-semibold underline cursor-pointer"
       >
         <span>Open LinkedIn</span>
         <ExternalLink className="w-2.5 h-2.5" />
-      </a>
+      </button>
     </div>
 
     <div className="grid grid-cols-3 gap-2 text-[11px]">

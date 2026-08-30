@@ -23,6 +23,32 @@ async fn fetch_url_html(url: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to read website response body: {}", e))
 }
 
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &url])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 fn main() {
     #[cfg(target_os = "linux")]
     {
@@ -30,7 +56,7 @@ fn main() {
     }
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_url_html])
+        .invoke_handler(tauri::generate_handler![fetch_url_html, open_external_url])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

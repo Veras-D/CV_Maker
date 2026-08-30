@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { GitHubUserRepo, GitHubUserProfile } from '../../utils/githubScraper';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 export interface GitHubTabContentProps {
   usernameInput: string;
@@ -104,15 +105,17 @@ const GitHubRepoRow: React.FC<{
               {repo.language}
             </span>
           )}
-          <a
-            href={repo.html_url}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-slate-500 hover:text-sky-400 transition-colors p-0.5"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              openExternalUrl(repo.html_url);
+            }}
+            className="text-slate-500 hover:text-sky-400 transition-colors p-0.5 cursor-pointer"
+            title="Open Repository"
           >
             <ExternalLink className="w-3 h-3" />
-          </a>
+          </button>
         </div>
       </div>
 
