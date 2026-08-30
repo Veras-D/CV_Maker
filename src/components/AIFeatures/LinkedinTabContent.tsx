@@ -53,10 +53,10 @@ const TutorialSteps: React.FC = () => (
           <span className="w-4 h-4 rounded-full bg-sky-900/60 text-sky-400 flex items-center justify-center text-[10px] font-bold shrink-0">
             2
           </span>
-          <span>Click &quot;More&quot;</span>
+          <span>Click &quot;Resources&quot;</span>
         </div>
         <p className="text-[10px] text-slate-400">
-          Under your name &amp; photo, click the <strong>More</strong> (<MousePointerClick className="w-2.5 h-2.5 inline" />) button.
+          Under your headline, click the <strong>Resources</strong> (<MousePointerClick className="w-2.5 h-2.5 inline" />) button.
         </p>
       </div>
 
@@ -68,7 +68,7 @@ const TutorialSteps: React.FC = () => (
           <span>Save to PDF</span>
         </div>
         <p className="text-[10px] text-slate-400">
-          Select <strong>&quot;Save to PDF&quot;</strong> to download your full work history instantly.
+          Click <strong>&quot;Save to PDF&quot;</strong> in the dropdown menu to download your complete profile PDF.
         </p>
       </div>
     </div>
