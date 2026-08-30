@@ -106,17 +106,35 @@ interface RawExpEntry {
   bullets: string[];
 }
 
+function cleanLinkedInBullet(str: string): string {
+  let text = str.trim();
+  text = text.replace(/^[A-Za-z\s&-]+:\s+/, '');
+  text = text.replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '').trim();
+  return text;
+}
+
+function isSkipLinkedInLine(line: string): boolean {
+  if (/^(?:Key Responsibilities|Key Achievements|Achievements|Skills and Tools Used|Skills and Tools|Tools Used):?$/i.test(line)) {
+    return true;
+  }
+  return /^-\s*(?:Languages and Technologies|Cloud Platforms|Database|Visualization Tools|Project Management|Tools):/i.test(line);
+}
+
 function appendLinkedInExpBullet(current: RawExpEntry, line: string) {
+  if (isSkipLinkedInLine(line)) return;
+
   if (line.startsWith('-')) {
-    current.bullets.push(cleanSpecialPunctuation(line.slice(1)));
-    return;
-  }
-  if (current.bullets.length > 0 && !/[.:]$/.test(current.bullets[current.bullets.length - 1]) && !line.startsWith('Key ') && !line.startsWith('Skills and ')) {
+    const cleaned = cleanLinkedInBullet(line.slice(1));
+    if (cleaned && cleaned.toLowerCase() !== current.role.toLowerCase() && cleaned.length > 10) {
+      current.bullets.push(cleaned);
+    }
+  } else if (current.bullets.length > 0) {
     current.bullets[current.bullets.length - 1] += ` ${line}`;
-    return;
-  }
-  if (line.length > 15 && !line.startsWith('Key ') && !line.startsWith('Skills and ') && !line.startsWith('Achievements')) {
-    current.bullets.push(line);
+  } else {
+    const cleaned = cleanLinkedInBullet(line);
+    if (cleaned && cleaned.toLowerCase() !== current.role.toLowerCase() && cleaned.length > 25) {
+      current.bullets.push(cleaned);
+    }
   }
 }
 
