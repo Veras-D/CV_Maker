@@ -83,31 +83,6 @@ function findColumnSplitGutter(items: PositionedItem[]): number | null {
   return null;
 }
 
-function mergeVisualLines(rawLines: string[]): string[] {
-  const result: string[] = [];
-  for (const line of rawLines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    if (result.length === 0) {
-      result.push(trimmed);
-      continue;
-    }
-
-    const prev = result[result.length - 1];
-    const startsBullet = /^[●•\-*►▸▪▫⁃]/.test(trimmed);
-    const startsLower = /^[a-zà-ÿ]/.test(trimmed);
-    const prevEndsPunct = /[.!?:]$/.test(prev);
-
-    if (!startsBullet && (startsLower || !prevEndsPunct) && prev.length < 90 && !/^\d{4}/.test(trimmed)) {
-      result[result.length - 1] = `${prev} ${trimmed}`;
-    } else {
-      result.push(trimmed);
-    }
-  }
-  return result;
-}
-
 function renderColumnLines(items: PositionedItem[]): string {
   // Sort Y descending (top to bottom), X ascending (left to right)
   const sorted = [...items].sort((a, b) => {
@@ -137,7 +112,7 @@ function renderColumnLines(items: PositionedItem[]): string {
     lines.push(currentLine.map(i => i.str).join(' '));
   }
 
-  return mergeVisualLines(lines).join('\n');
+  return lines.join('\n');
 }
 
 function processPageWithLayout(items: PDFRawTextItem[]): string {

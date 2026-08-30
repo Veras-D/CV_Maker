@@ -103,14 +103,26 @@ function inferFromPrevLines(prevLines: string[]): { role: string; company: strin
   return null;
 }
 
-function popTrailingRoleBullet(prev: ExtractedExp | null): string | null {
+function popTrailingExpHeader(prev: ExtractedExp | null, textWithoutDate: string): { role: string; company: string } | null {
   if (!prev || prev.bullets.length === 0) return null;
-  const lastBullet = prev.bullets[prev.bullets.length - 1];
-  if (ROLE_PREFIX_REGEX.test(lastBullet) || (lastBullet.length < 40 && !lastBullet.includes('.'))) {
-    prev.bullets.pop();
-    return lastBullet;
+  const last = prev.bullets[prev.bullets.length - 1];
+  const isRole = ROLE_PREFIX_REGEX.test(last) || (last.length < 45 && !last.includes('.'));
+  if (!isRole) return null;
+
+  prev.bullets.pop();
+  if (textWithoutDate) {
+    return { role: last, company: cleanSpecialPunctuation(textWithoutDate) || 'Software House' };
   }
-  return null;
+
+  if (prev.bullets.length > 0) {
+    const secondLast = prev.bullets[prev.bullets.length - 1];
+    const isCompany = secondLast.length < 50 && !secondLast.includes('.') && !/^[●•\-*]/.test(secondLast);
+    if (isCompany) {
+      prev.bullets.pop();
+      return { role: last, company: secondLast };
+    }
+  }
+  return { role: last, company: 'Software House' };
 }
 
 function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: string[], prevExp: ExtractedExp | null): ExtractedExp {
@@ -118,11 +130,11 @@ function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: st
   const startDate = dateMatch[1].trim();
   const endDate = dateMatch[2].trim();
 
-  const poppedRole = popTrailingRoleBullet(prevExp);
-  if (poppedRole) {
+  const popped = popTrailingExpHeader(prevExp, textWithoutDate);
+  if (popped) {
     return {
-      role: poppedRole,
-      company: cleanSpecialPunctuation(textWithoutDate) || 'Software House',
+      role: popped.role,
+      company: popped.company,
       startDate,
       endDate,
       bullets: []
