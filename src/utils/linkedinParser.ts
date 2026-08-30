@@ -97,6 +97,33 @@ interface RawExpEntry {
   bullets: string[];
 }
 
+function tryCreateNewLinkedInExp(lines: string[], i: number, dateMatch: RegExpMatchArray): RawExpEntry | null {
+  if (i < 2) return null;
+  const role = lines[i - 1];
+  const comp = lines[i - 2];
+  return {
+    company: comp || 'Software Company',
+    role: role || 'Software Engineer',
+    startDate: dateMatch[1].trim(),
+    endDate: dateMatch[2].trim(),
+    bullets: []
+  };
+}
+
+function appendLinkedInBullet(current: RawExpEntry, line: string) {
+  if (line.startsWith('-')) {
+    current.bullets.push(cleanSpecialPunctuation(line.slice(1)));
+    return;
+  }
+  if (current.bullets.length > 0 && !/[.!?:]$/.test(current.bullets[current.bullets.length - 1])) {
+    current.bullets[current.bullets.length - 1] += ` ${line}`;
+    return;
+  }
+  if (line.length > 20 && !line.startsWith('Key ') && !line.startsWith('Skills and ')) {
+    current.bullets.push(line);
+  }
+}
+
 function processLinkedInExpLines(lines: string[]): RawExpEntry[] {
   const entries: RawExpEntry[] = [];
   let current: RawExpEntry | null = null;
@@ -105,29 +132,20 @@ function processLinkedInExpLines(lines: string[]): RawExpEntry[] {
     const line = lines[i];
     const dateMatch = line.match(LI_DATE_REGEX);
 
-    if (dateMatch && i >= 2) {
-      if (current) entries.push(current);
-      const role = lines[i - 1];
-      const comp = lines[i - 2];
-      current = {
-        company: comp || 'Software Company',
-        role: role || 'Software Engineer',
-        startDate: dateMatch[1].trim(),
-        endDate: dateMatch[2].trim(),
-        bullets: []
-      };
-      // Skip location line if immediately after date
-      if (i + 1 < lines.length && !lines[i + 1].startsWith('-') && lines[i + 1].length < 40) {
-        i++;
+    if (dateMatch) {
+      const created = tryCreateNewLinkedInExp(lines, i, dateMatch);
+      if (created) {
+        if (current) entries.push(current);
+        current = created;
+        if (i + 1 < lines.length && !lines[i + 1].startsWith('-') && lines[i + 1].length < 40) {
+          i++;
+        }
+        continue;
       }
-    } else if (current) {
-      if (line.startsWith('-')) {
-        current.bullets.push(cleanSpecialPunctuation(line.slice(1)));
-      } else if (current.bullets.length > 0 && !/[.!?:]$/.test(current.bullets[current.bullets.length - 1])) {
-        current.bullets[current.bullets.length - 1] += ` ${line}`;
-      } else if (line.length > 20 && !line.startsWith('Key ') && !line.startsWith('Skills and ')) {
-        current.bullets.push(line);
-      }
+    }
+
+    if (current) {
+      appendLinkedInBullet(current, line);
     }
   }
 
