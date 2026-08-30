@@ -106,22 +106,26 @@ function inferFromPrevLines(prevLines: string[]): { role: string; company: strin
   return null;
 }
 
-function handleDateWithText(textWithoutDate: string, prevLines: string[], prevExp: ExtractedExp | null): { role: string; company: string } {
-  const parsed = extractRoleAndCompanyFromLine(textWithoutDate);
-  if (parsed.role && parsed.company) {
-    return { role: parsed.role, company: parsed.company };
-  }
-
-  if (parsed.role && ROLE_PREFIX_REGEX.test(parsed.role)) {
-    return { role: parsed.role, company: parsed.company || 'Software House' };
-  }
-
+function tryMatchInferredRole(textWithoutDate: string, prevLines: string[], prevExp: ExtractedExp | null): { role: string; company: string } | null {
   const fromDateText = inferFromDateText(textWithoutDate, prevLines);
   if (fromDateText && ROLE_PREFIX_REGEX.test(fromDateText.role)) {
     if (prevExp && prevExp.bullets.length > 0 && prevExp.bullets[prevExp.bullets.length - 1] === fromDateText.role) {
       prevExp.bullets.pop();
     }
     return fromDateText;
+  }
+  return null;
+}
+
+function handleDateWithText(textWithoutDate: string, prevLines: string[], prevExp: ExtractedExp | null): { role: string; company: string } {
+  const parsed = extractRoleAndCompanyFromLine(textWithoutDate);
+  if (parsed.role && (parsed.company || ROLE_PREFIX_REGEX.test(parsed.role))) {
+    return { role: parsed.role, company: parsed.company || 'Software House' };
+  }
+
+  const matchedInferred = tryMatchInferredRole(textWithoutDate, prevLines, prevExp);
+  if (matchedInferred) {
+    return matchedInferred;
   }
 
   return { role: parsed.role || 'Software Professional', company: parsed.company || 'Software House' };
