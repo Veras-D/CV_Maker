@@ -1,6 +1,6 @@
 import { IngestionResult } from './ingestionService';
 import { WorkExperience, EducationItem, LanguageItem, SkillCategory } from '../types/cv';
-import { cleanSpecialPunctuation } from './resumePatterns';
+import { cleanSpecialPunctuation, TECH_KEYWORD_LIST } from './resumePatterns';
 
 export function isLinkedInProfileText(rawText: string): boolean {
   return (
@@ -11,35 +11,40 @@ export function isLinkedInProfileText(rawText: string): boolean {
   );
 }
 
-function cleanLinkedInLine(l: string): string {
-  return cleanSpecialPunctuation(l.replace(/^Page \d+ of \d+$/i, '').trim());
-}
-
 function extractSidebarInfo(rawText: string) {
   const email = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
-  const phoneMatch = rawText.match(/(\+?\d[\d\s-]{6,16})\s*\(Mobile\)/i) || rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{4,5}[-.\s]?\d{4}/);
-  const phone = phoneMatch ? phoneMatch[1] || phoneMatch[0] : undefined;
+  const phoneMatch = rawText.match(/(\+?\d[\d\s-]{6,16})\s*\(Mobile\)/i);
+  const phone = phoneMatch ? phoneMatch[1].replace(/\s+/g, '') : undefined;
 
-  const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
-  const linkedinUrl = linkedinMatch ? (linkedinMatch[0].startsWith('http') ? linkedinMatch[0] : `https://${linkedinMatch[0]}`) : undefined;
+  const linkedinMatch = rawText.match(/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
+  const linkedinUrl = linkedinMatch ? `https://${linkedinMatch[0].replace(/^https?:\/\//, '')}` : undefined;
 
-  const portfolioMatch = rawText.match(/(?:https?:\/\/)?github\.com\/[a-zA-Z0-9_-]+/i) || rawText.match(/(?:https?:\/\/)?\S+\.(?:dev|app|io|me)\b/i);
-  const portfolioUrl = portfolioMatch ? (portfolioMatch[0].startsWith('http') ? portfolioMatch[0] : `https://${portfolioMatch[0]}`) : undefined;
+  const githubMatch = rawText.match(/(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i);
+  const portfolioUrl = githubMatch ? `https://${githubMatch[0].replace(/^https?:\/\//, '')}` : undefined;
 
   return { email, phone, linkedinUrl, portfolioUrl };
 }
 
 function parseLinkedInSkills(rawText: string): SkillCategory[] {
-  const match = rawText.match(/Top Skills\s+([\s\S]*?)(?=Languages|Certifications|Summary|Experience|Education|$)/i);
-  if (!match) return [];
+  const topSkillsMatch = rawText.match(/Top Skills\s+([\s\S]*?)(?=Languages)/i);
+  const topSkills = topSkillsMatch
+    ? topSkillsMatch[1].split('\n').map(s => s.trim()).filter(s => s && s.length < 40)
+    : [];
 
-  const lines = match[1].split('\n').map(cleanLinkedInLine).filter(l => l && l.length < 40);
-  if (lines.length === 0) return [];
+  const detectedTech = new Set<string>();
+  const lower = rawText.toLowerCase();
+  TECH_KEYWORD_LIST.forEach(tech => {
+    const regex = new RegExp(`\\b${tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (regex.test(lower)) detectedTech.add(tech);
+  });
+
+  const allSkills = Array.from(new Set([...topSkills, ...Array.from(detectedTech)]));
+  if (allSkills.length === 0) return [];
 
   return [{
-    id: `cat-linkedin-skills`,
-    categoryName: { en: 'Top Skills' },
-    skills: lines.map((name, idx) => ({
+    id: 'cat-linkedin-skills',
+    categoryName: { en: 'Technical Skills' },
+    skills: allSkills.map((name, idx) => ({
       id: `skill-li-${idx}`,
       name,
       tags: ['fullstack'],
@@ -49,10 +54,10 @@ function parseLinkedInSkills(rawText: string): SkillCategory[] {
 }
 
 function parseLinkedInLanguages(rawText: string): LanguageItem[] {
-  const match = rawText.match(/Languages\s+([\s\S]*?)(?=Certifications|Summary|Experience|Education|Top Skills|$)/i);
+  const match = rawText.match(/Languages\s+([\s\S]*?)(?=Certifications)/i);
   if (!match) return [];
 
-  const lines = match[1].split('\n').map(cleanLinkedInLine).filter(Boolean);
+  const lines = match[1].split('\n').map(l => l.trim()).filter(Boolean);
   const items: LanguageItem[] = [];
 
   for (const line of lines) {
@@ -69,25 +74,29 @@ function parseLinkedInLanguages(rawText: string): LanguageItem[] {
   return items;
 }
 
-function extractLinkedInHeader(mainText: string) {
-  const lines = mainText.split('\n').map(cleanLinkedInLine).filter(Boolean);
-  const forbidden = /^(Contact|Top Skills|Languages|Certifications|Summary|Experience|Education)$/i;
-  const filtered = lines.filter(l => !forbidden.test(l) && !l.includes('@') && !/^\d+$/.test(l));
+function extractLinkedInHeader(text: string) {
+  const summaryIdx = text.indexOf('Summary');
+  const beforeSummary = summaryIdx !== -1 ? text.slice(0, summaryIdx).trim() : text;
+  const certIdx = beforeSummary.lastIndexOf('Certifications');
+  const certBlock = certIdx !== -1 ? beforeSummary.slice(certIdx) : beforeSummary;
+  const lines = certBlock.split('\n').map(l => l.trim()).filter(Boolean);
 
-  const name = filtered[0] || 'Vivi Veras';
-  const headline = filtered[1] && filtered[1].length <= 80 ? filtered[1] : undefined;
-  const location = filtered[2] && filtered[2].length <= 60 && !filtered[2].startsWith('Developer') ? filtered[2] : undefined;
+  const location = lines.length >= 1 ? lines[lines.length - 1] : undefined;
+  const headline = lines.length >= 2 ? lines[lines.length - 2] : undefined;
+  const name = lines.length >= 3 ? lines[lines.length - 3] : 'Vivi Veras';
 
   return { name, headline, location };
 }
 
-function extractLinkedInSummary(mainText: string): string | undefined {
-  const match = mainText.match(/Summary\s+([\s\S]*?)(?=Experience|Education|$)/i);
-  if (!match) return undefined;
-  return match[1].split('\n').map(cleanLinkedInLine).filter(Boolean).join(' ').trim() || undefined;
+function extractLinkedInSummary(text: string): string | undefined {
+  const summaryIdx = text.indexOf('Summary');
+  if (summaryIdx === -1) return undefined;
+  const expIdx = text.indexOf('Experience\n');
+  const block = expIdx !== -1 ? text.slice(summaryIdx + 7, expIdx) : text.slice(summaryIdx + 7);
+  return block.replace(/Page \d+ of \d+/gi, '').replace(/\f/g, ' ').replace(/\s+/g, ' ').trim() || undefined;
 }
 
-const LI_DATE_REGEX = /\b([A-Za-z]+(?:\s+\d{4})?|\d{4})\s*[-–—]\s*(Present|\d{4}|[A-Za-z]+(?:\s+\d{4})?)\s*(?:\([^)]+\))?/i;
+const LI_DATE_REGEX = /^(January|February|March|April|May|June|July|August|September|October|November|December|\d{4})\s*(\d{4})?\s*[-–—]\s*(Present|\d{4}|[A-Za-z]+\s+\d{4})\s*(?:\([^)]+\))?/i;
 
 interface RawExpEntry {
   company: string;
@@ -97,67 +106,64 @@ interface RawExpEntry {
   bullets: string[];
 }
 
-function tryCreateNewLinkedInExp(lines: string[], i: number, dateMatch: RegExpMatchArray): RawExpEntry | null {
-  if (i < 2) return null;
-  const role = lines[i - 1];
-  const comp = lines[i - 2];
-  return {
-    company: comp || 'Software Company',
-    role: role || 'Software Engineer',
-    startDate: dateMatch[1].trim(),
-    endDate: dateMatch[2].trim(),
-    bullets: []
-  };
-}
-
-function appendLinkedInBullet(current: RawExpEntry, line: string) {
+function appendLinkedInExpBullet(current: RawExpEntry, line: string) {
   if (line.startsWith('-')) {
     current.bullets.push(cleanSpecialPunctuation(line.slice(1)));
     return;
   }
-  if (current.bullets.length > 0 && !/[.!?:]$/.test(current.bullets[current.bullets.length - 1])) {
+  if (current.bullets.length > 0 && !/[.:]$/.test(current.bullets[current.bullets.length - 1]) && !line.startsWith('Key ') && !line.startsWith('Skills and ')) {
     current.bullets[current.bullets.length - 1] += ` ${line}`;
     return;
   }
-  if (line.length > 20 && !line.startsWith('Key ') && !line.startsWith('Skills and ')) {
+  if (line.length > 15 && !line.startsWith('Key ') && !line.startsWith('Skills and ') && !line.startsWith('Achievements')) {
     current.bullets.push(line);
   }
 }
 
-function shouldSkipLocation(lines: string[], nextIdx: number): boolean {
-  return nextIdx < lines.length && !lines[nextIdx].startsWith('-') && lines[nextIdx].length < 40;
-}
+function parseLinkedInExperience(text: string): WorkExperience[] {
+  const expIdx = text.indexOf('Experience\n');
+  if (expIdx === -1) return [];
+  const eduIdx = text.indexOf('Education\n');
+  const expText = text.slice(expIdx + 11, eduIdx !== -1 ? eduIdx : undefined);
 
-function processLinkedInExpLines(lines: string[]): RawExpEntry[] {
-  const entries: RawExpEntry[] = [];
+  const clean = expText.replace(/Page \d+ of \d+/gi, '').replace(/\f/g, '\n');
+  const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const jobs: RawExpEntry[] = [];
   let current: RawExpEntry | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const dateMatch = line.match(LI_DATE_REGEX);
-    const created = dateMatch ? tryCreateNewLinkedInExp(lines, i, dateMatch) : null;
 
-    if (created) {
-      if (current) entries.push(current);
-      current = created;
-      if (shouldSkipLocation(lines, i + 1)) i++;
-    } else if (current) {
-      appendLinkedInBullet(current, line);
+    if (i + 2 < lines.length && LI_DATE_REGEX.test(lines[i + 2])) {
+      if (current) jobs.push(current);
+      const dateMatch = lines[i + 2].match(LI_DATE_REGEX);
+      const startDate = (dateMatch ? dateMatch[1] + (dateMatch[2] ? ` ${dateMatch[2]}` : '') : '').trim();
+      const endDate = (dateMatch ? dateMatch[3] : 'Present').trim();
+
+      current = {
+        company: lines[i],
+        role: lines[i + 1],
+        startDate,
+        endDate,
+        bullets: []
+      };
+
+      i += 2;
+      if (i + 1 < lines.length && !lines[i + 1].startsWith('-') && lines[i + 1].length < 40) {
+        i++;
+      }
+      continue;
+    }
+
+    if (current) {
+      appendLinkedInExpBullet(current, line);
     }
   }
 
-  if (current) entries.push(current);
-  return entries;
-}
+  if (current) jobs.push(current);
 
-function parseLinkedInExperience(mainText: string): WorkExperience[] {
-  const match = mainText.match(/Experience\s+([\s\S]*?)(?=Education|$)/i);
-  if (!match) return [];
-
-  const lines = match[1].split('\n').map(cleanLinkedInLine).filter(Boolean);
-  const rawEntries = processLinkedInExpLines(lines);
-
-  return rawEntries.slice(0, 6).map((e, idx) => ({
+  return jobs.slice(0, 6).map((e, idx) => ({
     id: `li-exp-${idx}-${Date.now()}`,
     company: e.company,
     roleTitle: { en: e.role },
@@ -165,7 +171,7 @@ function parseLinkedInExperience(mainText: string): WorkExperience[] {
     endDate: e.endDate,
     bullets: e.bullets.map((b, bIdx) => ({
       id: `li-b-${bIdx}`,
-      text: { en: b },
+      text: { en: cleanSpecialPunctuation(b) },
       tags: ['fullstack'],
       enabled: true
     })),
@@ -174,30 +180,40 @@ function parseLinkedInExperience(mainText: string): WorkExperience[] {
   }));
 }
 
-function parseLinkedInEducation(mainText: string): EducationItem[] {
-  const match = mainText.match(/Education\s+([\s\S]*)/i);
-  if (!match) return [];
+function formatEduEntry(inst: string, details: string, idx: number): EducationItem {
+  const parts = details.split('·');
+  const program = parts[0] ? cleanSpecialPunctuation(parts[0]) : inst;
+  const dMatch = details.slice(details.indexOf('·')).match(/\(([^)]+)\)/) || details.match(/\(([^)]+)\)/);
+  const dates = dMatch ? dMatch[1] : 'Graduated';
+  return { id: `li-edu-${idx}`, institution: inst, program: { en: program }, dates, enabled: true };
+}
 
-  const lines = match[1].split('\n').map(cleanLinkedInLine).filter(Boolean);
+function parseLinkedInEducation(text: string): EducationItem[] {
+  const eduIdx = text.indexOf('Education\n');
+  if (eduIdx === -1) return [];
+  const eduText = text.slice(eduIdx + 10).replace(/Page \d+ of \d+/gi, '').replace(/\f/g, '\n');
+  const rawLines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
+
   const items: EducationItem[] = [];
+  let currentInst = '';
+  let currentDetails = '';
 
-  for (let i = 0; i < lines.length; i += 2) {
-    const institution = lines[i];
-    const details = lines[i + 1] || '';
-    if (!institution) continue;
+  for (const line of rawLines) {
+    if (!currentInst) {
+      currentInst = line;
+    } else if (!currentDetails) {
+      currentDetails = line;
+    } else if (currentDetails.lastIndexOf('(') > currentDetails.lastIndexOf(')')) {
+      currentDetails += ` ${line}`;
+    } else {
+      items.push(formatEduEntry(currentInst, currentDetails, items.length));
+      currentInst = line;
+      currentDetails = '';
+    }
+  }
 
-    const parts = details.split('·');
-    const program = parts[0] ? cleanSpecialPunctuation(parts[0]) : institution;
-    const datesMatch = details.match(/\(([^)]+)\)/);
-    const dates = datesMatch ? datesMatch[1] : 'Graduated';
-
-    items.push({
-      id: `li-edu-${items.length}`,
-      institution: institution.slice(0, 50),
-      program: { en: program.slice(0, 60) },
-      dates,
-      enabled: true
-    });
+  if (currentInst && currentDetails) {
+    items.push(formatEduEntry(currentInst, currentDetails, items.length));
   }
 
   return items.slice(0, 5);
