@@ -120,6 +120,50 @@ function appendLinkedInExpBullet(current: RawExpEntry, line: string) {
   }
 }
 
+function tryExtractJobHeader(lines: string[], i: number): { entry: RawExpEntry; skipCount: number } | null {
+  if (i + 2 >= lines.length || !LI_DATE_REGEX.test(lines[i + 2])) {
+    return null;
+  }
+  const dateMatch = lines[i + 2].match(LI_DATE_REGEX);
+  const startDate = (dateMatch ? dateMatch[1] + (dateMatch[2] ? ` ${dateMatch[2]}` : '') : '').trim();
+  const endDate = (dateMatch ? dateMatch[3] : 'Present').trim();
+
+  const entry: RawExpEntry = {
+    company: lines[i],
+    role: lines[i + 1],
+    startDate,
+    endDate,
+    bullets: []
+  };
+
+  const hasLocation = i + 3 < lines.length && !lines[i + 3].startsWith('-') && lines[i + 3].length < 40;
+  return { entry, skipCount: hasLocation ? 3 : 2 };
+}
+
+function collectLinkedInJobEntries(lines: string[]): RawExpEntry[] {
+  const jobs: RawExpEntry[] = [];
+  let current: RawExpEntry | null = null;
+  let i = 0;
+
+  while (i < lines.length) {
+    const header = tryExtractJobHeader(lines, i);
+    if (header) {
+      if (current) jobs.push(current);
+      current = header.entry;
+      i += header.skipCount + 1;
+      continue;
+    }
+
+    if (current) {
+      appendLinkedInExpBullet(current, lines[i]);
+    }
+    i++;
+  }
+
+  if (current) jobs.push(current);
+  return jobs;
+}
+
 function parseLinkedInExperience(text: string): WorkExperience[] {
   const expIdx = text.indexOf('Experience\n');
   if (expIdx === -1) return [];
@@ -128,40 +172,7 @@ function parseLinkedInExperience(text: string): WorkExperience[] {
 
   const clean = expText.replace(/Page \d+ of \d+/gi, '').replace(/\f/g, '\n');
   const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
-
-  const jobs: RawExpEntry[] = [];
-  let current: RawExpEntry | null = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (i + 2 < lines.length && LI_DATE_REGEX.test(lines[i + 2])) {
-      if (current) jobs.push(current);
-      const dateMatch = lines[i + 2].match(LI_DATE_REGEX);
-      const startDate = (dateMatch ? dateMatch[1] + (dateMatch[2] ? ` ${dateMatch[2]}` : '') : '').trim();
-      const endDate = (dateMatch ? dateMatch[3] : 'Present').trim();
-
-      current = {
-        company: lines[i],
-        role: lines[i + 1],
-        startDate,
-        endDate,
-        bullets: []
-      };
-
-      i += 2;
-      if (i + 1 < lines.length && !lines[i + 1].startsWith('-') && lines[i + 1].length < 40) {
-        i++;
-      }
-      continue;
-    }
-
-    if (current) {
-      appendLinkedInExpBullet(current, line);
-    }
-  }
-
-  if (current) jobs.push(current);
+  const jobs = collectLinkedInJobEntries(lines);
 
   return jobs.slice(0, 6).map((e, idx) => ({
     id: `li-exp-${idx}-${Date.now()}`,
