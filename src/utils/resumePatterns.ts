@@ -1,4 +1,4 @@
-import { LanguageItem, SkillCategory, ProjectItem } from '../types/cv';
+import { LanguageItem, SkillCategory, ProjectItem, EducationItem } from '../types/cv';
 
 export const TECH_KEYWORD_LIST = [
   'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Rust', 'Docker',
@@ -169,4 +169,61 @@ export function parseProjects(projText: string): ProjectItem[] {
       tags: ['fullstack'],
       enabled: true
     }));
+}
+
+interface EduState {
+  institution: string;
+  program: string;
+  dates: string;
+}
+
+function flushEduState(items: EducationItem[], state: EduState) {
+  if (!state.institution && !state.program) return;
+  items.push({
+    id: `edu-${items.length}`,
+    institution: (state.institution || state.program).slice(0, 50),
+    program: { en: (state.program || state.institution).slice(0, 60) },
+    dates: state.dates || 'Graduated',
+    enabled: true
+  });
+  state.institution = '';
+  state.program = '';
+  state.dates = '';
+}
+
+function processEduLine(line: string, items: EducationItem[], state: EduState, dateRegex: RegExp) {
+  const dateMatch = line.match(dateRegex);
+  if (dateMatch) {
+    flushEduState(items, state);
+    state.dates = dateMatch[0];
+    const cleanWithoutDate = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
+    if (cleanWithoutDate) state.institution = cleanWithoutDate;
+    return;
+  }
+
+  if (ACADEMIC_KEYWORDS.test(line)) {
+    if (!state.institution) state.institution = cleanSpecialPunctuation(line);
+    else if (!state.program) state.program = cleanSpecialPunctuation(line);
+  } else if (state.institution && !state.program && line.length < 70) {
+    state.program = cleanSpecialPunctuation(line);
+  }
+}
+
+export function parseEducationEntries(eduText: string): EducationItem[] {
+  if (!eduText.trim()) return [];
+
+  const lines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
+  const items: EducationItem[] = [];
+  const dateRegex = /(\b\d{4}\s*[-–—to/\s]+\s*(\d{4}|Present|Current|Atual)?\b|\b\d{1,2}\/\d{4}\s*[-–—to/\s]+\s*(\d{1,2}\/\d{4}|Present|Current|Atual)?\b)/i;
+  const state: EduState = { institution: '', program: '', dates: '' };
+
+  for (const line of lines) {
+    if (line.startsWith('●') || line.startsWith('•') || /^(Technologies|Skills|Stack|Courses|MongoDB|HTML|CSS|React|Node)/i.test(line)) {
+      continue;
+    }
+    processEduLine(line, items, state, dateRegex);
+  }
+
+  flushEduState(items, state);
+  return items.slice(0, 5);
 }

@@ -1,15 +1,15 @@
-import { WorkExperience, EducationItem } from '../types/cv';
+import { WorkExperience } from '../types/cv';
 import { IngestionResult } from './ingestionService';
 import { 
   SECTION_PATTERNS, 
   DATE_RANGE_REGEX, 
   ROLE_PREFIX_REGEX, 
-  ACADEMIC_KEYWORDS,
   cleanSpecialPunctuation,
   extractHeaderInfo,
   parseLanguages,
   parseSkills,
-  parseProjects
+  parseProjects,
+  parseEducationEntries
 } from './resumePatterns';
 
 export { cleanSpecialPunctuation };
@@ -179,16 +179,35 @@ function appendSplitSentences(current: ExtractedExp, cleaned: string): boolean {
   return false;
 }
 
+const BULLET_START_REGEX = /^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212]+/u;
+
+function tryAppendToPreviousBullet(current: ExtractedExp, cleaned: string): boolean {
+  if (current.bullets.length === 0) return false;
+  const lastIdx = current.bullets.length - 1;
+  const lastBullet = current.bullets[lastIdx];
+  const shouldAppend = !/[.!?]$/.test(lastBullet) || /^[a-zà-ÿ]/.test(cleaned) || cleaned.length < 35;
+  if (shouldAppend) {
+    current.bullets[lastIdx] = `${lastBullet} ${cleaned}`;
+    return true;
+  }
+  return false;
+}
+
 function processExpLineItem(line: string, current: ExtractedExp) {
+  const isBulletLine = BULLET_START_REGEX.test(line);
   const cleaned = cleanSpecialPunctuation(line);
   if (!cleaned) return;
 
-  if (/^[●•\-*]/.test(line)) {
+  if (isBulletLine) {
     current.bullets.push(cleaned);
     return;
   }
 
   if (tryAssignMissingRoleOrComp(current, line, cleaned)) {
+    return;
+  }
+
+  if (tryAppendToPreviousBullet(current, cleaned)) {
     return;
   }
 
@@ -251,63 +270,6 @@ function parseExperienceEntries(expText: string): WorkExperience[] {
       tags: ['fullstack'],
       enabled: true
     }));
-}
-
-interface EduState {
-  institution: string;
-  program: string;
-  dates: string;
-}
-
-function flushEduState(items: EducationItem[], state: EduState) {
-  if (!state.institution && !state.program) return;
-  items.push({
-    id: `edu-${items.length}`,
-    institution: (state.institution || state.program).slice(0, 50),
-    program: { en: (state.program || state.institution).slice(0, 60) },
-    dates: state.dates || 'Graduated',
-    enabled: true
-  });
-  state.institution = '';
-  state.program = '';
-  state.dates = '';
-}
-
-function processEduLine(line: string, items: EducationItem[], state: EduState, dateRegex: RegExp) {
-  const dateMatch = line.match(dateRegex);
-  if (dateMatch) {
-    flushEduState(items, state);
-    state.dates = dateMatch[0];
-    const cleanWithoutDate = line.replace(dateRegex, '').replace(/[()]/g, ' ').trim();
-    if (cleanWithoutDate) state.institution = cleanWithoutDate;
-    return;
-  }
-
-  if (ACADEMIC_KEYWORDS.test(line)) {
-    if (!state.institution) state.institution = cleanSpecialPunctuation(line);
-    else if (!state.program) state.program = cleanSpecialPunctuation(line);
-  } else if (state.institution && !state.program && line.length < 70) {
-    state.program = cleanSpecialPunctuation(line);
-  }
-}
-
-function parseEducationEntries(eduText: string): EducationItem[] {
-  if (!eduText.trim()) return [];
-
-  const lines = eduText.split('\n').map(l => l.trim()).filter(Boolean);
-  const items: EducationItem[] = [];
-  const dateRegex = /(\b\d{4}\s*[-–—to/\s]+\s*(\d{4}|Present|Current|Atual)?\b|\b\d{1,2}\/\d{4}\s*[-–—to/\s]+\s*(\d{1,2}\/\d{4}|Present|Current|Atual)?\b)/i;
-  const state: EduState = { institution: '', program: '', dates: '' };
-
-  for (const line of lines) {
-    if (line.startsWith('●') || line.startsWith('•') || /^(Technologies|Skills|Stack|Courses|MongoDB|HTML|CSS|React|Node)/i.test(line)) {
-      continue;
-    }
-    processEduLine(line, items, state, dateRegex);
-  }
-
-  flushEduState(items, state);
-  return items.slice(0, 5);
 }
 
 /**
