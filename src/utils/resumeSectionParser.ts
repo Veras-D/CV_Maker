@@ -5,10 +5,8 @@ import {
   DATE_RANGE_REGEX, 
   ROLE_PREFIX_REGEX, 
   ACADEMIC_KEYWORDS,
-  FORBIDDEN_NAME_PATTERNS,
   cleanSpecialPunctuation,
-  extractCandidateName,
-  extractContactDetails,
+  extractHeaderInfo,
   parseLanguages,
   parseSkills,
   parseProjects
@@ -61,25 +59,6 @@ function segmentResumeText(rawText: string): RawSections {
   return sections;
 }
 
-function extractHeaderInfo(headerText: string, fullText: string) {
-  const lines = (headerText || fullText).split('\n').map(l => l.trim()).filter(Boolean).slice(0, 15);
-  const contacts = extractContactDetails(fullText);
-  const detectedName = extractCandidateName(lines);
-
-  const headlineCandidate = lines.find(l => 
-    l !== detectedName && 
-    !FORBIDDEN_NAME_PATTERNS.test(l) &&
-    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor|Programador|Analista|Automação)/i.test(l) &&
-    l.length <= 70
-  );
-
-  return {
-    detectedName,
-    detectedHeadline: headlineCandidate ? cleanSpecialPunctuation(headlineCandidate) : undefined,
-    contacts
-  };
-}
-
 interface ExtractedExp {
   role: string;
   company: string;
@@ -124,10 +103,31 @@ function inferFromPrevLines(prevLines: string[]): { role: string; company: strin
   return null;
 }
 
-function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: string[]): ExtractedExp {
+function popTrailingRoleBullet(prev: ExtractedExp | null): string | null {
+  if (!prev || prev.bullets.length === 0) return null;
+  const lastBullet = prev.bullets[prev.bullets.length - 1];
+  if (ROLE_PREFIX_REGEX.test(lastBullet) || (lastBullet.length < 40 && !lastBullet.includes('.'))) {
+    prev.bullets.pop();
+    return lastBullet;
+  }
+  return null;
+}
+
+function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: string[], prevExp: ExtractedExp | null): ExtractedExp {
   const textWithoutDate = line.replace(DATE_RANGE_REGEX, '').replace(/[()]/g, ' ').trim();
   const startDate = dateMatch[1].trim();
   const endDate = dateMatch[2].trim();
+
+  const poppedRole = popTrailingRoleBullet(prevExp);
+  if (poppedRole) {
+    return {
+      role: poppedRole,
+      company: cleanSpecialPunctuation(textWithoutDate) || 'Software House',
+      startDate,
+      endDate,
+      bullets: []
+    };
+  }
 
   const fromDateText = inferFromDateText(textWithoutDate, prevLines);
   if (fromDateText) {
@@ -141,13 +141,7 @@ function handleDateLine(line: string, dateMatch: RegExpMatchArray, prevLines: st
 
   const fallback = extractRoleAndCompanyFromLine(textWithoutDate);
   const fallbackRole = fallback.role || (prevLines.length > 0 ? cleanSpecialPunctuation(prevLines[prevLines.length - 1]) : 'Software Professional');
-  return {
-    role: fallbackRole,
-    company: fallback.company,
-    startDate,
-    endDate,
-    bullets: []
-  };
+  return { role: fallbackRole, company: fallback.company, startDate, endDate, bullets: [] };
 }
 
 function tryAssignMissingRoleOrComp(current: ExtractedExp, line: string, cleaned: string): boolean {
@@ -206,7 +200,7 @@ function collectExpEntries(lines: string[]): ExtractedExp[] {
     const dateMatch = line.match(DATE_RANGE_REGEX);
     if (dateMatch) {
       if (current && (current.role || current.company)) exps.push(current);
-      current = handleDateLine(line, dateMatch, recentLines);
+      current = handleDateLine(line, dateMatch, recentLines, current);
     } else if (current) {
       processExpLineItem(line, current);
       recentLines.push(line);

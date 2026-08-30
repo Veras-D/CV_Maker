@@ -27,12 +27,12 @@ export const SECTION_PATTERNS: SectionPattern[] = [
   { key: 'education', regex: /\b(?:academic\s+background|education(?:\s+and\s+training)?|cursos?\s+e\s+escolaridade|cursos?\s+e\s+certificações|escolaridade|formação\s+acadêmica|formação|educação)\b/i },
   { key: 'skills', regex: /\b(?:technical\s+skills|core\s+competencies|expertise\s*&\s*skills?|expertise|skills\s+&\s+expertise|skills|habilidades|competências|tecnologias)\b/i },
   { key: 'languages', regex: /\b(?:language\s+proficiency|language\s+skills|languages|idiomas|línguas)\b/i },
-  { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projects|projetos)\b/i }
+  { key: 'projects', regex: /\b(?:key\s+projects|featured\s+projects|projetos)\b/i }
 ];
 
 const MONTHS_PT_EN = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ago|Set|Out|Dez|January|February|March|April|June|July|August|September|October|November|December';
 const DATE_TOKEN_START = `(?:(?:${MONTHS_PT_EN})[a-z]*\\.?\\s+\\d{4}|\\b(?:\\d{1,2}[\\/.-])?\\d{1,2}[\\/.-]\\d{4}\\b|\\b\\d{4}\\b)`;
-const DATE_TOKEN_END = `(?:(?:${MONTHS_PT_EN})[a-z]*\\.?\\s+\\d{4}|\\b(?:\\d{1,2}[\\/.-])?\\d{1,2}[\\/.-]\\d{4}\\b|\\b\\d{4}\\b|Present|Current|Atual|Atualmente|Presente|Now)`;
+const DATE_TOKEN_END = `(?:(?:${MONTHS_PT_EN})[a-z]*\\.?\\s+\\d{4}|\\b(?:\\d{1,2}[\\/.-])?\\d{1,2}[\\/.-]\\d{4}\\b|\\b\\d{4}\\b|\\b(?:Present|Current|Atualmente|Atual|Presente|Now)\\b)`;
 
 export const DATE_RANGE_REGEX = new RegExp(`(${DATE_TOKEN_START})\\s*[-–—to/\\s]+\\s*(${DATE_TOKEN_END})`, 'i');
 
@@ -49,12 +49,23 @@ export function cleanSpecialPunctuation(str: string): string {
     .trim();
 }
 
+export function isLikelyCandidateName(str: string): boolean {
+  const clean = cleanSpecialPunctuation(str.split(/[•|—–\-/:]/)[0]);
+  if (clean.length < 2 || clean.length > 35) return false;
+  if (FORBIDDEN_NAME_PATTERNS.test(clean)) return false;
+  if (/^(?:como|sou|tenho|with|i\s+am|experienced|a\s+|o\s+|the\s+|curriculo|curriculum)/i.test(clean)) return false;
+  if (/[,;:.!?]/.test(clean)) return false;
+  const words = clean.trim().split(/\s+/);
+  if (words.length > 4 || words.length < 1) return false;
+  return words.every(w => /^[A-ZÀ-Ý]/.test(w));
+}
+
 export function extractCandidateName(lines: string[]): string | undefined {
   const candidates: string[] = [];
   for (const line of lines) {
     if (line.includes('@') || line.startsWith('http') || /^\+?\d/.test(line)) continue;
     const clean = cleanSpecialPunctuation(line.split(/[•|—–\-/:]/)[0]);
-    if (clean.length >= 2 && clean.length <= 40 && !FORBIDDEN_NAME_PATTERNS.test(clean)) {
+    if (isLikelyCandidateName(clean)) {
       candidates.push(clean);
     }
   }
@@ -72,6 +83,25 @@ export function extractContactDetails(rawText: string) {
   const portfolio = rawText.match(/https?:\/\/[a-zA-Z0-9.-]+\.(?:dev|app|io|com|org|net|me)\b/i)?.[0];
 
   return { email, phone, github, linkedin, portfolio };
+}
+
+export function extractHeaderInfo(headerText: string, fullText: string) {
+  const allLines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+  const contacts = extractContactDetails(fullText);
+  const detectedName = extractCandidateName(allLines);
+
+  const headlineCandidate = allLines.find(l => 
+    l !== detectedName && 
+    !FORBIDDEN_NAME_PATTERNS.test(l) &&
+    /(Developer|Engineer|Architect|Designer|Manager|Programmer|Consultant|Scientist|Desenvolvedor|Programador|Analista|Automação)/i.test(l) &&
+    l.length <= 70
+  );
+
+  return {
+    detectedName,
+    detectedHeadline: headlineCandidate ? cleanSpecialPunctuation(headlineCandidate) : undefined,
+    contacts
+  };
 }
 
 export function parseLanguages(rawText: string): LanguageItem[] {
