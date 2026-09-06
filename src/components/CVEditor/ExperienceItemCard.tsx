@@ -21,14 +21,15 @@ const DateSelectors: React.FC<DateSelectorsProps> = ({
   currentYear,
   onUpdateDates
 }) => {
+  const currentMonth = months[new Date().getMonth()]?.value || 'Jan';
   const parseMonthYear = (dateStr: string) => {
     const parts = dateStr.split(' ');
-    return parts.length === 2 ? { month: parts[0], year: parts[1] } : { month: 'Jan', year: currentYear.toString() };
+    return parts.length === 2 ? { month: parts[0], year: parts[1] } : { month: currentMonth, year: currentYear.toString() };
   };
 
   const start = parseMonthYear(startDate);
   const isPresent = endDate.toLowerCase() === 'present';
-  const end = isPresent ? { month: 'Present', year: 'Present' } : parseMonthYear(endDate);
+  const end = isPresent ? { month: currentMonth, year: currentYear.toString() } : parseMonthYear(endDate);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
@@ -61,7 +62,7 @@ const DateSelectors: React.FC<DateSelectorsProps> = ({
             <input
               type="checkbox"
               checked={isPresent}
-              onChange={(e) => onUpdateDates({ endDate: e.target.checked ? 'Present' : `Dec ${currentYear}` })}
+              onChange={(e) => onUpdateDates({ endDate: e.target.checked ? 'Present' : `${currentMonth} ${currentYear}` })}
               className="rounded bg-slate-800 border-slate-700"
             />
             <span>Current Position</span>
