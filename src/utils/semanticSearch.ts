@@ -1,5 +1,5 @@
-import { CVData, WorkExperience, SkillCategory, ProjectItem, WorkBullet } from '../types/cv';
-import { DOMAIN_TAXONOMY, getDomainsForSkill } from './skillOntology';
+import { CVData, WorkExperience, SkillCategory, SkillItem, ProjectItem, WorkBullet } from '../types/cv';
+import { DOMAIN_TAXONOMY, getDomainsForSkill, formatTechnologyName } from './skillOntology';
 
 export interface ATSMatchResult {
   atsScore: number;
@@ -190,9 +190,40 @@ export function performHybridSemanticMatch(params: {
     };
   });
 
-  // 2. Rank & Filter Skills
+  // 2. Rank & Filter Skills (auto-enrich with project tools matching target domains)
+  const activeProjectTechs = cvData.projects
+    .filter(p => p.enabled)
+    .flatMap(p => p.techStack);
+
   const rankedSkills = cvData.skillCategories.map(cat => {
-    const updatedSkills = cat.skills.map(s => {
+    const existingSkillNames = new Set(cat.skills.map(s => s.name.toLowerCase()));
+    const catNameLower = (cat.categoryName.en || '').toLowerCase();
+    const catDomains = getDomainsForSkill(catNameLower);
+
+    const supplementalSkills: SkillItem[] = [];
+    activeProjectTechs.forEach(tech => {
+      const techLower = tech.trim().toLowerCase();
+      if (!existingSkillNames.has(techLower)) {
+        const techDomains = getDomainsForSkill(tech);
+        const matchesCategory = techDomains.some(d => 
+          catDomains.includes(d) || 
+          catNameLower.includes(d) || 
+          (d === 'testing' && catNameLower.includes('qa'))
+        );
+        if (matchesCategory) {
+          existingSkillNames.add(techLower);
+          supplementalSkills.push({
+            id: `sk-proj-${techLower}`,
+            name: formatTechnologyName(tech),
+            tags: techDomains,
+            enabled: true
+          });
+        }
+      }
+    });
+
+    const allSkills = [...cat.skills, ...supplementalSkills];
+    const updatedSkills = allSkills.map(s => {
       const sLower = s.name.toLowerCase();
       const isMatched = matchedKeywords.some(kw => sLower.includes(kw) || kw.includes(sLower));
       const sDomains = getDomainsForSkill(s.name);
