@@ -176,7 +176,24 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const clearTagFilters = () => setSelectedTags([]);
 
-  const exportDataJSON = () => JSON.stringify(cvData, null, 2);
+  const exportDataJSON = (): string => {
+    const jsonString = JSON.stringify(cvData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const namePrefix = (cvData.profile.name || 'CV_Maker').trim().replace(/\s+/g, '_') || 'CV_Maker';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `${namePrefix}_Backup_${dateStr}.json`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return filename;
+  };
 
   const importDataJSON = (jsonString: string): boolean => {
     try {
