@@ -10,22 +10,27 @@ import {
   LanguageItem,
   UserProfile 
 } from '../types/cv';
-
-export {
-  PAGE_WIDTH,
+import { sanitizePdfText } from './pdfSanitizer';
+import {
   MARGIN_LEFT,
   MARGIN_RIGHT,
   CONTENT_WIDTH,
+  ensurePageSpace,
   drawSectionHeader,
   drawContactRow,
   getPDFContactItems,
   drawTitleAndHeadline
 } from './pdfHeaderUtils';
 
-import {
+export {
+  PAGE_WIDTH,
+  PAGE_HEIGHT,
   MARGIN_LEFT,
   MARGIN_RIGHT,
   CONTENT_WIDTH,
+  TOP_MARGIN,
+  MAX_PAGE_Y,
+  ensurePageSpace,
   drawSectionHeader,
   drawContactRow,
   getPDFContactItems,
@@ -51,17 +56,78 @@ export function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode)
 }
 
 export function drawSummary(doc: jsPDF, profile: UserProfile, lang: LanguageCode, startY: number): number {
-  const summaryText = profile.summary?.[lang] || profile.summary?.en || '';
-  if (!summaryText.trim()) return startY;
+  const rawSummary = profile.summary?.[lang] || profile.summary?.en || '';
+  const cleanSummary = sanitizePdfText(rawSummary);
+  if (!cleanSummary) return startY;
 
   let y = drawSectionHeader(doc, lang === 'en' ? 'Executive Profile' : 'Profil', startY);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.2);
   doc.setTextColor(30, 41, 59);
-  const summaryLines = doc.splitTextToSize(summaryText, CONTENT_WIDTH);
-  doc.text(summaryLines, MARGIN_LEFT, y);
-  y += (summaryLines.length * 4.2) + 4.0;
-  return y;
+  const summaryLines = doc.splitTextToSize(cleanSummary, CONTENT_WIDTH);
+  
+  summaryLines.forEach((line: string) => {
+    y = ensurePageSpace(doc, y, 5);
+    doc.text(line, MARGIN_LEFT, y);
+    y += 4.2;
+  });
+
+  return y + 2.0;
+}
+
+function drawExperienceItem(doc: jsPDF, exp: WorkExperience, lang: LanguageCode, startY: number): number {
+  let y = ensurePageSpace(doc, startY, 14);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.8);
+  doc.setTextColor(15, 23, 42);
+  doc.text(sanitizePdfText(exp.roleTitle[lang] || exp.roleTitle.en), MARGIN_LEFT, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(sanitizePdfText(`${exp.startDate} – ${exp.endDate}`), MARGIN_RIGHT, y, { align: 'right' });
+  y += 4.0;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.8);
+  doc.setTextColor(51, 65, 85);
+  doc.text(sanitizePdfText(`${exp.company} | ${exp.location || 'Remote'}`), MARGIN_LEFT, y);
+  y += 3.8;
+
+  const rawSummary = exp.summary ? (exp.summary[lang] || exp.summary.en || '') : '';
+  const cleanSummary = sanitizePdfText(rawSummary);
+  if (cleanSummary) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8.4);
+    doc.setTextColor(71, 85, 105);
+    const sLines = doc.splitTextToSize(cleanSummary, CONTENT_WIDTH);
+    sLines.forEach((line: string) => {
+      y = ensurePageSpace(doc, y, 4);
+      doc.text(line, MARGIN_LEFT, y);
+      y += 3.6;
+    });
+    y += 1.0;
+  }
+
+  exp.bullets.filter(b => b.enabled).forEach((b: WorkBullet) => {
+    const rawText = b.text[lang] || b.text.en;
+    const cleanText = sanitizePdfText(rawText);
+    if (!cleanText) return;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+    doc.setTextColor(30, 41, 59);
+    const bLines = doc.splitTextToSize(cleanText, CONTENT_WIDTH - 6);
+    
+    y = ensurePageSpace(doc, y, (bLines.length * 3.8) + 1.0);
+    doc.setFillColor(30, 41, 59);
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.0, 0.45, 'F');
+    doc.text(bLines, MARGIN_LEFT + 5.0, y);
+    y += (bLines.length * 3.8) + 1.0;
+  });
+
+  return y + 1.8;
 }
 
 export function drawExperiences(
@@ -69,64 +135,81 @@ export function drawExperiences(
   experiences: WorkExperience[], 
   options: { tags: string[]; lang: LanguageCode; startY: number }
 ): number {
-  const { tags, lang, startY } = options;
-  const filtered = experiences
-    .filter(e => e.enabled)
-    .map(e => ({
-      ...e,
-      activeBullets: e.bullets.filter(b => b.enabled && (tags.length === 0 || b.tags.some(t => tags.includes(t))))
-    }))
-    .filter(e => e.activeBullets.length > 0 || tags.length === 0);
-
+  const { lang, startY } = options;
+  const filtered = experiences.filter(e => e.enabled);
   if (filtered.length === 0) return startY;
 
   let y = drawSectionHeader(doc, lang === 'en' ? 'Professional Experience' : 'Pracovní Zkušenosti', startY);
-
   filtered.forEach(exp => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.8);
-    doc.setTextColor(15, 23, 42);
-    doc.text(exp.roleTitle[lang] || exp.roleTitle.en, MARGIN_LEFT, y);
+    y = drawExperienceItem(doc, exp, lang, y);
+  });
+  return y + 2.0;
+}
 
+function drawProjectBadges(doc: jsPDF, techStack: string[], y: number): number {
+  let techX = MARGIN_LEFT;
+  techStack.forEach(tech => {
+    const cleanTech = sanitizePdfText(tech);
+    if (!cleanTech) return;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`${exp.startDate} – ${exp.endDate}`, MARGIN_RIGHT, y, { align: 'right' });
-    y += 4.0;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.8);
-    doc.setTextColor(51, 65, 85);
-    doc.text(`${exp.company} | ${exp.location || 'Remote'}`, MARGIN_LEFT, y);
-    y += 3.8;
-
-    const expSummary = exp.summary ? (exp.summary[lang] || exp.summary.en || '') : '';
-    if (expSummary) {
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8.4);
-      doc.setTextColor(71, 85, 105);
-      const sLines = doc.splitTextToSize(expSummary, CONTENT_WIDTH);
-      doc.text(sLines, MARGIN_LEFT, y);
-      y += (sLines.length * 3.6) + 1.2;
+    doc.setFontSize(7.6);
+    const tWidth = doc.getTextWidth(cleanTech) + 4.0;
+    
+    if (techX + tWidth > MARGIN_RIGHT) {
+      techX = MARGIN_LEFT;
+      y += 5.0;
     }
 
-    exp.activeBullets.forEach((b: WorkBullet) => {
-      doc.setFillColor(30, 41, 59);
-      doc.circle(MARGIN_LEFT + 2.0, y - 1.0, 0.45, 'F');
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.8);
-      doc.setTextColor(30, 41, 59);
-      const bulletText = b.text[lang] || b.text.en;
-      const bLines = doc.splitTextToSize(bulletText, CONTENT_WIDTH - 6);
-      doc.text(bLines, MARGIN_LEFT + 5.0, y);
-      y += (bLines.length * 3.8) + 1.0;
-    });
-
-    y += 1.8;
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(techX, y - 2.8, tWidth, 4.0, 0.8, 0.8, 'FD');
+    doc.setTextColor(71, 85, 105);
+    doc.text(cleanTech, techX + 2.0, y);
+    techX += tWidth + 2.0;
   });
+  return y + 5.5;
+}
 
-  return y + 2.0;
+function drawSingleProject(doc: jsPDF, p: ProjectItem, lang: LanguageCode, startY: number): number {
+  let y = ensurePageSpace(doc, startY, 16);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.6);
+  doc.setTextColor(15, 23, 42);
+  doc.text(sanitizePdfText(p.title), MARGIN_LEFT, y);
+
+  if (p.url) {
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(8.0);
+    doc.setTextColor(3, 105, 161);
+    const cleanUrl = sanitizePdfText(p.url);
+    const linkW = doc.getTextWidth(cleanUrl) + 3.5;
+    const linkX = MARGIN_RIGHT - linkW;
+    doc.textWithLink(cleanUrl, linkX, y, { url: cleanUrl });
+  }
+
+  y += 3.8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.6);
+  doc.setTextColor(51, 65, 85);
+  const cleanDesc = sanitizePdfText(p.description[lang] || p.description.en);
+  const pLines = doc.splitTextToSize(cleanDesc, CONTENT_WIDTH);
+  
+  pLines.forEach((line: string) => {
+    y = ensurePageSpace(doc, y, 4);
+    doc.text(line, MARGIN_LEFT, y);
+    y += 3.6;
+  });
+  y += 1.5;
+
+  if (p.techStack && p.techStack.length > 0) {
+    y = ensurePageSpace(doc, y, 6);
+    y = drawProjectBadges(doc, p.techStack, y);
+  } else {
+    y += 2.0;
+  }
+  return y;
 }
 
 export function drawProjects(doc: jsPDF, projects: ProjectItem[], lang: LanguageCode, startY: number): number {
@@ -134,52 +217,9 @@ export function drawProjects(doc: jsPDF, projects: ProjectItem[], lang: Language
   if (activeProjects.length === 0) return startY;
 
   let y = drawSectionHeader(doc, lang === 'en' ? 'Featured Portfolio Projects' : 'Projekty', startY);
-
   activeProjects.forEach(p => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(15, 23, 42);
-    doc.text(p.title, MARGIN_LEFT, y);
-
-    if (p.url) {
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(8.0);
-      doc.setTextColor(3, 105, 161);
-      const linkW = doc.getTextWidth(p.url) + 3.5;
-      const linkX = MARGIN_RIGHT - linkW;
-      doc.textWithLink(p.url, linkX, y, { url: p.url });
-    }
-
-    y += 3.8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.6);
-    doc.setTextColor(51, 65, 85);
-    const descText = p.description[lang] || p.description.en;
-    const pLines = doc.splitTextToSize(descText, CONTENT_WIDTH);
-    doc.text(pLines, MARGIN_LEFT, y);
-    y += (pLines.length * 3.6) + 1.5;
-
-    if (p.techStack && p.techStack.length > 0) {
-      let techX = MARGIN_LEFT;
-      p.techStack.forEach(tech => {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.6);
-        const tWidth = doc.getTextWidth(tech) + 4.0;
-        doc.setFillColor(241, 245, 249);
-        doc.setDrawColor(226, 232, 240);
-        doc.setLineWidth(0.2);
-        doc.roundedRect(techX, y - 2.8, tWidth, 4.0, 0.8, 0.8, 'FD');
-        doc.setTextColor(71, 85, 105);
-        doc.text(tech, techX + 2.0, y);
-        techX += tWidth + 2.0;
-      });
-      y += 5.5;
-    } else {
-      y += 2.0;
-    }
+    y = drawSingleProject(doc, p, lang, y);
   });
-
   return y + 2.0;
 }
 
@@ -193,16 +233,18 @@ export function drawSkills(doc: jsPDF, skillCategories: SkillCategory[], lang: L
     const activeSkills = cat.skills.filter((s: SkillItem) => s.enabled);
     if (activeSkills.length === 0) return;
 
+    y = ensurePageSpace(doc, y, 8);
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.8);
     doc.setTextColor(15, 23, 42);
-    const catLabel = `${cat.categoryName[lang] || cat.categoryName.en}:`;
+    const catLabel = `${sanitizePdfText(cat.categoryName[lang] || cat.categoryName.en)}:`;
     doc.text(catLabel, MARGIN_LEFT, y);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.8);
     doc.setTextColor(30, 41, 59);
-    const skillsString = activeSkills.map((s: SkillItem) => s.name).join(', ');
+    const skillsString = activeSkills.map((s: SkillItem) => sanitizePdfText(s.name)).filter(Boolean).join(', ');
     const skillLines = doc.splitTextToSize(skillsString, CONTENT_WIDTH - 44);
     doc.text(skillLines, MARGIN_LEFT + 44, y);
     y += (skillLines.length * 3.8) + 0.8;
@@ -222,10 +264,12 @@ export function drawEducationAndLanguages(
   const activeLang = languages.filter(l => l.enabled);
   if (activeEdu.length === 0 && activeLang.length === 0) return startY;
 
+  let y = ensurePageSpace(doc, startY, 20);
+
   const COL1_X = MARGIN_LEFT;
   const COL2_X = 110;
   const COL_WIDTH = 86;
-  let y = startY;
+  const startSectionY = y;
 
   if (activeEdu.length > 0) {
     doc.setFont('helvetica', 'bold');
@@ -242,25 +286,25 @@ export function drawEducationAndLanguages(
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.6);
       doc.setTextColor(15, 23, 42);
-      doc.text(edu.institution, COL1_X, y);
+      doc.text(sanitizePdfText(edu.institution), COL1_X, y);
       y += 3.4;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.0);
       doc.setTextColor(71, 85, 105);
-      doc.text(edu.program[lang] || edu.program.en, COL1_X, y);
+      doc.text(sanitizePdfText(edu.program[lang] || edu.program.en), COL1_X, y);
       y += 3.2;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.6);
       doc.setTextColor(100, 116, 139);
-      doc.text(edu.dates, COL1_X, y);
+      doc.text(sanitizePdfText(edu.dates), COL1_X, y);
       y += 4.0;
     });
   }
 
   const col1EndY = y;
-  y = startY;
+  y = startSectionY;
 
   if (activeLang.length > 0) {
     doc.setFont('helvetica', 'bold');
@@ -277,12 +321,12 @@ export function drawEducationAndLanguages(
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.6);
       doc.setTextColor(15, 23, 42);
-      doc.text(l.language[lang] || l.language.en, COL2_X, y);
+      doc.text(sanitizePdfText(l.language[lang] || l.language.en), COL2_X, y);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.6);
       doc.setTextColor(100, 116, 139);
-      doc.text(l.proficiency[lang] || l.proficiency.en, COL2_X, y + 3.2);
+      doc.text(sanitizePdfText(l.proficiency[lang] || l.proficiency.en), COL2_X, y + 3.2);
       y += 6.5;
     });
   }

@@ -7,7 +7,9 @@ import {
   drawExperiences, 
   drawSkills, 
   drawProjects, 
-  drawEducationAndLanguages 
+  drawEducationAndLanguages,
+  PAGE_WIDTH,
+  PAGE_HEIGHT
 } from './pdfDrawSections';
 
 export interface PDFExportParams {
@@ -39,6 +41,18 @@ export async function exportCVToPDF(params: PDFExportParams): Promise<void> {
   currentY = drawSkills(doc, data.skillCategories, language, currentY);
   currentY = drawProjects(doc, data.projects, language, currentY);
   drawEducationAndLanguages(doc, data.education, data.languages, { lang: language, startY: currentY });
+
+  // Add subtle page numbers if the document spans multiple pages
+  const pageCount = doc.getNumberOfPages();
+  if (pageCount > 1) {
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.0);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Page ${i} of ${pageCount}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 8, { align: 'center' });
+    }
+  }
 
   const rawBytes = doc.output('arraybuffer');
   const enrichedBytes = await injectPDFMetadata(new Uint8Array(rawBytes), metadata);

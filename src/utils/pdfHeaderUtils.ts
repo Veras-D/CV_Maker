@@ -1,16 +1,32 @@
 import jsPDF from 'jspdf';
 import { UserProfile } from '../types/cv';
+import { sanitizePdfText } from './pdfSanitizer';
 
 export const PAGE_WIDTH = 210;
+export const PAGE_HEIGHT = 297;
 export const MARGIN_LEFT = 14;
 export const MARGIN_RIGHT = 196;
 export const CONTENT_WIDTH = MARGIN_RIGHT - MARGIN_LEFT; // 182mm
+export const TOP_MARGIN = 16;
+export const MAX_PAGE_Y = 278;
 
-export function drawSectionHeader(doc: jsPDF, title: string, y: number): number {
+/**
+ * Checks if the required vertical space exceeds page boundary; if so, adds a new page.
+ */
+export function ensurePageSpace(doc: jsPDF, currentY: number, requiredSpace: number): number {
+  if (currentY + requiredSpace > MAX_PAGE_Y) {
+    doc.addPage();
+    return TOP_MARGIN;
+  }
+  return currentY;
+}
+
+export function drawSectionHeader(doc: jsPDF, title: string, startY: number): number {
+  const y = ensurePageSpace(doc, startY, 12);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(title.toUpperCase(), MARGIN_LEFT, y);
+  doc.text(sanitizePdfText(title).toUpperCase(), MARGIN_LEFT, y);
   const nextY = y + 1.5;
   doc.setDrawColor(148, 163, 184);
   doc.setLineWidth(0.25);
@@ -27,7 +43,8 @@ export function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: s
   const dotWidth = 5.2;
   let totalWidth = 0;
   const itemWidths = contactItems.map(item => {
-    const w = doc.getTextWidth(item.text);
+    const clean = sanitizePdfText(item.text);
+    const w = doc.getTextWidth(clean);
     totalWidth += w;
     return w;
   });
@@ -37,12 +54,13 @@ export function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: s
   const y = startY;
 
   contactItems.forEach((item, idx) => {
+    const cleanText = sanitizePdfText(item.text);
     if (item.url) {
       doc.setTextColor(3, 105, 161);
-      doc.textWithLink(item.text, startX, y, { url: item.url });
+      doc.textWithLink(cleanText, startX, y, { url: item.url });
     } else {
       doc.setTextColor(71, 85, 105);
-      doc.text(item.text, startX, y);
+      doc.text(cleanText, startX, y);
     }
     startX += itemWidths[idx];
 
@@ -78,19 +96,22 @@ export function getPDFContactItems(profile: UserProfile): { text: string; url?: 
 
 export function drawTitleAndHeadline(doc: jsPDF, name: string, headline: string, startY: number): number {
   let y = startY;
-  if (name) {
+  const cleanName = sanitizePdfText(name);
+  const cleanHeadline = sanitizePdfText(headline);
+
+  if (cleanName) {
     doc.setFont('times', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text(name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
+    doc.text(cleanName.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
     y += 6.2;
   }
 
-  if (headline) {
+  if (cleanHeadline) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10);
     doc.setTextColor(51, 65, 85);
-    doc.text(headline, PAGE_WIDTH / 2, y, { align: 'center' });
+    doc.text(cleanHeadline, PAGE_WIDTH / 2, y, { align: 'center' });
     y += 5.0;
   }
   return y;
