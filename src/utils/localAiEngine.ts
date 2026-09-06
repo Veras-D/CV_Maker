@@ -1,5 +1,6 @@
 import { CVData, LanguageCode, CoverLetter, PDFMetadata } from '../types/cv';
 import { performHybridSemanticMatch, ATSMatchResult } from './semanticSearch';
+import { formatTechnologyName, getDomainLabel } from './skillOntology';
 
 export interface LocalTailorOutput {
   matchResult: ATSMatchResult;
@@ -10,7 +11,15 @@ export interface LocalTailorOutput {
 }
 
 /**
- * Synthesize a professional, ATS-optimized Cover Letter locally
+ * Format bullet list cleanly for cover letters
+ */
+function formatBulletList(bullets: string[]): string {
+  if (bullets.length === 0) return '';
+  return bullets.map(b => `• ${b}`).join('\n');
+}
+
+/**
+ * Synthesize a professional, ATS-optimized Cover Letter locally in English
  */
 export function generateLocalCoverLetter(params: {
   candidateName: string;
@@ -20,41 +29,35 @@ export function generateLocalCoverLetter(params: {
   matchedKeywords: string[];
   topBullets: string[];
   language?: LanguageCode;
-}): { en: string; cs: string } {
+}): Record<string, string> {
   const { candidateName, companyName, jobTitle, matchedTags, matchedKeywords, topBullets } = params;
   const name = candidateName.trim() || 'Candidate';
   const company = companyName.trim() || 'Hiring Team';
   const role = jobTitle.trim() || 'Software Engineer';
-  const tagList = matchedTags.map(t => t.toUpperCase()).join(' & ');
-  const skillHighlight = matchedKeywords.slice(0, 5).join(', ') || 'modern software engineering best practices';
+  
+  const domainText = matchedTags.slice(0, 2).map(getDomainLabel).join(' & ') || 'Software Engineering';
+  const skillHighlight = matchedKeywords.slice(0, 5).map(formatTechnologyName).join(', ') || 'modern software engineering practices';
+  const validBullets = topBullets.filter(Boolean).slice(0, 2);
 
-  const achievementParagraph = topBullets.length > 0
-    ? `In my previous roles, I have delivered proven impact, including: ${topBullets.slice(0, 2).join(' Furthermore, ')}`
-    : `Throughout my career, I have specialized in building resilient, high-performance web applications and scalable distributed systems using modern cloud tools.`;
+  const impactSection = validBullets.length > 0
+    ? `Key achievements and technical contributions relevant to this role:\n${formatBulletList(validBullets)}`
+    : `Throughout my career, I have specialized in building resilient, high-performance applications and scalable distributed systems using modern industry standards.`;
 
-  const en = `Dear Hiring Team at ${company},
+  const letterText = `Dear Hiring Team at ${company},
 
-I am writing to express my strong interest in the ${role} position. With comprehensive expertise in ${tagList} development—specifically leveraging ${skillHighlight}—I am confident in my ability to immediately deliver scalable, high-quality solutions for your engineering organization.
+I am writing to express my strong interest in the ${role} position. With comprehensive expertise in ${domainText}—specifically leveraging ${skillHighlight}—I am confident in my ability to immediately deliver scalable, high-quality solutions for your team.
 
-${achievementParagraph}
+${impactSection}
 
-I am deeply drawn to ${company}'s technical vision and would welcome the opportunity to discuss how my proactive mindset, architectural discipline, and engineering background can contribute to your upcoming product milestones.
+I am deeply drawn to ${company}'s technical vision and would welcome the opportunity to discuss how my engineering background, proactive mindset, and architectural discipline can contribute to your upcoming product milestones.
 
 Sincerely,
 ${name}`;
 
-  const cs = `Vážený hiring týme společnosti ${company},
-
-obracím se na Vás s projevem velkého zájmu o pracovní pozici ${role}. Díky rozsáhlým zkušenostem v oblastech ${tagList} a praktickým znalostem ${skillHighlight} jsem připraven okamžitě přispět k úspěchu Vašich projektů.
-
-${topBullets.length > 0 ? `Během své dosavadní praxe jsem dosáhl klíčových výsledků: ${topBullets.slice(0, 2).join(' ')}` : 'Mám za sebou úspěšné projekty zaměřené na vývoj spolehlivých aplikací a moderní cloudovou infrastrukturu.'}
-
-Velmi mě oslovilo směřování společnosti ${company} a rád bych s Vámi osobně probral, jak mohu svými schopnostmi pomoci Vašemu týmu.
-
-S pozdravem,
-${name}`;
-
-  return { en, cs };
+  return {
+    en: letterText,
+    [params.language || 'en']: letterText
+  };
 }
 
 /**
@@ -80,7 +83,7 @@ export function runLocalAITailor(params: {
   // Extract top matching bullets for cover letter synthesis
   const topBullets = matchResult.rankedExperiences
     .filter(e => e.enabled)
-    .flatMap(e => e.bullets.filter(b => b.enabled).map(b => b.text.en || ''))
+    .flatMap(e => e.bullets.filter(b => b.enabled).map(b => b.text[language] || b.text.en || ''))
     .filter(Boolean)
     .slice(0, 3);
 
@@ -107,7 +110,8 @@ export function runLocalAITailor(params: {
 
   const primaryRole = jobTitle || 'Software Engineer';
   const primaryCompany = companyName || 'Application';
-  const kwString = matchResult.matchedKeywords.slice(0, 8).join(', ') || 'Software Development';
+  const kwString = matchResult.matchedKeywords.slice(0, 8).map(formatTechnologyName).join(', ') || 'Software Development';
+  const domainString = matchResult.matchedTags.map(getDomainLabel).join(' & ');
 
   const tailoredMetadata: PDFMetadata = {
     dc_title: `${candidateName} - ${primaryRole} Resume (${primaryCompany})`,
@@ -117,7 +121,7 @@ export function runLocalAITailor(params: {
     cp_category: 'Curriculum Vitae / Resume'
   };
 
-  const tailoredSummary = `Results-oriented ${primaryRole} with specialized expertise in ${matchResult.matchedTags.join(' & ')} and hands-on experience in ${kwString}. Proven history of delivering high-quality, scalable applications aligned with ATS standards.`;
+  const tailoredSummary = `Results-oriented ${primaryRole} with specialized expertise in ${domainString} and hands-on experience in ${kwString}. Proven history of delivering high-quality, scalable applications aligned with ATS standards.`;
 
   const updatedData: CVData = {
     ...cvData,

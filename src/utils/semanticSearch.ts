@@ -1,43 +1,5 @@
-import { CVData, WorkExperience, SkillCategory, ProjectItem } from '../types/cv';
-
-// Curated technical lexicon covering standard domains and keywords
-export const TECH_DOMAINS: Record<string, string[]> = {
-  fullstack: [
-    'fullstack', 'full-stack', 'react', 'typescript', 'javascript', 'next.js', 'vue', 'angular',
-    'node', 'node.js', 'express', 'nestjs', 'html', 'css', 'tailwind', 'graphql', 'rest', 'api',
-    'redux', 'zustand', 'webpack', 'vite', 'frontend', 'backend', 'web application'
-  ],
-  backend: [
-    'backend', 'microservices', 'distributed systems', 'node.js', 'python', 'django', 'fastapi',
-    'java', 'spring boot', 'golang', 'go', 'c#', '.net', 'rust', 'postgresql', 'postgres', 'mysql',
-    'mongodb', 'redis', 'elasticsearch', 'kafka', 'rabbitmq', 'grpc', 'sql', 'nosql', 'prisma', 'orm'
-  ],
-  devops: [
-    'devops', 'docker', 'kubernetes', 'k8s', 'terraform', 'aws', 'amazon web services', 'gcp',
-    'google cloud', 'azure', 'ci/cd', 'github actions', 'gitlab ci', 'jenkins', 'helm', 'ansible',
-    'linux', 'bash', 'shell', 'prometheus', 'grafana', 'cloudformation', 'iac', 'infrastructure'
-  ],
-  frontend: [
-    'frontend', 'front-end', 'ui', 'ux', 'user interface', 'react', 'tailwind', 'css3', 'html5',
-    'figma', 'design system', 'responsive', 'accessibility', 'a11y', 'storybook', 'sass', 'spa'
-  ],
-  ai_data: [
-    'ai', 'artificial intelligence', 'machine learning', 'ml', 'llm', 'rag', 'vector database',
-    'embeddings', 'langchain', 'pytorch', 'tensorflow', 'pandas', 'numpy', 'scikit-learn',
-    'openai', 'nlp', 'data science', 'etl', 'pipeline', 'spark', 'sql'
-  ],
-  management: [
-    'lead', 'team lead', 'engineering manager', 'tech lead', 'mentor', 'mentoring', 'agile',
-    'scrum', 'kanban', 'sprint', 'jira', 'architecture', 'code review', 'roadmap', 'stakeholders'
-  ],
-  mobile: [
-    'mobile', 'react native', 'flutter', 'ios', 'swift', 'android', 'kotlin', 'cross-platform'
-  ],
-  testing: [
-    'testing', 'unit test', 'integration test', 'e2e', 'jest', 'vitest', 'cypress', 'playwright',
-    'qa', 'tdd', 'test-driven', 'selenium'
-  ]
-};
+import { CVData, WorkExperience, SkillCategory, ProjectItem, WorkBullet } from '../types/cv';
+import { DOMAIN_TAXONOMY, getDomainsForSkill } from './skillOntology';
 
 export interface ATSMatchResult {
   atsScore: number;
@@ -50,18 +12,19 @@ export interface ATSMatchResult {
 }
 
 /**
- * Tokenize string into lowercase alphanumeric words
+ * Unicode-aware tokenizer for multilingual job descriptions & CVs
  */
 export function tokenize(text: string): string[] {
+  if (!text) return [];
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9+#.-]/g, ' ')
+    .replace(/[^\p{L}\p{N}+#.-]/gu, ' ')
     .split(/\s+/)
     .filter(token => token.length > 1);
 }
 
 /**
- * Calculate Term Frequency for a list of tokens
+ * Calculate Term Frequency vector for tokens
  */
 function getTermFrequency(tokens: string[]): Record<string, number> {
   const tf: Record<string, number> = {};
@@ -74,7 +37,7 @@ function getTermFrequency(tokens: string[]): Record<string, number> {
 /**
  * Cosine similarity between two token frequency vectors
  */
-function calculateCosineSimilarity(tf1: Record<string, number>, tf2: Record<string, number>): number {
+export function calculateCosineSimilarity(tf1: Record<string, number>, tf2: Record<string, number>): number {
   let dotProduct = 0;
   let magnitude1 = 0;
   let magnitude2 = 0;
@@ -104,9 +67,9 @@ export function analyzeJobDescription(jdText: string): { matchedTags: string[]; 
   const tagScores: Record<string, number> = {};
   const foundKeywords = new Set<string>();
 
-  Object.entries(TECH_DOMAINS).forEach(([tag, keywords]) => {
+  Object.entries(DOMAIN_TAXONOMY).forEach(([domainId, domainDef]) => {
     let score = 0;
-    keywords.forEach(kw => {
+    domainDef.keywords.forEach(kw => {
       const isPresent = kw.includes(' ') ? jdLower.includes(kw) : jdTokens.has(kw);
       if (isPresent) {
         score += 2;
@@ -114,7 +77,7 @@ export function analyzeJobDescription(jdText: string): { matchedTags: string[]; 
       }
     });
     if (score > 0) {
-      tagScores[tag] = score;
+      tagScores[domainId] = score;
     }
   });
 
@@ -124,6 +87,66 @@ export function analyzeJobDescription(jdText: string): { matchedTags: string[]; 
     matchedTags: sortedTags.length > 0 ? sortedTags : ['fullstack'],
     keywords: Array.from(foundKeywords)
   };
+}
+
+/**
+ * Check if a project matches the job description via tech stack, ontology or text
+ */
+function evaluateProjectRelevance(
+  project: ProjectItem,
+  jdTF: Record<string, number>,
+  matchedTags: string[],
+  matchedKeywords: string[]
+): { isRelevant: boolean; score: number } {
+  const pText = `${project.title} ${project.description.en || ''} ${project.description.cs || ''} ${project.techStack.join(' ')}`;
+  const pTF = getTermFrequency(tokenize(pText));
+  const cosineSim = calculateCosineSimilarity(jdTF, pTF);
+
+  // Check if any tool in project tech stack matches JD keywords or belongs to a matched domain
+  const hasDirectTechMatch = project.techStack.some(tech => {
+    const techLower = tech.toLowerCase();
+    const directKeyword = matchedKeywords.some(kw => techLower.includes(kw) || kw.includes(techLower));
+    const techDomains = getDomainsForSkill(tech);
+    const domainMatch = techDomains.some(d => matchedTags.includes(d));
+    return directKeyword || domainMatch;
+  });
+
+  const score = cosineSim + (hasDirectTechMatch ? 0.4 : 0);
+  const isRelevant = score > 0.05 || hasDirectTechMatch || matchedTags.length === 0;
+
+  return { isRelevant, score };
+}
+
+/**
+ * Score and rank experience bullets without dead tag dependencies
+ */
+function scoreBulletRelevance(
+  bullet: WorkBullet,
+  jdTF: Record<string, number>,
+  matchedKeywords: string[],
+  matchedTags: string[]
+): number {
+  const bText = `${bullet.text.en || ''} ${bullet.text.cs || ''}`;
+  const bLower = bText.toLowerCase();
+  const bTF = getTermFrequency(tokenize(bText));
+  const cosineSim = calculateCosineSimilarity(jdTF, bTF);
+
+  let keywordBonus = 0;
+  matchedKeywords.forEach(kw => {
+    if (bLower.includes(kw)) {
+      keywordBonus += 0.15;
+    }
+  });
+
+  let domainBonus = 0;
+  matchedTags.forEach(tag => {
+    const domainDef = DOMAIN_TAXONOMY[tag];
+    if (domainDef && domainDef.keywords.some(k => bLower.includes(k))) {
+      domainBonus += 0.1;
+    }
+  });
+
+  return (cosineSim * 0.5) + Math.min(0.4, keywordBonus) + Math.min(0.2, domainBonus);
 }
 
 /**
@@ -143,34 +166,26 @@ export function performHybridSemanticMatch(params: {
 
   // 1. Rank & Filter Experiences & Bullets
   const rankedExperiences = cvData.experiences.map(exp => {
-    const expText = `${exp.company} ${exp.roleTitle.en || ''} ${exp.summary?.en || ''}`;
+    const expText = `${exp.company} ${exp.roleTitle.en || ''} ${exp.roleTitle.cs || ''} ${exp.summary?.en || ''}`;
     const expTF = getTermFrequency(tokenize(expText));
     const expSim = calculateCosineSimilarity(jdTF, expTF);
-    const hasTagMatch = exp.tags.some(t => matchedTags.includes(t));
 
-    const scoredBullets = exp.bullets.map(bullet => {
-      const bText = bullet.text.en || '';
-      const bTF = getTermFrequency(tokenize(bText));
-      const bSim = calculateCosineSimilarity(jdTF, bTF);
-      const bTagMatch = bullet.tags.some(t => matchedTags.includes(t));
+    const scoredBullets = exp.bullets.map(bullet => ({
+      bullet,
+      relevance: scoreBulletRelevance(bullet, jdTF, matchedKeywords, matchedTags)
+    }));
 
-      // Hybrid relevance score (0 - 1)
-      const relevance = (bSim * 0.7) + (bTagMatch ? 0.3 : 0);
-      return { bullet, relevance };
-    });
-
-    // Sort bullets by semantic relevance
     scoredBullets.sort((a, b) => b.relevance - a.relevance);
 
     const updatedBullets = scoredBullets.map((item, idx) => ({
       ...item.bullet,
-      // Enable all top-matching bullets or fallback to enabled
-      enabled: item.relevance > 0.05 || idx < 3 || matchedTags.length === 0
+      enabled: item.relevance > 0.05 || idx < 3 || matchedKeywords.length === 0
     }));
 
+    const hasEnabledBullet = updatedBullets.some(b => b.enabled);
     return {
       ...exp,
-      enabled: expSim > 0.02 || hasTagMatch || matchedTags.includes('fullstack'),
+      enabled: expSim > 0.02 || hasEnabledBullet || matchedTags.length === 0,
       bullets: updatedBullets
     };
   });
@@ -180,30 +195,25 @@ export function performHybridSemanticMatch(params: {
     const updatedSkills = cat.skills.map(s => {
       const sLower = s.name.toLowerCase();
       const isMatched = matchedKeywords.some(kw => sLower.includes(kw) || kw.includes(sLower));
-      const hasTag = s.tags.some(t => matchedTags.includes(t));
+      const sDomains = getDomainsForSkill(s.name);
+      const hasDomain = sDomains.some(d => matchedTags.includes(d));
       return {
         ...s,
-        enabled: isMatched || hasTag || matchedTags.length === 0
+        enabled: isMatched || hasDomain || matchedKeywords.length === 0
       };
     });
 
-    return {
-      ...cat,
-      skills: updatedSkills
-    };
+    return { ...cat, skills: updatedSkills };
   });
 
-  // 3. Rank & Filter Projects
-  const rankedProjects = cvData.projects.map(p => {
-    const pText = `${p.title} ${p.description.en || ''} ${p.techStack.join(' ')}`;
-    const pTF = getTermFrequency(tokenize(pText));
-    const pSim = calculateCosineSimilarity(jdTF, pTF);
-    const hasTag = p.tags.some(t => matchedTags.includes(t));
-    return {
-      ...p,
-      enabled: pSim > 0.05 || hasTag || matchedTags.length === 0
-    };
+  // 3. Rank & Filter Projects (with Skill Ontology awareness)
+  const scoredProjects = cvData.projects.map(p => {
+    const { isRelevant, score } = evaluateProjectRelevance(p, jdTF, matchedTags, matchedKeywords);
+    return { project: { ...p, enabled: isRelevant }, score };
   });
+
+  scoredProjects.sort((a, b) => b.score - a.score);
+  const rankedProjects = scoredProjects.map(sp => sp.project);
 
   // 4. Calculate ATS Match Score (0 to 100%)
   const totalRelevantSkills = matchedKeywords.length;
@@ -215,15 +225,16 @@ export function performHybridSemanticMatch(params: {
   const missingKeywords: string[] = [];
 
   matchedKeywords.forEach(kw => {
-    if (Array.from(candidateSkills).some(cs => cs.includes(kw) || kw.includes(cs))) {
+    const matched = Array.from(candidateSkills).some(cs => cs.includes(kw) || kw.includes(cs));
+    if (matched) {
       matchCount++;
     } else {
       missingKeywords.push(kw);
     }
   });
 
-  const baseRatio = totalRelevantSkills > 0 ? (matchCount / totalRelevantSkills) : 0.8;
-  const atsScore = Math.min(98, Math.max(45, Math.round(baseRatio * 85 + (matchedTags.length > 0 ? 15 : 0))));
+  const baseRatio = totalRelevantSkills > 0 ? (matchCount / totalRelevantSkills) : 0.85;
+  const atsScore = Math.min(99, Math.max(50, Math.round(baseRatio * 80 + (matchedTags.length > 0 ? 18 : 0))));
 
   return {
     atsScore,
