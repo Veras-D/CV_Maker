@@ -26,7 +26,7 @@ const ProjectCardItem: React.FC<{
     if (joined !== currentParsed && joined !== techStackText) {
       setTechStackText(joined);
     }
-  }, [p.techStack]);
+  }, [p.techStack, techStackText]);
 
   const handleTechStackChange = (val: string) => {
     setTechStackText(val);
