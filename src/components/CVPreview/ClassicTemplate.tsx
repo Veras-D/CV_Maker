@@ -143,27 +143,35 @@ const ResumeExperience: React.FC<{ experiences: WorkExperience[]; language: Lang
         {language === 'en' ? 'Professional Experience' : 'Pracovní Zkušenosti'}
       </h2>
       <div className="space-y-3">
-        {experiences.map(exp => (
-          <div key={exp.id}>
-            <div className="flex justify-between items-baseline font-bold">
-              <span className="text-slate-900 text-[11px]">{exp.roleTitle[language] || exp.roleTitle.en}</span>
-              <span className="text-[9.5px] text-slate-600 font-normal">{exp.startDate} – {exp.endDate}</span>
-            </div>
-            <div className="text-[10px] font-semibold text-slate-700 mb-1">
-              {exp.company} {exp.location && `| ${exp.location}`}
-            </div>
-            {exp.bullets.length > 0 && (
-              <div className="space-y-0.5 text-slate-800 text-[10px] pl-1 leading-normal">
-                {exp.bullets.map(b => (
-                  <div key={b.id} className="flex items-start">
-                    <span className="mr-1.5 text-slate-800 font-bold shrink-0">•</span>
-                    <span>{(b.text[language] || b.text.en || '').replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '').trim()}</span>
-                  </div>
-                ))}
+        {experiences.map(exp => {
+          const expSummary = exp.summary ? (exp.summary[language] || exp.summary.en || '') : '';
+          return (
+            <div key={exp.id}>
+              <div className="flex justify-between items-baseline font-bold">
+                <span className="text-slate-900 text-[11px]">{exp.roleTitle[language] || exp.roleTitle.en}</span>
+                <span className="text-[9.5px] text-slate-600 font-normal">{exp.startDate} – {exp.endDate}</span>
               </div>
-            )}
-          </div>
-        ))}
+              <div className="text-[10px] font-semibold text-slate-700 mb-1">
+                {exp.company} {exp.location && `| ${exp.location}`}
+              </div>
+              {expSummary && (
+                <p className="text-[9.5px] text-slate-700 mb-1 italic leading-relaxed">
+                  {expSummary}
+                </p>
+              )}
+              {exp.bullets.length > 0 && (
+                <div className="space-y-0.5 text-slate-800 text-[10px] pl-1 leading-normal">
+                  {exp.bullets.map(b => (
+                    <div key={b.id} className="flex items-start">
+                      <span className="mr-1.5 text-slate-800 font-bold shrink-0">•</span>
+                      <span>{(b.text[language] || b.text.en || '').replace(/^[\s•●○*·▪▫►▸⁃\u2013\u2014\u002D\u2212|:;,\-_/]+/u, '').trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

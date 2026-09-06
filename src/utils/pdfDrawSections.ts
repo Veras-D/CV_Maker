@@ -11,94 +11,27 @@ import {
   UserProfile 
 } from '../types/cv';
 
-export const PAGE_WIDTH = 210;
-export const MARGIN_LEFT = 14;
-export const MARGIN_RIGHT = 196;
-export const CONTENT_WIDTH = MARGIN_RIGHT - MARGIN_LEFT; // 182mm
+export {
+  PAGE_WIDTH,
+  MARGIN_LEFT,
+  MARGIN_RIGHT,
+  CONTENT_WIDTH,
+  drawSectionHeader,
+  drawContactRow,
+  getPDFContactItems,
+  drawTitleAndHeadline
+} from './pdfHeaderUtils';
 
-export function drawSectionHeader(doc: jsPDF, title: string, y: number): number {
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(title.toUpperCase(), MARGIN_LEFT, y);
-  const nextY = y + 1.5;
-  doc.setDrawColor(148, 163, 184);
-  doc.setLineWidth(0.25);
-  doc.line(MARGIN_LEFT, nextY, MARGIN_RIGHT, nextY);
-  return nextY + 4.2;
-}
-
-export function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: string }[], startY: number): number {
-  if (contactItems.length === 0) return startY;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
-
-  const dotWidth = 5.2;
-  let totalWidth = 0;
-  const itemWidths = contactItems.map(item => {
-    const w = doc.getTextWidth(item.text);
-    totalWidth += w;
-    return w;
-  });
-  totalWidth += (contactItems.length - 1) * dotWidth;
-
-  let startX = (PAGE_WIDTH - totalWidth) / 2;
-  const y = startY;
-
-  contactItems.forEach((item, idx) => {
-    if (item.url) {
-      doc.setTextColor(3, 105, 161);
-      doc.textWithLink(item.text, startX, y, { url: item.url });
-    } else {
-      doc.setTextColor(71, 85, 105);
-      doc.text(item.text, startX, y);
-    }
-    startX += itemWidths[idx];
-
-    if (idx < contactItems.length - 1) {
-      doc.setFillColor(100, 116, 139);
-      doc.circle(startX + (dotWidth / 2), y - 0.7, 0.4, 'F');
-      startX += dotWidth;
-    }
-  });
-
-  return y + 3.8;
-}
-
-export function getPDFContactItems(profile: UserProfile): { text: string; url?: string }[] {
-  const items: { text: string; url?: string }[] = [
-    { text: (profile.email || '').trim() },
-    { text: (profile.phone || '').trim() },
-    { text: (profile.location || '').trim() }
-  ].filter(item => Boolean(item.text));
-
-  if (profile.portfolioUrl && profile.portfolioUrl.trim()) {
-    items.push({ text: profile.portfolioUrl.trim(), url: profile.portfolioUrl.trim() });
-  }
-
-  return items;
-}
-
-export function drawTitleAndHeadline(doc: jsPDF, name: string, headline: string, startY: number): number {
-  let y = startY;
-  if (name) {
-    doc.setFont('times', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(15, 23, 42);
-    doc.text(name.toUpperCase(), PAGE_WIDTH / 2, y, { align: 'center' });
-    y += 6.2;
-  }
-
-  if (headline) {
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(10);
-    doc.setTextColor(51, 65, 85);
-    doc.text(headline, PAGE_WIDTH / 2, y, { align: 'center' });
-    y += 5.0;
-  }
-  return y;
-}
+import {
+  PAGE_WIDTH,
+  MARGIN_LEFT,
+  MARGIN_RIGHT,
+  CONTENT_WIDTH,
+  drawSectionHeader,
+  drawContactRow,
+  getPDFContactItems,
+  drawTitleAndHeadline
+} from './pdfHeaderUtils';
 
 export function drawHeader(doc: jsPDF, profile: UserProfile, lang: LanguageCode): number {
   const name = (profile.name || '').trim();
@@ -167,6 +100,16 @@ export function drawExperiences(
     doc.setTextColor(51, 65, 85);
     doc.text(`${exp.company} | ${exp.location || 'Remote'}`, MARGIN_LEFT, y);
     y += 3.8;
+
+    const expSummary = exp.summary ? (exp.summary[lang] || exp.summary.en || '') : '';
+    if (expSummary) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.4);
+      doc.setTextColor(71, 85, 105);
+      const sLines = doc.splitTextToSize(expSummary, CONTENT_WIDTH);
+      doc.text(sLines, MARGIN_LEFT, y);
+      y += (sLines.length * 3.6) + 1.2;
+    }
 
     exp.activeBullets.forEach((b: WorkBullet) => {
       doc.setFillColor(30, 41, 59);
