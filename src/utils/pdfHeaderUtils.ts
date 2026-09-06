@@ -56,6 +56,12 @@ export function drawContactRow(doc: jsPDF, contactItems: { text: string; url?: s
   return y + 3.8;
 }
 
+function tryPushLink(items: { text: string; url?: string }[], label: string, rawUrl?: string) {
+  if (!rawUrl || !rawUrl.trim()) return;
+  const url = rawUrl.trim();
+  items.push({ text: label, url: url.startsWith('http') ? url : `https://${url}` });
+}
+
 export function getPDFContactItems(profile: UserProfile): { text: string; url?: string }[] {
   const items: { text: string; url?: string }[] = [
     { text: (profile.email || '').trim() },
@@ -63,20 +69,9 @@ export function getPDFContactItems(profile: UserProfile): { text: string; url?: 
     { text: (profile.location || '').trim() }
   ].filter(item => Boolean(item.text));
 
-  if (profile.githubUrl && profile.githubUrl.trim()) {
-    const raw = profile.githubUrl.trim();
-    items.push({ text: 'GitHub', url: raw.startsWith('http') ? raw : `https://${raw}` });
-  }
-
-  if (profile.linkedinUrl && profile.linkedinUrl.trim()) {
-    const raw = profile.linkedinUrl.trim();
-    items.push({ text: 'LinkedIn', url: raw.startsWith('http') ? raw : `https://${raw}` });
-  }
-
-  if (profile.portfolioUrl && profile.portfolioUrl.trim()) {
-    const raw = profile.portfolioUrl.trim();
-    items.push({ text: 'Portfolio', url: raw.startsWith('http') ? raw : `https://${raw}` });
-  }
+  tryPushLink(items, 'GitHub', profile.githubUrl);
+  tryPushLink(items, 'LinkedIn', profile.linkedinUrl);
+  tryPushLink(items, 'Portfolio', profile.portfolioUrl);
 
   return items;
 }

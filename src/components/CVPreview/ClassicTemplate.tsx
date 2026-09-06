@@ -73,27 +73,27 @@ const EmptyResumePlaceholder: React.FC = () => {
   );
 };
 
+function getProfileLinks(profile: UserProfile): { label: string; url: string }[] {
+  const links: { label: string; url: string }[] = [];
+  const add = (label: string, raw?: string) => {
+    if (!raw?.trim()) return;
+    const url = raw.trim();
+    links.push({ label, url: url.startsWith('http') ? url : `https://${url}` });
+  };
+  add('GitHub', profile.githubUrl);
+  add('LinkedIn', profile.linkedinUrl);
+  add('Portfolio', profile.portfolioUrl);
+  return links;
+}
+
 const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> = ({ profile, language }) => {
   const name = profile.name?.trim();
   const headline = profile.headline?.[language]?.trim() || profile.headline?.en?.trim();
   const contactItems = getContactList(profile);
-  const github = profile.githubUrl?.trim();
-  const linkedin = profile.linkedinUrl?.trim();
-  const portfolio = profile.portfolioUrl?.trim();
+  const links = getProfileLinks(profile);
 
-  if (!name && !headline && contactItems.length === 0 && !github && !linkedin && !portfolio) {
+  if (!name && !headline && contactItems.length === 0 && links.length === 0) {
     return null;
-  }
-
-  const links: { label: string; url: string }[] = [];
-  if (github) {
-    links.push({ label: 'GitHub', url: github.startsWith('http') ? github : `https://${github}` });
-  }
-  if (linkedin) {
-    links.push({ label: 'LinkedIn', url: linkedin.startsWith('http') ? linkedin : `https://${linkedin}` });
-  }
-  if (portfolio) {
-    links.push({ label: 'Portfolio', url: portfolio.startsWith('http') ? portfolio : `https://${portfolio}` });
   }
 
   return (
