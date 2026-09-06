@@ -8,12 +8,12 @@ export interface IngestionSourceTabsProps {
   onTabChange: (tab: IngestionSourceType) => void;
 }
 
-const TABS: { id: IngestionSourceType; label: string; icon: React.FC<{ className?: string }> }[] = [
+const TABS: { id: IngestionSourceType; label: string; icon: React.FC<{ className?: string }>; badge?: string }[] = [
   { id: 'file', label: 'Upload CV', icon: UploadCloud },
   { id: 'github', label: 'GitHub', icon: Github },
   { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
   { id: 'website', label: 'Portfolio', icon: Globe },
-  { id: 'text', label: 'Text', icon: FileText }
+  { id: 'text', label: 'Text', icon: FileText, badge: 'Beta' }
 ];
 
 export const IngestionSourceTabs: React.FC<IngestionSourceTabsProps> = ({ activeTab, onTabChange }) => {
@@ -35,6 +35,11 @@ export const IngestionSourceTabs: React.FC<IngestionSourceTabsProps> = ({ active
           >
             <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
             <span>{tab.label}</span>
+            {tab.badge && (
+              <span className="px-1 py-0.2 text-[8px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded uppercase tracking-wider">
+                {tab.badge}
+              </span>
+            )}
           </button>
         );
       })}

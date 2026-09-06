@@ -151,9 +151,14 @@ export const TextTabContent: React.FC<{
   isProcessing: boolean;
 }> = ({ input, setInput, onFetch, isProcessing }) => (
   <div className="space-y-3">
-    <label className="block text-xs font-semibold text-slate-300">
-      Paste Resume / LinkedIn Bio Text
-    </label>
+    <div className="flex items-center justify-between">
+      <label className="block text-xs font-semibold text-slate-300">
+        Paste Resume / LinkedIn Bio Text
+      </label>
+      <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded uppercase tracking-wider">
+        Beta
+      </span>
+    </div>
     <textarea
       rows={4}
       placeholder="Paste your existing resume plain text, contact details, or experience summaries here..."
@@ -161,6 +166,9 @@ export const TextTabContent: React.FC<{
       onChange={(e) => setInput(e.target.value)}
       className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none font-mono"
     />
+    <p className="text-[10px] text-slate-500">
+      Natural language text parsing is currently in <span className="text-amber-400 font-semibold">Beta</span>. For best results, use structured bullet points or our dedicated PDF / LinkedIn importers.
+    </p>
     <button
       type="button"
       onClick={onFetch}
