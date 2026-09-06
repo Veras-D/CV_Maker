@@ -63,8 +63,19 @@ export function getPDFContactItems(profile: UserProfile): { text: string; url?: 
     { text: (profile.location || '').trim() }
   ].filter(item => Boolean(item.text));
 
+  if (profile.githubUrl && profile.githubUrl.trim()) {
+    const raw = profile.githubUrl.trim();
+    items.push({ text: 'GitHub', url: raw.startsWith('http') ? raw : `https://${raw}` });
+  }
+
+  if (profile.linkedinUrl && profile.linkedinUrl.trim()) {
+    const raw = profile.linkedinUrl.trim();
+    items.push({ text: 'LinkedIn', url: raw.startsWith('http') ? raw : `https://${raw}` });
+  }
+
   if (profile.portfolioUrl && profile.portfolioUrl.trim()) {
-    items.push({ text: profile.portfolioUrl.trim(), url: profile.portfolioUrl.trim() });
+    const raw = profile.portfolioUrl.trim();
+    items.push({ text: 'Portfolio', url: raw.startsWith('http') ? raw : `https://${raw}` });
   }
 
   return items;

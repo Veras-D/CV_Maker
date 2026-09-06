@@ -77,10 +77,23 @@ const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> =
   const name = profile.name?.trim();
   const headline = profile.headline?.[language]?.trim() || profile.headline?.en?.trim();
   const contactItems = getContactList(profile);
+  const github = profile.githubUrl?.trim();
+  const linkedin = profile.linkedinUrl?.trim();
   const portfolio = profile.portfolioUrl?.trim();
 
-  if (!name && !headline && contactItems.length === 0 && !portfolio) {
+  if (!name && !headline && contactItems.length === 0 && !github && !linkedin && !portfolio) {
     return null;
+  }
+
+  const links: { label: string; url: string }[] = [];
+  if (github) {
+    links.push({ label: 'GitHub', url: github.startsWith('http') ? github : `https://${github}` });
+  }
+  if (linkedin) {
+    links.push({ label: 'LinkedIn', url: linkedin.startsWith('http') ? linkedin : `https://${linkedin}` });
+  }
+  if (portfolio) {
+    links.push({ label: 'Portfolio', url: portfolio.startsWith('http') ? portfolio : `https://${portfolio}` });
   }
 
   return (
@@ -95,7 +108,7 @@ const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> =
           {headline}
         </p>
       )}
-      {(contactItems.length > 0 || portfolio) && (
+      {(contactItems.length > 0 || links.length > 0) && (
         <div className="text-[9.5px] text-slate-600 font-sans mt-1.5 flex flex-wrap justify-center items-center gap-2">
           {contactItems.map((item, idx) => (
             <React.Fragment key={idx}>
@@ -103,18 +116,18 @@ const ResumeHeader: React.FC<{ profile: UserProfile; language: LanguageCode }> =
               <span>{item}</span>
             </React.Fragment>
           ))}
-          {portfolio && (
-            <>
-              {contactItems.length > 0 && <span className="text-slate-400 font-bold">•</span>}
+          {links.map((link, idx) => (
+            <React.Fragment key={link.label}>
+              {(contactItems.length > 0 || idx > 0) && <span className="text-slate-400 font-bold">•</span>}
               <a 
-                href={portfolio}
-                onClick={(e) => { e.preventDefault(); openExternalUrl(portfolio); }} 
-                className="text-sky-700 hover:underline cursor-pointer"
+                href={link.url}
+                onClick={(e) => { e.preventDefault(); openExternalUrl(link.url); }} 
+                className="text-sky-700 hover:underline cursor-pointer font-medium"
               >
-                {portfolio}
+                {link.label}
               </a>
-            </>
-          )}
+            </React.Fragment>
+          ))}
         </div>
       )}
     </header>
