@@ -13,8 +13,18 @@ export async function injectPDFMetadata(pdfBytes: Uint8Array, metadata: PDFMetad
   if (metadata.cp_description) {
     pdfDoc.setSubject(metadata.cp_description);
   }
-  if (metadata.cp_keywords) {
-    pdfDoc.setKeywords(metadata.cp_keywords.split(',').map(k => k.trim()));
+  
+  const kwList = (metadata.cp_keywords || '')
+    .split(',')
+    .map(k => k.trim())
+    .filter(Boolean);
+
+  if (metadata.cp_category && !kwList.includes(metadata.cp_category)) {
+    kwList.push(metadata.cp_category);
+  }
+
+  if (kwList.length > 0) {
+    pdfDoc.setKeywords(kwList);
   }
   
   pdfDoc.setProducer('CV Maker & Role Tracker (PDF Engine)');
