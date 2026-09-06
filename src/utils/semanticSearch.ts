@@ -233,13 +233,27 @@ export function performHybridSemanticMatch(params: {
     }
   });
 
+  // 4. Enrich matched skills with candidate's actual competencies in the matched domains
+  const candidateDomainSkills = cvData.skillCategories
+    .flatMap(c => c.skills)
+    .filter(s => {
+      const sDomains = getDomainsForSkill(s.name);
+      return sDomains.some(d => matchedTags.includes(d));
+    })
+    .map(s => s.name);
+
+  const combinedSkillSet = new Set<string>();
+  matchedKeywords.forEach(kw => combinedSkillSet.add(kw));
+  candidateDomainSkills.forEach(skill => combinedSkillSet.add(skill.toLowerCase()));
+  const enrichedKeywords = Array.from(combinedSkillSet);
+
   const baseRatio = totalRelevantSkills > 0 ? (matchCount / totalRelevantSkills) : 0.85;
   const atsScore = Math.min(99, Math.max(50, Math.round(baseRatio * 80 + (matchedTags.length > 0 ? 18 : 0))));
 
   return {
     atsScore,
     matchedTags,
-    matchedKeywords,
+    matchedKeywords: enrichedKeywords,
     missingKeywords: missingKeywords.slice(0, 8),
     rankedExperiences,
     rankedSkills,
