@@ -179,7 +179,7 @@ export function performHybridSemanticMatch(params: {
 
     const updatedBullets = scoredBullets.map((item, idx) => ({
       ...item.bullet,
-      enabled: item.relevance > 0.05 || idx < 3 || matchedKeywords.length === 0
+      enabled: idx < 2 || item.relevance > 0.05 || matchedKeywords.length === 0
     }));
 
     const hasEnabledBullet = updatedBullets.some(b => b.enabled);

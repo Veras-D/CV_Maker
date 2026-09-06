@@ -12,6 +12,7 @@ export interface TailoredOutputViewProps {
   activePreset: RolePreset;
   coverLetterEditable: string;
   isPdfExporting: boolean;
+  downloadFeedback?: string | null;
   onCoverLetterChange: (v: string) => void;
   onDownloadCoverLetter: () => void;
   onDownloadPDF: () => void;
@@ -24,6 +25,7 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
   activePreset,
   coverLetterEditable,
   isPdfExporting,
+  downloadFeedback,
   onCoverLetterChange,
   onDownloadCoverLetter,
   onDownloadPDF
@@ -31,6 +33,13 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
   if (tailoredOutput) {
     return (
       <div className="space-y-4">
+        {downloadFeedback && (
+          <div className="bg-emerald-950/90 border border-emerald-700/70 rounded-xl p-3 flex items-center gap-2.5 text-xs text-emerald-300 shadow-md animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-medium">{downloadFeedback}</span>
+          </div>
+        )}
+
         <ATSScoreCard output={tailoredOutput} />
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">

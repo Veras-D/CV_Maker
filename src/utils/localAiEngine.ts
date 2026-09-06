@@ -123,8 +123,22 @@ export function runLocalAITailor(params: {
 
   const tailoredSummary = `Results-oriented ${primaryRole} with specialized expertise in ${domainString} and hands-on experience in ${kwString}. Proven history of delivering high-quality, scalable applications aligned with ATS standards.`;
 
+  const tailoredHeadline = primaryRole;
   const updatedData: CVData = {
     ...cvData,
+    profile: {
+      ...cvData.profile,
+      headline: {
+        ...cvData.profile.headline,
+        [language]: tailoredHeadline,
+        en: tailoredHeadline
+      },
+      summary: {
+        ...cvData.profile.summary,
+        [language]: tailoredSummary,
+        en: tailoredSummary
+      }
+    },
     experiences: matchResult.rankedExperiences,
     skillCategories: matchResult.rankedSkills,
     projects: matchResult.rankedProjects,

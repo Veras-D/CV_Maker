@@ -19,6 +19,7 @@ export const AIRoleTailor: React.FC = () => {
   const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
 
   const handleRunTailor = (e: React.FormEvent) => {
@@ -55,15 +56,18 @@ export const AIRoleTailor: React.FC = () => {
 
   const handleDownloadPDF = async () => {
     setIsPdfExporting(true);
+    const filename = `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
     try {
       await exportCVToPDF({
         elementId: 'tailored-ats-cv-preview',
-        filename: `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}`,
+        filename,
         metadata: tailoredOutput?.tailoredMetadata || activePreset.metadata,
         data: tailoredOutput?.updatedData || cvData,
         language: activeLanguage as LanguageCode,
         selectedTags: tailoredOutput?.matchResult.matchedTags || []
       });
+      setDownloadFeedback(`Tailored PDF downloaded: "${filename}"`);
+      setTimeout(() => setDownloadFeedback(null), 5000);
     } catch (e) {
       console.error("PDF export failed", e);
     } finally {
@@ -72,13 +76,17 @@ export const AIRoleTailor: React.FC = () => {
   };
 
   const handleDownloadCoverLetter = () => {
+    const filename = `Cover_Letter_${(companyName || 'Job').replace(/\s+/g, '_')}.txt`;
     const file = new Blob([coverLetterEditable], { type: 'text/plain' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(file);
-    link.download = `Cover_Letter_${(companyName || 'Job').replace(/\s+/g, '_')}.txt`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    setDownloadFeedback(`Cover Letter downloaded: "${filename}"`);
+    setTimeout(() => setDownloadFeedback(null), 5000);
   };
 
   const isMasterEmpty = !cvData.profile.name?.trim() && cvData.experiences.length === 0;
@@ -114,6 +122,7 @@ export const AIRoleTailor: React.FC = () => {
             activePreset={activePreset}
             coverLetterEditable={coverLetterEditable}
             isPdfExporting={isPdfExporting}
+            downloadFeedback={downloadFeedback}
             onCoverLetterChange={setCoverLetterEditable}
             onDownloadCoverLetter={handleDownloadCoverLetter}
             onDownloadPDF={handleDownloadPDF}
