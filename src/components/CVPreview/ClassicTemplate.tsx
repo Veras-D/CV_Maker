@@ -305,7 +305,7 @@ export const ClassicTemplate: React.FC<TemplateProps> = ({ data, language, selec
     .map(e => ({
       ...e,
       bullets: e.bullets.filter(b => 
-        b.enabled && (selectedTags.length === 0 || b.tags.some(t => selectedTags.includes(t)))
+        b.enabled && (selectedTags.length === 0 || b.tags.length === 0 || b.tags.some(t => selectedTags.includes(t)))
       )
     }))
     .filter(e => e.bullets.length > 0 || selectedTags.length === 0);

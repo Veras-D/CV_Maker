@@ -64,7 +64,7 @@ export const AIRoleTailor: React.FC = () => {
         metadata: tailoredOutput?.tailoredMetadata || activePreset.metadata,
         data: tailoredOutput?.updatedData || cvData,
         language: activeLanguage as LanguageCode,
-        selectedTags: tailoredOutput?.matchResult.matchedTags || []
+        selectedTags: []
       });
       setDownloadFeedback(`Tailored PDF downloaded: "${filename}"`);
       setTimeout(() => setDownloadFeedback(null), 5000);

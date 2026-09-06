@@ -92,7 +92,7 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
               <ClassicTemplate 
                 data={tailoredOutput.updatedData} 
                 language={activeLanguage as LanguageCode} 
-                selectedTags={tailoredOutput.matchResult.matchedTags} 
+                selectedTags={[]} 
                 preset={activePreset} 
               />
             </div>
