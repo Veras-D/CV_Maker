@@ -23,7 +23,6 @@ export {
 } from './pdfHeaderUtils';
 
 import {
-  PAGE_WIDTH,
   MARGIN_LEFT,
   MARGIN_RIGHT,
   CONTENT_WIDTH,
