@@ -43,7 +43,7 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
             <button
               type="button"
               onClick={onDownloadCoverLetter}
-              className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Cover Letter</span>
@@ -53,7 +53,7 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
               type="button"
               onClick={onDownloadPDF}
               disabled={isPdfExporting}
-              className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow cursor-pointer"
+              className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow cursor-pointer transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               <span>{isPdfExporting ? 'Exporting...' : 'Export PDF'}</span>
@@ -61,13 +61,18 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <h4 className="text-xs font-bold text-slate-300 mb-2">Tailored Cover Letter ({activeLanguage.toUpperCase()})</h4>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-slate-200">
+              Tailored Cover Letter ({activeLanguage.toUpperCase()})
+            </h4>
+            <span className="text-[11px] text-slate-400">Editable preview</span>
+          </div>
           <textarea
-            rows={7}
+            rows={8}
             value={coverLetterEditable}
             onChange={(e) => onCoverLetterChange(e.target.value)}
-            className="w-full bg-slate-850 border border-slate-750 rounded-lg p-3 text-xs text-slate-200 leading-relaxed font-sans focus:outline-none"
+            className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg p-3.5 text-xs text-slate-100 placeholder:text-slate-500 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner resize-y"
           />
         </div>
 
