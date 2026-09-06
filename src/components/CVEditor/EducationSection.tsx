@@ -87,13 +87,19 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                   <CustomSelect
                     options={yearOptions}
                     value={startYr}
-                    onChange={(val) => onUpdate(edu.id, { dates: `${val} – ${endYr}` })}
+                    onChange={(val) => {
+                      const newEndYr = endYr !== 'Present' && parseInt(endYr, 10) < parseInt(val, 10) ? val : endYr;
+                      onUpdate(edu.id, { dates: `${val} – ${newEndYr}` });
+                    }}
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400 mb-0.5 font-medium">End Year</label>
                   <CustomSelect
-                    options={[{ value: 'Present', label: 'Present' }, ...yearOptions]}
+                    options={[
+                      { value: 'Present', label: 'Present' },
+                      ...yearOptions.filter(y => parseInt(y.value, 10) >= parseInt(startYr, 10))
+                    ]}
                     value={endYr}
                     onChange={(val) => onUpdate(edu.id, { dates: `${startYr} – ${val}` })}
                   />

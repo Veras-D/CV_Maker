@@ -13,6 +13,17 @@ interface DateSelectorsProps {
   onUpdateDates: (updates: { startDate?: string; endDate?: string }) => void;
 }
 
+const MONTH_INDEX_MAP: Record<string, number> = {
+  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+  Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+};
+
+const getAbsoluteMonth = (month: string, year: string): number => {
+  const m = MONTH_INDEX_MAP[month] ?? 0;
+  const y = parseInt(year, 10) || 0;
+  return y * 12 + m;
+};
+
 const DateSelectors: React.FC<DateSelectorsProps> = ({
   startDate,
   endDate,
@@ -29,7 +40,51 @@ const DateSelectors: React.FC<DateSelectorsProps> = ({
 
   const start = parseMonthYear(startDate);
   const isPresent = endDate.toLowerCase() === 'present';
-  const end = isPresent ? { month: currentMonth, year: currentYear.toString() } : parseMonthYear(endDate);
+  const rawEnd = isPresent ? { month: currentMonth, year: currentYear.toString() } : parseMonthYear(endDate);
+  const isEndEarlier = !isPresent && getAbsoluteMonth(rawEnd.month, rawEnd.year) < getAbsoluteMonth(start.month, start.year);
+  const end = isEndEarlier ? start : rawEnd;
+
+  const handleStartMonthChange = (newMonth: string) => {
+    const updates: { startDate?: string; endDate?: string } = {
+      startDate: `${newMonth} ${start.year}`
+    };
+    if (!isPresent && getAbsoluteMonth(end.month, end.year) < getAbsoluteMonth(newMonth, start.year)) {
+      updates.endDate = `${newMonth} ${start.year}`;
+    }
+    onUpdateDates(updates);
+  };
+
+  const handleStartYearChange = (newYear: string) => {
+    const updates: { startDate?: string; endDate?: string } = {
+      startDate: `${start.month} ${newYear}`
+    };
+    if (!isPresent && getAbsoluteMonth(end.month, end.year) < getAbsoluteMonth(start.month, newYear)) {
+      updates.endDate = `${start.month} ${newYear}`;
+    }
+    onUpdateDates(updates);
+  };
+
+  const handleEndMonthChange = (newMonth: string) => {
+    if (getAbsoluteMonth(newMonth, end.year) < getAbsoluteMonth(start.month, start.year)) {
+      onUpdateDates({ endDate: `${start.month} ${start.year}` });
+    } else {
+      onUpdateDates({ endDate: `${newMonth} ${end.year}` });
+    }
+  };
+
+  const handleEndYearChange = (newYear: string) => {
+    if (getAbsoluteMonth(end.month, newYear) < getAbsoluteMonth(start.month, start.year)) {
+      onUpdateDates({ endDate: `${start.month} ${newYear}` });
+    } else {
+      onUpdateDates({ endDate: `${end.month} ${newYear}` });
+    }
+  };
+
+  const filteredEndYears = years.filter((y) => parseInt(y.value, 10) >= parseInt(start.year, 10));
+  const filteredEndMonths =
+    end.year === start.year
+      ? months.filter((m) => (MONTH_INDEX_MAP[m.value] ?? 0) >= (MONTH_INDEX_MAP[start.month] ?? 0))
+      : months;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
@@ -42,12 +97,12 @@ const DateSelectors: React.FC<DateSelectorsProps> = ({
           <CustomSelect
             options={months}
             value={start.month}
-            onChange={(val) => onUpdateDates({ startDate: `${val} ${start.year}` })}
+            onChange={handleStartMonthChange}
           />
           <CustomSelect
             options={years}
             value={start.year}
-            onChange={(val) => onUpdateDates({ startDate: `${start.month} ${val}` })}
+            onChange={handleStartYearChange}
           />
         </div>
       </div>
@@ -76,14 +131,14 @@ const DateSelectors: React.FC<DateSelectorsProps> = ({
         ) : (
           <div className="grid grid-cols-2 gap-1.5">
             <CustomSelect
-              options={months}
+              options={filteredEndMonths}
               value={end.month}
-              onChange={(val) => onUpdateDates({ endDate: `${val} ${end.year}` })}
+              onChange={handleEndMonthChange}
             />
             <CustomSelect
-              options={years}
+              options={filteredEndYears}
               value={end.year}
-              onChange={(val) => onUpdateDates({ endDate: `${end.month} ${val}` })}
+              onChange={handleEndYearChange}
             />
           </div>
         )}
