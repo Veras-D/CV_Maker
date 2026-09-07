@@ -1,7 +1,8 @@
 import React from 'react';
 import { KanbanRole } from '../../types/cv';
-import { Building, MapPin, Calendar, ExternalLink, Trash2, Edit3, GripVertical } from 'lucide-react';
+import { Building, MapPin, Calendar, ExternalLink, Trash2, Edit3, GripVertical, AlertTriangle } from 'lucide-react';
 import { openExternalUrl } from '../../utils/urlHelper';
+import { isKanbanCardStale, getKanbanInactivityDays, formatInactivityBadge } from '../../utils/kanbanUtils';
 
 export interface KanbanCardItemProps {
   role: KanbanRole;
@@ -20,6 +21,9 @@ export const KanbanCardItem: React.FC<KanbanCardItemProps> = ({
   onEdit,
   onDelete
 }) => {
+  const isStale = isKanbanCardStale(role);
+  const inactivityDays = isStale ? getKanbanInactivityDays(role) : 0;
+
   return (
     <div 
       draggable
@@ -28,9 +32,24 @@ export const KanbanCardItem: React.FC<KanbanCardItemProps> = ({
       className={`rounded-lg p-3 space-y-2 transition-all duration-150 overflow-hidden ${
         isBeingDragged
           ? 'opacity-35 scale-[0.97] border-2 border-dashed border-sky-400 bg-sky-950/20 shadow-none ring-2 ring-sky-500/20 cursor-grabbing'
-          : 'bg-slate-850 border border-slate-750 hover:border-sky-600/50 hover:shadow-md shadow-sm group cursor-grab active:cursor-grabbing'
+          : isStale
+            ? 'bg-amber-950/15 border border-amber-500/50 hover:border-amber-400/80 hover:shadow-md shadow-sm group cursor-grab active:cursor-grabbing'
+            : 'bg-slate-850 border border-slate-750 hover:border-sky-600/50 hover:shadow-md shadow-sm group cursor-grab active:cursor-grabbing'
       }`}
     >
+      {isStale && (
+        <div 
+          className="flex items-center justify-between gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded text-amber-300 text-[10px] font-medium"
+          title="No activity or status changes for over 30 days. Consider following up, archiving, or updating this role."
+        >
+          <div className="flex items-center gap-1 min-w-0">
+            <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="font-semibold">{formatInactivityBadge(inactivityDays)}</span>
+          </div>
+          <span className="text-amber-400/80 text-[9.5px] truncate">Follow up / update</span>
+        </div>
+      )}
+
       <div className="flex justify-between items-start gap-1">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <GripVertical className="w-3.5 h-3.5 text-slate-600 opacity-40 group-hover:opacity-100 shrink-0" />
