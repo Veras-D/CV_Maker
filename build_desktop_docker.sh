@@ -12,9 +12,9 @@ if ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker compose"
 fi
 
-# Clean previous local testing data from host WebKit localStorage for a fresh test start
-echo "Cleaning local app testing cache (~/.local/share/com.veras.cvmaker)..."
-rm -rf "$HOME/.local/share/com.veras.cvmaker" "$HOME/.config/com.veras.cvmaker" "$HOME/.cache/com.veras.cvmaker" 2>/dev/null || true
+# Optional: Uncomment the lines below only if you want to hard reset the local app storage for testing:
+# echo "Cleaning local app testing cache (~/.local/share/com.veras.cvmaker)..."
+# rm -rf "$HOME/.local/share/com.veras.cvmaker" "$HOME/.config/com.veras.cvmaker" "$HOME/.cache/com.veras.cvmaker" 2>/dev/null || true
 
 # Clean old bundle folders using Docker container privileges
 $DOCKER_CMD run --rm desktop-builder sh -c "rm -rf /app/src-tauri/target/release/bundle /app/CV_Maker_*_amd64.AppImage 2>/dev/null || true"
@@ -31,7 +31,7 @@ if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
     echo "=========================================="
     echo " SUCCESS! Desktop AppImage generated in root folder:"
     echo " $APPIMAGE_FILE"
-    echo " (Local test storage was reset for a fresh start)"
+    echo " (User data and local storage preserved)"
     echo "=========================================="
 else
     echo "Build complete. Check root directory for generated AppImage."
