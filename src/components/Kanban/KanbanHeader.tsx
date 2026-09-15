@@ -1,18 +1,26 @@
 import React from 'react';
-import { Kanban, Search, Plus, Archive, ArchiveRestore } from 'lucide-react';
+import { Kanban, Search, Plus, Archive, ArchiveRestore, Inbox } from 'lucide-react';
 
 export interface KanbanHeaderProps {
   searchTerm: string;
+  showAppliedKanban: boolean;
   showArchivedKanban: boolean;
+  appliedCount: number;
+  archivedCount: number;
   onSearchTermChange: (v: string) => void;
+  onToggleShowApplied: () => void;
   onToggleShowArchived: () => void;
   onOpenAddModal: () => void;
 }
 
 export const KanbanHeader: React.FC<KanbanHeaderProps> = ({
   searchTerm,
+  showAppliedKanban,
   showArchivedKanban,
+  appliedCount,
+  archivedCount,
   onSearchTermChange,
+  onToggleShowApplied,
   onToggleShowArchived,
   onOpenAddModal
 }) => {
@@ -40,8 +48,26 @@ export const KanbanHeader: React.FC<KanbanHeaderProps> = ({
 
         <button
           type="button"
+          onClick={onToggleShowApplied}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+            showAppliedKanban 
+              ? 'bg-sky-950/60 border-sky-800 text-sky-300' 
+              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Inbox className="w-3.5 h-3.5" />
+          <span>{showAppliedKanban ? 'Hide Applied' : 'Show Applied'}</span>
+          {!showAppliedKanban && appliedCount > 0 && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">
+              {appliedCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
           onClick={onToggleShowArchived}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
             showArchivedKanban 
               ? 'bg-rose-950/60 border-rose-800 text-rose-300' 
               : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -49,6 +75,11 @@ export const KanbanHeader: React.FC<KanbanHeaderProps> = ({
         >
           {showArchivedKanban ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
           <span>{showArchivedKanban ? 'Hide Archive' : 'Show Archive'}</span>
+          {!showArchivedKanban && archivedCount > 0 && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-300 font-bold border border-rose-800/40">
+              {archivedCount}
+            </span>
+          )}
         </button>
 
         <button

@@ -25,10 +25,12 @@ interface CVContextType {
   selectedTags: string[];
   activeLayout: 'classic' | 'modern' | 'minimal';
   activeTab: 'tailor' | 'editor' | 'kanban' | 'metadata';
+  showAppliedKanban: boolean;
   showArchivedKanban: boolean;
   
   // Navigation
   setActiveTab: (tab: 'tailor' | 'editor' | 'kanban' | 'metadata') => void;
+  setShowAppliedKanban: (show: boolean) => void;
   setShowArchivedKanban: (show: boolean) => void;
 
   // Preset & Filtering
@@ -112,10 +114,42 @@ function loadInitialCVData(): CVData {
   return createEmptyCVData();
 }
 
+function downloadCVDataJSON(cvData: CVData): string {
+  const jsonString = JSON.stringify(cvData, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const namePrefix = (cvData.profile.name || 'CV_Maker').trim().replace(/\s+/g, '_') || 'CV_Maker';
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `${namePrefix}_Backup_${dateStr}.json`;
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  return filename;
+}
+
+function parseCVDataJSON(jsonString: string): CVData | null {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (parsed && typeof parsed === 'object' && parsed.profile && parsed.experiences) {
+      return parsed as CVData;
+    }
+  } catch (e) {
+    console.error("Invalid JSON format", e);
+  }
+  return null;
+}
+
 export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cvData, setCvData] = useState<CVData>(loadInitialCVData);
   const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showAppliedKanban, setShowAppliedKanban] = useState(false);
   const [showArchivedKanban, setShowArchivedKanban] = useState(false);
   const [isIngestionModalOpen, setIsIngestionModalOpen] = useState(false);
 
@@ -176,34 +210,13 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const clearTagFilters = () => setSelectedTags([]);
 
-  const exportDataJSON = (): string => {
-    const jsonString = JSON.stringify(cvData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const namePrefix = (cvData.profile.name || 'CV_Maker').trim().replace(/\s+/g, '_') || 'CV_Maker';
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `${namePrefix}_Backup_${dateStr}.json`;
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    return filename;
-  };
+  const exportDataJSON = (): string => downloadCVDataJSON(cvData);
 
   const importDataJSON = (jsonString: string): boolean => {
-    try {
-      const parsed = JSON.parse(jsonString);
-      if (parsed && typeof parsed === 'object' && parsed.profile && parsed.experiences) {
-        setCvData(parsed);
-        return true;
-      }
-    } catch (e) {
-      console.error("Invalid JSON format", e);
+    const parsed = parseCVDataJSON(jsonString);
+    if (parsed) {
+      setCvData(parsed);
+      return true;
     }
     return false;
   };
@@ -225,8 +238,10 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       selectedTags,
       activeLayout,
       activeTab,
+      showAppliedKanban,
       showArchivedKanban,
       setActiveTab,
+      setShowAppliedKanban,
       setShowArchivedKanban,
       selectPreset,
       createPreset,
