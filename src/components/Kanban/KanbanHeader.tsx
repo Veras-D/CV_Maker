@@ -1,5 +1,5 @@
 import React from 'react';
-import { Kanban, Search, Plus, Archive, ArchiveRestore, Inbox } from 'lucide-react';
+import { Kanban, Search, Plus, Archive, ArchiveRestore, Inbox, X } from 'lucide-react';
 
 export interface KanbanHeaderProps {
   searchTerm: string;
@@ -36,14 +36,24 @@ export const KanbanHeader: React.FC<KanbanHeaderProps> = ({
 
       <div className="flex items-center gap-2.5">
         <div className="relative">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search company or role..."
+            placeholder="Search by role title, company..."
             value={searchTerm}
             onChange={(e) => onSearchTermChange(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+            className="bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 w-56 transition-all"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => onSearchTermChange('')}
+              className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <button

@@ -66,14 +66,24 @@ export const KanbanBoard: React.FC = () => {
   };
 
   const allRoles = cvData.kanbanRoles || [];
-  const filteredRoles = allRoles.filter(r => 
-    r.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.roleTitle.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const searchClean = searchTerm.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const filteredRoles = allRoles.filter(r => {
+    if (!searchClean) return true;
+    const title = (r.roleTitle || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const company = (r.company || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const location = (r.location || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const notes = (r.notes || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return title.includes(searchClean) || company.includes(searchClean) || location.includes(searchClean) || notes.includes(searchClean);
+  });
+
   const appliedRoles = filteredRoles.filter(r => r.status === 'applied');
   const archivedRoles = filteredRoles.filter(r => r.status === 'archived');
 
-  const columnCount = 4 + (showAppliedKanban ? 1 : 0) + (showArchivedKanban ? 1 : 0);
+  const isAppliedVisible = showAppliedKanban || (searchClean.length > 0 && appliedRoles.length > 0);
+  const isArchivedVisible = showArchivedKanban || (searchClean.length > 0 && archivedRoles.length > 0);
+
+  const columnCount = 4 + (isAppliedVisible ? 1 : 0) + (isArchivedVisible ? 1 : 0);
   const getGridColsClass = (count: number) => {
     if (count === 4) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
     if (count === 5) return 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5';
@@ -84,8 +94,8 @@ export const KanbanBoard: React.FC = () => {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       <KanbanHeader
         searchTerm={searchTerm}
-        showAppliedKanban={showAppliedKanban}
-        showArchivedKanban={showArchivedKanban}
+        showAppliedKanban={isAppliedVisible}
+        showArchivedKanban={isArchivedVisible}
         appliedCount={appliedRoles.length}
         archivedCount={archivedRoles.length}
         onSearchTermChange={setSearchTerm}
@@ -95,7 +105,7 @@ export const KanbanBoard: React.FC = () => {
       />
 
       <div className={`grid gap-4 items-start ${getGridColsClass(columnCount)}`}>
-        {showAppliedKanban && (
+        {isAppliedVisible && (
           <KanbanColumn
             colId="applied"
             title="Applied"
@@ -130,7 +140,7 @@ export const KanbanBoard: React.FC = () => {
           />
         ))}
 
-        {showArchivedKanban && (
+        {isArchivedVisible && (
           <ArchivedColumn
             title="Archived / Dismissed"
             roles={archivedRoles}
