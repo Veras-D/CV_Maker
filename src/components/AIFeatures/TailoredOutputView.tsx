@@ -11,9 +11,12 @@ export interface TailoredOutputViewProps {
   activeLanguage: string;
   activePreset: RolePreset;
   coverLetterEditable: string;
+  summaryEditable: string;
   isPdfExporting: boolean;
   downloadFeedback?: string | null;
   onCoverLetterChange: (v: string) => void;
+  onSummaryChange: (v: string) => void;
+  onResetSummaryToMaster: () => void;
   onDownloadCoverLetter: () => void;
   onDownloadPDF: () => void;
 }
@@ -24,9 +27,12 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
   activeLanguage,
   activePreset,
   coverLetterEditable,
+  summaryEditable,
   isPdfExporting,
   downloadFeedback,
   onCoverLetterChange,
+  onSummaryChange,
+  onResetSummaryToMaster,
   onDownloadCoverLetter,
   onDownloadPDF
 }) => {
@@ -68,6 +74,32 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
               <span>{isPdfExporting ? 'Exporting...' : 'Export PDF'}</span>
             </button>
           </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-slate-200">
+              Executive Profile Summary ({activeLanguage.toUpperCase()})
+            </h4>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onResetSummaryToMaster}
+                className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline cursor-pointer"
+                title="Restore original summary from Master Profile"
+              >
+                Reset to Master Summary
+              </button>
+              <span className="text-[11px] text-slate-500">·</span>
+              <span className="text-[11px] text-slate-400">Editable preview</span>
+            </div>
+          </div>
+          <textarea
+            rows={3}
+            value={summaryEditable}
+            onChange={(e) => onSummaryChange(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg p-3 text-xs text-slate-100 placeholder:text-slate-500 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner resize-y"
+          />
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">

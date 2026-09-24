@@ -18,6 +18,7 @@ export const AIRoleTailor: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
+  const [summaryEditable, setSummaryEditable] = useState('');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
@@ -37,6 +38,7 @@ export const AIRoleTailor: React.FC = () => {
       });
       setTailoredOutput(output);
       setCoverLetterEditable(output.coverLetter.content[activeLanguage] || output.coverLetter.content.en || '');
+      setSummaryEditable(output.tailoredSummary);
       
       addKanbanRole({
         roleTitle: jobTitle || 'Software Engineer',
@@ -52,6 +54,33 @@ export const AIRoleTailor: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSummaryChange = (newSummary: string) => {
+    setSummaryEditable(newSummary);
+    if (tailoredOutput) {
+      setTailoredOutput({
+        ...tailoredOutput,
+        tailoredSummary: newSummary,
+        updatedData: {
+          ...tailoredOutput.updatedData,
+          profile: {
+            ...tailoredOutput.updatedData.profile,
+            summary: {
+              ...tailoredOutput.updatedData.profile.summary,
+              [activeLanguage]: newSummary,
+              en: newSummary
+            }
+          }
+        }
+      });
+    }
+  };
+
+  const handleResetSummaryToMaster = () => {
+    const rawMaster = (cvData.profile.summary[activeLanguage] || cvData.profile.summary.en || '').trim();
+    const cleanMaster = rawMaster.includes('aligned with ATS standards') ? '' : rawMaster;
+    handleSummaryChange(cleanMaster);
   };
 
   const handleDownloadPDF = async () => {
@@ -121,9 +150,12 @@ export const AIRoleTailor: React.FC = () => {
             activeLanguage={activeLanguage}
             activePreset={activePreset}
             coverLetterEditable={coverLetterEditable}
+            summaryEditable={summaryEditable}
             isPdfExporting={isPdfExporting}
             downloadFeedback={downloadFeedback}
             onCoverLetterChange={setCoverLetterEditable}
+            onSummaryChange={handleSummaryChange}
+            onResetSummaryToMaster={handleResetSummaryToMaster}
             onDownloadCoverLetter={handleDownloadCoverLetter}
             onDownloadPDF={handleDownloadPDF}
           />
