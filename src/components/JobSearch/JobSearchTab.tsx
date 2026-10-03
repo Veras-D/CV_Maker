@@ -1,69 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useCV } from '../../context/CVContext';
-import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
-import { fetchAllRemoteJobs } from '../../utils/jobSearchApi';
-import { filterRemoteJobs } from '../../utils/jobFilterEngine';
+import React from 'react';
 import { JobSearchFilters } from './JobSearchFilters';
 import { JobCard } from './JobCard';
 import { JobDetailModal } from './JobDetailModal';
+import { JobPagination } from './JobPagination';
+import { useJobSearchData } from './useJobSearchData';
 import { RefreshCw, Briefcase, SearchX } from 'lucide-react';
 
-const PAGE_SIZE = 18;
-
 export const JobSearchTab: React.FC = () => {
-  const { cvData, applyAndTailorJob } = useCV();
-
-  const [allJobs, setAllJobs] = useState<RemoteJob[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [selectedJob, setSelectedJob] = useState<RemoteJob | null>(null);
-
-  const [filters, setFilters] = useState<JobSearchFiltersState>({
-    query: '',
-    postedTime: '1w', // Default: 1 week
-    region: 'worldwide', // Default: Worldwide
-    sources: { ashby: true, greenhouse: true, lever: true }, // Default: all active
-    minSalary: 0,
-    hideApplied: false
-  });
-
-  const loadJobs = async (force = false) => {
-    if (force) setIsRefreshing(true);
-    else setIsLoading(true);
-
-    try {
-      const data = await fetchAllRemoteJobs(force);
-      setAllJobs(data);
-    } catch (err) {
-      console.error("Failed to fetch jobs:", err);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    loadJobs(false);
-  }, []);
-
-  const filteredJobs = filterRemoteJobs({
-    jobs: allJobs,
+  const {
+    isLoading,
+    isRefreshing,
+    currentPage,
+    totalPages,
+    pageSize,
+    selectedJob,
+    setSelectedJob,
     filters,
-    kanbanRoles: cvData.kanbanRoles
-  });
-
-  const handleApplyAndTailor = (job: RemoteJob) => {
-    applyAndTailorJob({
-      jobTitle: job.title,
-      companyName: job.company,
-      roleUrl: job.url,
-      jobDescription: job.descriptionPlain
-    });
-  };
-
-  const displayedJobs = filteredJobs.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredJobs.length;
+    handleUpdateFilters,
+    handlePageChange,
+    filteredJobs,
+    paginatedJobs,
+    handleApplyAndTailor,
+    loadJobs,
+    kanbanRoles
+  } = useJobSearchData();
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -97,10 +57,7 @@ export const JobSearchTab: React.FC = () => {
       {/* Filters */}
       <JobSearchFilters
         filters={filters}
-        onChangeFilters={(newF) => {
-          setFilters(newF);
-          setVisibleCount(PAGE_SIZE);
-        }}
+        onChangeFilters={handleUpdateFilters}
         totalFound={filteredJobs.length}
       />
 
@@ -132,35 +89,31 @@ export const JobSearchTab: React.FC = () => {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayedJobs.map(job => (
+            {paginatedJobs.map(job => (
               <JobCard
                 key={job.id}
                 job={job}
-                kanbanRoles={cvData.kanbanRoles}
+                kanbanRoles={kanbanRoles}
                 onSelectJob={setSelectedJob}
                 onApplyAndTailor={handleApplyAndTailor}
               />
             ))}
           </div>
 
-          {hasMore && (
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-              >
-                Load More Jobs ({filteredJobs.length - visibleCount} remaining)
-              </button>
-            </div>
-          )}
+          <JobPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredJobs.length}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+          />
         </div>
       )}
 
       {/* Details Modal */}
       <JobDetailModal
         job={selectedJob}
-        kanbanRoles={cvData.kanbanRoles}
+        kanbanRoles={kanbanRoles}
         onClose={() => setSelectedJob(null)}
         onApplyAndTailor={handleApplyAndTailor}
       />
