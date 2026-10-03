@@ -6,13 +6,9 @@ import {
   fetchJobicyJobs, 
   fetchSmartRecruitersCompany 
 } from './jobSearchAggregators';
+import { getSavedTrackedCompanies, TrackedCompany } from './companyWatchlistService';
 
-const ASHBY_COMPANIES = ['openai', 'linear', 'resend', 'ramp', 'vanta', 'synthesia'];
-const GREENHOUSE_COMPANIES = ['canonical', 'gitlab', 'stripe', 'cloudflare', 'dropbox', 'reddit', 'mongodb'];
-const LEVER_COMPANIES = ['spotify', 'toptal', 'wealthfront', 'neon'];
-const SMARTRECRUITERS_COMPANIES = ['mirantis', 'jitterbit', 'canva', 'invisibletechnologies'];
-
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v8';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v9';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
@@ -25,7 +21,8 @@ function cleanupOldCaches(): void {
     'cv_maker_cached_remote_jobs_v4',
     'cv_maker_cached_remote_jobs_v5',
     'cv_maker_cached_remote_jobs_v6',
-    'cv_maker_cached_remote_jobs_v7'
+    'cv_maker_cached_remote_jobs_v7',
+    'cv_maker_cached_remote_jobs_v8'
   ];
   for (const key of obsoleteKeys) {
     try {
@@ -293,17 +290,30 @@ export function buildGoogleAtsSearchUrl(query: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(rawQuery)}`;
 }
 
+function fetchCompanyJobs(company: TrackedCompany): Promise<RemoteJob[]> {
+  switch (company.ats) {
+    case 'ashby':
+      return fetchAshbyCompany(company.slug);
+    case 'greenhouse':
+      return fetchGreenhouseCompany(company.slug);
+    case 'lever':
+      return fetchLeverCompany(company.slug);
+    case 'smartrecruiters':
+      return fetchSmartRecruitersCompany(company.slug);
+    default:
+      return Promise.resolve([]);
+  }
+}
+
 export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJob[]> {
   if (!forceRefresh) {
     const cached = getCachedJobs();
     if (cached && cached.length >= 20) return cached;
   }
 
+  const enabledCompanies = getSavedTrackedCompanies().filter(c => c.enabled);
   const promises: Promise<RemoteJob[]>[] = [
-    ...ASHBY_COMPANIES.map(c => fetchAshbyCompany(c)),
-    ...GREENHOUSE_COMPANIES.map(c => fetchGreenhouseCompany(c)),
-    ...LEVER_COMPANIES.map(c => fetchLeverCompany(c)),
-    ...SMARTRECRUITERS_COMPANIES.map(c => fetchSmartRecruitersCompany(c)),
+    ...enabledCompanies.map(c => fetchCompanyJobs(c)),
     fetchRemotiveJobs(),
     fetchJobicyJobs()
   ];

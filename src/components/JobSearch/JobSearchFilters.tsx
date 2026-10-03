@@ -12,6 +12,7 @@ export interface JobSearchFiltersProps {
   jobs?: RemoteJob[];
   appliedCount?: number;
   isLoading?: boolean;
+  onOpenCompaniesModal?: () => void;
 }
 
 export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
@@ -20,7 +21,8 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
   totalFound,
   jobs,
   appliedCount,
-  isLoading
+  isLoading,
+  onOpenCompaniesModal
 }) => {
   const toggleSource = (source: JobSource) => {
     onChangeFilters({
@@ -51,6 +53,7 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
       <JobSourceCheckboxes
         sources={filters.sources}
         onToggleSource={toggleSource}
+        onOpenCompaniesModal={onOpenCompaniesModal}
       />
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">

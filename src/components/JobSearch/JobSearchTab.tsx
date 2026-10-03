@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { JobSearchFilters } from './JobSearchFilters';
 import { JobCard } from './JobCard';
 import { JobDetailModal } from './JobDetailModal';
 import { JobPagination } from './JobPagination';
+import { TrackedCompaniesModal } from './TrackedCompaniesModal';
 import { useJobSearchData } from './useJobSearchData';
 import { RefreshCw, Briefcase, SearchX } from 'lucide-react';
 
 export const JobSearchTab: React.FC = () => {
+  const [isCompaniesModalOpen, setIsCompaniesModalOpen] = useState(false);
   const {
     isLoading,
     isRefreshing,
@@ -64,6 +66,7 @@ export const JobSearchTab: React.FC = () => {
         jobs={allJobs}
         appliedCount={appliedCount}
         isLoading={isLoading}
+        onOpenCompaniesModal={() => setIsCompaniesModalOpen(true)}
       />
 
       {/* Job Grid / Loading / Empty */}
@@ -121,6 +124,13 @@ export const JobSearchTab: React.FC = () => {
         kanbanRoles={kanbanRoles}
         onClose={() => setSelectedJob(null)}
         onApplyAndTailor={handleApplyAndTailor}
+      />
+
+      {/* Tracked Companies Watchlist Modal */}
+      <TrackedCompaniesModal
+        isOpen={isCompaniesModalOpen}
+        onClose={() => setIsCompaniesModalOpen(false)}
+        onCompaniesChanged={() => loadJobs(true)}
       />
     </div>
   );
