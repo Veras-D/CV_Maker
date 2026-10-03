@@ -124,6 +124,26 @@ function matchesContractDuration(job: RemoteJob, filter: ContractDuration): bool
   return job.contractDuration === filter;
 }
 
+function matchesSearchQuery(job: RemoteJob, tokens: string[]): boolean {
+  if (tokens.length === 0) return true;
+  const titleLower = job.title.toLowerCase();
+  const compLower = job.company.toLowerCase();
+  const deptLower = (job.department || '').toLowerCase();
+  const descSnippet = (job.descriptionPlain || '').slice(0, 2000).toLowerCase();
+  const combined = `${titleLower} ${compLower} ${deptLower} ${descSnippet}`;
+  return tokens.every(tok => combined.includes(tok));
+}
+
+function isRemoteJobSourceValid(job: RemoteJob): boolean {
+  if (job.source === 'remotive' || job.source === 'jobicy') return true;
+  return isStrictlyRemote(job.location);
+}
+
+function isJobAppliedOrHidden(job: RemoteJob, hideApplied: boolean, kanbanRoles: KanbanRole[]): boolean {
+  if (!hideApplied) return false;
+  return isJobAlreadyApplied(job, kanbanRoles).isApplied;
+}
+
 interface FilterJobParams {
   jobs: RemoteJob[];
   filters: JobSearchFiltersState;
@@ -136,27 +156,14 @@ export function filterRemoteJobs(params: FilterJobParams): RemoteJob[] {
 
   return jobs.filter(job => {
     if (!filters.sources[job.source]) return false;
-    if (!isStrictlyRemote(job.location)) return false;
+    if (!isRemoteJobSourceValid(job)) return false;
     if (!matchesTimeFilter(job.publishedAt, filters.postedTime)) return false;
     if (!matchesRegion(job.region, filters.region)) return false;
     if (!matchesSalary(job, filters.minSalary)) return false;
     if (!matchesEmploymentType(job, filters.employmentType)) return false;
     if (!matchesContractDuration(job, filters.contractDuration)) return false;
-
-    if (filters.hideApplied) {
-      const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
-      if (appliedInfo.isApplied) return false;
-    }
-
-    if (queryTokens.length > 0) {
-      const titleLower = job.title.toLowerCase();
-      const compLower = job.company.toLowerCase();
-      const combined = `${titleLower} ${compLower}`;
-      const matchesAll = queryTokens.every(tok => combined.includes(tok));
-      if (!matchesAll) return false;
-    }
-
-    return true;
+    if (isJobAppliedOrHidden(job, filters.hideApplied, kanbanRoles)) return false;
+    return matchesSearchQuery(job, queryTokens);
   });
 }
 

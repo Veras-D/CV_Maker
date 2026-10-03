@@ -32,7 +32,9 @@ interface RemotiveRawJob {
 
 export async function fetchRemotiveJobs(): Promise<RemoteJob[]> {
   try {
-    const res = await fetch('https://remotive.com/api/remote-jobs?limit=100');
+    const res = await fetch('https://remotive.com/api/remote-jobs?limit=100', {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const rawJobs: RemotiveRawJob[] = data.jobs || [];
@@ -55,7 +57,7 @@ export async function fetchRemotiveJobs(): Promise<RemoteJob[]> {
         publishedAt: raw.publication_date || new Date().toISOString(),
         salarySummary: raw.salary || undefined,
         descriptionPlain: plain,
-        descriptionHtml: raw.description,
+        descriptionHtml: undefined,
         department: raw.category,
         employmentType: isContract ? 'contract' : raw.job_type === 'part_time' ? 'part-time' : 'full-time',
         contractDuration: durationInfo.duration,
@@ -82,7 +84,9 @@ interface JobicyRawJob {
 
 export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
   try {
-    const res = await fetch('https://jobicy.com/api/v2/remote-jobs?count=50');
+    const res = await fetch('https://jobicy.com/api/v2/remote-jobs?count=50', {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const rawJobs: JobicyRawJob[] = data.jobs || [];
@@ -106,7 +110,7 @@ export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
         region: detectJobRegion(loc),
         publishedAt: raw.pubDate || new Date().toISOString(),
         descriptionPlain: plain,
-        descriptionHtml: raw.jobDescription,
+        descriptionHtml: undefined,
         department: raw.jobIndustry?.[0],
         employmentType: isContract ? 'contract' : isPartTime ? 'part-time' : 'full-time',
         contractDuration: durationInfo.duration,
@@ -160,7 +164,9 @@ function parseSmartRecruitersJob(raw: SmartRecruitersRawJob, companySlug: string
 
 export async function fetchSmartRecruitersCompany(companySlug: string): Promise<RemoteJob[]> {
   try {
-    const res = await fetch(`https://api.smartrecruiters.com/v1/companies/${companySlug}/postings?limit=50`);
+    const res = await fetch(`https://api.smartrecruiters.com/v1/companies/${companySlug}/postings?limit=50`, {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const rawJobs: SmartRecruitersRawJob[] = Array.isArray(data.content) ? data.content : [];

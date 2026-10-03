@@ -12,20 +12,86 @@ const GREENHOUSE_COMPANIES = ['canonical', 'gitlab', 'stripe', 'cloudflare', 'dr
 const LEVER_COMPANIES = ['spotify', 'palantir'];
 const SMARTRECRUITERS_COMPANIES = ['deliveryhero', 'redbull'];
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v3';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v4';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
+
+function cleanupOldCaches(): void {
+  const obsoleteKeys = [
+    'cv_maker_cached_remote_jobs_v1',
+    'cv_maker_cached_remote_jobs_v2',
+    'cv_maker_cached_remote_jobs_v3'
+  ];
+  for (const key of obsoleteKeys) {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch {
+      // Storage access failure ignored
+    }
+  }
+}
+
+function toCompactJob(job: RemoteJob): RemoteJob {
+  return {
+    id: job.id,
+    title: job.title,
+    company: job.company,
+    source: job.source,
+    url: job.url,
+    applyUrl: job.applyUrl,
+    location: job.location,
+    region: job.region,
+    publishedAt: job.publishedAt,
+    salarySummary: job.salarySummary,
+    minSalary: job.minSalary,
+    maxSalary: job.maxSalary,
+    currency: job.currency,
+    descriptionPlain: job.descriptionPlain ? job.descriptionPlain.slice(0, 1000) : '',
+    department: job.department,
+    employmentType: job.employmentType,
+    contractDuration: job.contractDuration,
+    contractDurationLabel: job.contractDurationLabel
+  };
+}
+
+function trySetStorage(storage: Storage, key: string, value: string): boolean {
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function persistToStorage(compactJobs: RemoteJob[]): void {
+  const payload = JSON.stringify({ timestamp: Date.now(), jobs: compactJobs });
+  if (trySetStorage(localStorage, CACHE_KEY, payload)) return;
+
+  const fallback = JSON.stringify({ timestamp: Date.now(), jobs: compactJobs.slice(0, 250) });
+  if (trySetStorage(localStorage, CACHE_KEY, fallback)) return;
+
+  trySetStorage(sessionStorage, CACHE_KEY, payload);
+}
+
+function saveJobsToCache(jobs: RemoteJob[]): void {
+  if (!Array.isArray(jobs) || jobs.length === 0) return;
+  memoryCachedJobs = { timestamp: Date.now(), jobs };
+  cleanupOldCaches();
+  const compactJobs = jobs.slice(0, 500).map(toCompactJob);
+  persistToStorage(compactJobs);
+}
 
 export function getCachedJobs(): RemoteJob[] | null {
   if (memoryCachedJobs && Date.now() - memoryCachedJobs.timestamp < CACHE_TTL_MS) {
     return memoryCachedJobs.jobs;
   }
   try {
-    const cachedStr = localStorage.getItem(CACHE_KEY);
+    const cachedStr = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
     if (!cachedStr) return null;
     const { timestamp, jobs } = JSON.parse(cachedStr);
-    const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs) && jobs.length > 0;
+    const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs) && jobs.length >= 20;
     if (isValid) {
       memoryCachedJobs = { timestamp, jobs };
       return jobs;
@@ -87,7 +153,7 @@ function parseAshbyJob(raw: AshbyRawJob, companySlug: string): RemoteJob | null 
     maxSalary: compSummary?.maxValue,
     currency: compSummary?.currencyCode,
     descriptionPlain: plain,
-    descriptionHtml: raw.descriptionHtml,
+    descriptionHtml: undefined,
     department: raw.department,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
@@ -126,7 +192,7 @@ function parseGreenhouseJob(raw: GreenhouseRawJob, companySlug: string): RemoteJ
     region: detectJobRegion(loc),
     publishedAt: raw.updated_at || raw.first_published || new Date().toISOString(),
     descriptionPlain: plain,
-    descriptionHtml: raw.content,
+    descriptionHtml: undefined,
     department: raw.departments?.[0]?.name,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
@@ -168,7 +234,7 @@ function parseLeverJob(raw: LeverRawJob, companySlug: string): RemoteJob | null 
     region: detectJobRegion(loc),
     publishedAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
     descriptionPlain: plain,
-    descriptionHtml: raw.description,
+    descriptionHtml: undefined,
     department: raw.categories?.department,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
@@ -178,7 +244,9 @@ function parseLeverJob(raw: LeverRawJob, companySlug: string): RemoteJob | null 
 
 async function fetchAshbyCompany(companySlug: string): Promise<RemoteJob[]> {
   try {
-    const res = await fetch(`https://api.ashbyhq.com/posting-api/job-board/${companySlug}?includeCompensation=true`);
+    const res = await fetch(`https://api.ashbyhq.com/posting-api/job-board/${companySlug}?includeCompensation=true`, {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs: AshbyRawJob[] = data.jobs || [];
@@ -190,7 +258,9 @@ async function fetchAshbyCompany(companySlug: string): Promise<RemoteJob[]> {
 
 async function fetchGreenhouseCompany(companySlug: string): Promise<RemoteJob[]> {
   try {
-    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${companySlug}/jobs?content=true`);
+    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${companySlug}/jobs?content=true`, {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs: GreenhouseRawJob[] = data.jobs || [];
@@ -202,7 +272,9 @@ async function fetchGreenhouseCompany(companySlug: string): Promise<RemoteJob[]>
 
 async function fetchLeverCompany(companySlug: string): Promise<RemoteJob[]> {
   try {
-    const res = await fetch(`https://api.lever.co/v0/postings/${companySlug}?mode=json`);
+    const res = await fetch(`https://api.lever.co/v0/postings/${companySlug}?mode=json`, {
+      signal: AbortSignal.timeout(8000)
+    });
     if (!res.ok) return [];
     const jobs: LeverRawJob[] = await res.json();
     if (!Array.isArray(jobs)) return [];
@@ -222,7 +294,7 @@ export function buildGoogleAtsSearchUrl(query: string): string {
 export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJob[]> {
   if (!forceRefresh) {
     const cached = getCachedJobs();
-    if (cached) return cached;
+    if (cached && cached.length >= 20) return cached;
   }
 
   const promises: Promise<RemoteJob[]>[] = [
@@ -245,13 +317,7 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
   // Sort by publishedAt descending
   allJobs.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-  memoryCachedJobs = { timestamp: Date.now(), jobs: allJobs };
-
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), jobs: allJobs }));
-  } catch {
-    // Quota exceeded or private browsing
-  }
+  saveJobsToCache(allJobs);
 
   return allJobs;
 }
