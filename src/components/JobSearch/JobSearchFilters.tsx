@@ -60,10 +60,10 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
             onChange={(e) => onChangeFilters({ ...filters, hideApplied: e.target.checked })}
             className="rounded bg-slate-900 border-slate-700 text-sky-600 focus:ring-0 cursor-pointer"
           />
-          <span className="font-medium">Don&apos;t show already applied jobs</span>
+          <span className="font-medium">Hide applied</span>
           {typeof appliedCount === 'number' && appliedCount > 0 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold">
-              {appliedCount} applied
+              {appliedCount}
             </span>
           )}
         </label>
