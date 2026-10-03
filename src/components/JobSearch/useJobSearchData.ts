@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCV } from '../../context/CVContext';
 import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
 import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
@@ -33,13 +33,18 @@ export function useJobSearchData() {
     contractDuration: 'all'
   });
 
-  const loadJobs = async (force = false) => {
+  const loadJobs = useCallback(async (force = false) => {
+    let shouldForce = force;
     if (!force) {
       const cached = getCachedJobs();
       if (cached && cached.length > 0) {
         setAllJobs(cached);
-        setIsLoading(false);
-        return;
+        const hasWorldwide = cached.some(j => j.region === 'worldwide');
+        if (hasWorldwide) {
+          setIsLoading(false);
+          return;
+        }
+        shouldForce = true;
       }
     }
 
@@ -47,7 +52,7 @@ export function useJobSearchData() {
     else setIsLoading(true);
 
     try {
-      const data = await fetchAllRemoteJobs(force);
+      const data = await fetchAllRemoteJobs(shouldForce);
       setAllJobs(data);
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
@@ -55,11 +60,11 @@ export function useJobSearchData() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadJobs(false);
-  }, []);
+  }, [loadJobs]);
 
   const handleUpdateFilters = (newFilters: JobSearchFiltersState) => {
     setFilters(newFilters);

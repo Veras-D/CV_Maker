@@ -1,20 +1,31 @@
 import { RemoteJob, JobSearchFiltersState, EmploymentType, ContractDuration } from '../types/jobSearch';
 import { KanbanRole } from '../types/cv';
 
-const EU_KEYWORDS = ['europe', 'emea', 'eu', 'uk', 'united kingdom', 'germany', 'france', 'spain', 'poland', 'czech', 'portugal', 'netherlands', 'ireland', 'sweden', 'london', 'berlin', 'paris', 'amsterdam', 'madrid'];
-const US_KEYWORDS = ['united states', 'usa', 'us', 'north america', 'san francisco', 'new york', 'austin', 'seattle', 'remote - us'];
-const LATAM_KEYWORDS = ['latam', 'latin america', 'brazil', 'mexico', 'argentina', 'colombia', 'chile'];
-const APAC_KEYWORDS = ['apac', 'asia', 'australia', 'singapore', 'japan', 'india', 'sydney', 'tokyo'];
+const US_REGEX = /\b(?:united states|usa|u\.s\.a\.?|u\.s\.?|us|north america|san francisco|new york|austin|seattle|california|chicago|boston|los angeles|remote - us|remote u\.?s\.?|us only|usa only)\b/i;
+const EU_REGEX = /\b(?:europe|emea|eu|uk|united kingdom|germany|france|spain|poland|czech|portugal|netherlands|ireland|sweden|london|berlin|paris|amsterdam|madrid)\b/i;
+const LATAM_REGEX = /\b(?:latam|latin america|brazil|mexico|argentina|colombia|chile)\b/i;
+const APAC_REGEX = /\b(?:apac|asia|australia|singapore|japan|india|sydney|tokyo)\b/i;
 const WORLDWIDE_KEYWORDS = ['worldwide', 'global', 'anywhere', 'work from anywhere', 'all locations', 'remote - global', 'remote - anywhere'];
+
+function isSpecificRegion(loc: string): RemoteJob['region'] | null {
+  if (US_REGEX.test(loc)) return 'us';
+  if (EU_REGEX.test(loc)) return 'eu';
+  if (LATAM_REGEX.test(loc)) return 'latam';
+  if (APAC_REGEX.test(loc)) return 'apac';
+  return null;
+}
 
 export function detectJobRegion(locationStr: string): RemoteJob['region'] {
   const loc = (locationStr || '').toLowerCase();
-  if (WORLDWIDE_KEYWORDS.some(k => loc.includes(k))) return 'worldwide';
-  if (EU_KEYWORDS.some(k => loc.includes(k))) return 'eu';
-  if (US_KEYWORDS.some(k => loc.includes(k))) return 'us';
-  if (LATAM_KEYWORDS.some(k => loc.includes(k))) return 'latam';
-  if (APAC_KEYWORDS.some(k => loc.includes(k))) return 'apac';
-  if (loc.includes('remote') || !loc.trim()) return 'worldwide';
+  const specific = isSpecificRegion(loc);
+
+  if (loc.includes('worldwide')) return 'worldwide';
+  if (specific) return specific;
+
+  const hasWorldwideKeyword = WORLDWIDE_KEYWORDS.some(k => loc.includes(k));
+  if (hasWorldwideKeyword || loc.includes('remote') || !loc.trim()) {
+    return 'worldwide';
+  }
   return 'other';
 }
 
