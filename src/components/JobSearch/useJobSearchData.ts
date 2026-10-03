@@ -6,6 +6,9 @@ import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngi
 
 export const PAGE_SIZE = 12;
 
+let lastFetchTimestamp = 0;
+const FRESHNESS_THRESHOLD_MS = 5 * 60 * 1000;
+
 export function useJobSearchData() {
   const { cvData, applyAndTailorJob } = useCV();
 
@@ -34,26 +37,29 @@ export function useJobSearchData() {
   });
 
   const loadJobs = useCallback(async (force = false) => {
-    let shouldForce = force;
+    const isStale = Date.now() - lastFetchTimestamp > FRESHNESS_THRESHOLD_MS;
+
     if (!force) {
       const cached = getCachedJobs();
       if (cached && cached.length > 0) {
         setAllJobs(cached);
-        const hasWorldwide = cached.some(j => j.region === 'worldwide');
-        if (hasWorldwide) {
+        if (!isStale) {
           setIsLoading(false);
           return;
         }
-        shouldForce = true;
       }
     }
 
-    if (force) setIsRefreshing(true);
-    else setIsLoading(true);
+    if (force) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
     try {
-      const data = await fetchAllRemoteJobs(shouldForce);
+      const data = await fetchAllRemoteJobs(true);
       setAllJobs(data);
+      lastFetchTimestamp = Date.now();
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
     } finally {
