@@ -274,3 +274,37 @@ export const deleteKanbanRoleState = (data: CVData, id: string): CVData => ({
   ...data,
   kanbanRoles: data.kanbanRoles.filter(r => r.id !== id)
 });
+
+export const createPresetState = (data: CVData, name: string, activeTags: string[], description?: string): CVData => {
+  const activePreset = data.presets.find(p => p.id === data.activePresetId) || data.presets[0];
+  const newPreset = {
+    id: `preset-${Date.now()}`,
+    name,
+    description: description || 'Custom role preset',
+    activeTags: [...activeTags],
+    activeLanguage: activePreset?.activeLanguage || 'en',
+    activeLayout: activePreset?.activeLayout || 'classic',
+    metadata: { ...activePreset.metadata, dc_title: `${data.profile.name} - ${name}` }
+  };
+  return {
+    ...data,
+    presets: [...data.presets, newPreset],
+    activePresetId: newPreset.id
+  };
+};
+
+export const deletePresetState = (data: CVData, presetId: string): CVData => {
+  if (data.presets.length <= 1) return data;
+  const filtered = data.presets.filter(p => p.id !== presetId);
+  return { ...data, presets: filtered, activePresetId: filtered[0].id };
+};
+
+export const setLanguageState = (data: CVData, lang: string): CVData => ({
+  ...data,
+  presets: data.presets.map(p => p.id === data.activePresetId ? { ...p, activeLanguage: lang } : p)
+});
+
+export const setLayoutState = (data: CVData, layout: 'classic' | 'modern' | 'minimal'): CVData => ({
+  ...data,
+  presets: data.presets.map(p => p.id === data.activePresetId ? { ...p, activeLayout: layout } : p)
+});

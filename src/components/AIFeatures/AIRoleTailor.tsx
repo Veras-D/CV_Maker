@@ -1,124 +1,40 @@
-import React, { useState } from 'react';
-import { useCV } from '../../context/CVContext';
-import { exportCVToPDF } from '../../utils/pdfExport';
+import React from 'react';
 import { ProModal } from '../Common/ProModal';
-import { runLocalAITailor, LocalTailorOutput } from '../../utils/localAiEngine';
-import { LanguageCode } from '../../types/cv';
 import { AIRoleTailorHeader } from './AIRoleTailorHeader';
 import { VacancyDetailsForm } from './VacancyDetailsForm';
 import { TailoredOutputView } from './TailoredOutputView';
+import { useAIRoleTailorState } from './useAIRoleTailorState';
 
 export const AIRoleTailor: React.FC = () => {
-  const { cvData, activeLanguage, addKanbanRole, activePreset, openIngestionModal } = useCV();
-  
-  const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [roleUrl, setRoleUrl] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
-  const [coverLetterEditable, setCoverLetterEditable] = useState('');
-  const [summaryEditable, setSummaryEditable] = useState('');
-  const [isPdfExporting, setIsPdfExporting] = useState(false);
-  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
-  const [isProModalOpen, setIsProModalOpen] = useState(false);
-
-  const handleRunTailor = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!jobDescription.trim()) return;
-
-    setIsProcessing(true);
-    try {
-      const output = runLocalAITailor({
-        jobTitle,
-        companyName,
-        jobDescription,
-        cvData,
-        language: activeLanguage as LanguageCode
-      });
-      setTailoredOutput(output);
-      setCoverLetterEditable(output.coverLetter.content[activeLanguage] || output.coverLetter.content.en || '');
-      setSummaryEditable(output.tailoredSummary);
-      
-      addKanbanRole({
-        roleTitle: jobTitle || 'Software Engineer',
-        company: companyName || 'Target Company',
-        location: 'Remote / Hybrid',
-        status: 'applied',
-        dateApplied: new Date().toISOString().slice(0, 10),
-        roleUrl: roleUrl.trim() || undefined,
-        notes: `Local ATS Match: ${output.matchResult.atsScore}% | Matched: ${output.matchResult.matchedKeywords.slice(0, 3).join(', ')}`
-      });
-    } catch (err) {
-      console.error("Local Tailor Error:", err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSummaryChange = (newSummary: string) => {
-    setSummaryEditable(newSummary);
-    if (tailoredOutput) {
-      setTailoredOutput({
-        ...tailoredOutput,
-        tailoredSummary: newSummary,
-        updatedData: {
-          ...tailoredOutput.updatedData,
-          profile: {
-            ...tailoredOutput.updatedData.profile,
-            summary: {
-              ...tailoredOutput.updatedData.profile.summary,
-              [activeLanguage]: newSummary,
-              en: newSummary
-            }
-          }
-        }
-      });
-    }
-  };
-
-  const handleResetSummaryToMaster = () => {
-    const rawMaster = (cvData.profile.summary[activeLanguage] || cvData.profile.summary.en || '').trim();
-    const cleanMaster = rawMaster.includes('aligned with ATS standards') ? '' : rawMaster;
-    handleSummaryChange(cleanMaster);
-  };
-
-  const handleDownloadPDF = async () => {
-    setIsPdfExporting(true);
-    const filename = `${(companyName || 'Job').replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
-    try {
-      await exportCVToPDF({
-        elementId: 'tailored-ats-cv-preview',
-        filename,
-        metadata: tailoredOutput?.tailoredMetadata || activePreset.metadata,
-        data: tailoredOutput?.updatedData || cvData,
-        language: activeLanguage as LanguageCode,
-        selectedTags: []
-      });
-      setDownloadFeedback(`Tailored PDF downloaded: "${filename}"`);
-      setTimeout(() => setDownloadFeedback(null), 5000);
-    } catch (e) {
-      console.error("PDF export failed", e);
-    } finally {
-      setIsPdfExporting(false);
-    }
-  };
-
-  const handleDownloadCoverLetter = () => {
-    const filename = `Cover_Letter_${(companyName || 'Job').replace(/\s+/g, '_')}.txt`;
-    const file = new Blob([coverLetterEditable], { type: 'text/plain' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(file);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    setDownloadFeedback(`Cover Letter downloaded: "${filename}"`);
-    setTimeout(() => setDownloadFeedback(null), 5000);
-  };
-
-  const isMasterEmpty = !cvData.profile.name?.trim() && cvData.experiences.length === 0;
+  const {
+    jobTitle,
+    setJobTitle,
+    companyName,
+    setCompanyName,
+    roleUrl,
+    setRoleUrl,
+    jobDescription,
+    setJobDescription,
+    isProcessing,
+    tailoredOutput,
+    coverLetterEditable,
+    setCoverLetterEditable,
+    summaryEditable,
+    isPdfExporting,
+    downloadFeedback,
+    isProModalOpen,
+    setIsProModalOpen,
+    handleRunTailor,
+    handleSummaryChange,
+    handleResetSummaryToMaster,
+    handleDownloadPDF,
+    handleDownloadCoverLetter,
+    isMasterEmpty,
+    openIngestionModal,
+    cvData,
+    activeLanguage,
+    activePreset,
+  } = useAIRoleTailorState();
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">

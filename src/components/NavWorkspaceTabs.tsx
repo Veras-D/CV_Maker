@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sparkles, FileText, Kanban, Sliders } from 'lucide-react';
+import { Sparkles, FileText, Kanban, Sliders, Briefcase } from 'lucide-react';
 
-export type WorkspaceTab = 'tailor' | 'editor' | 'kanban' | 'metadata';
+export type WorkspaceTab = 'tailor' | 'editor' | 'kanban' | 'metadata' | 'jobs';
 
 export interface NavWorkspaceTabsProps {
   activeTab: WorkspaceTab;
@@ -11,6 +11,19 @@ export interface NavWorkspaceTabsProps {
 export const NavWorkspaceTabs: React.FC<NavWorkspaceTabsProps> = ({ activeTab, onSelectTab }) => {
   return (
     <nav className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 shrink-0">
+      <button
+        type="button"
+        onClick={() => onSelectTab('jobs')}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+          activeTab === 'jobs' 
+            ? 'bg-sky-600 text-white shadow-sm font-semibold' 
+            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+        }`}
+      >
+        <Briefcase className="w-3.5 h-3.5" />
+        <span>Job Search</span>
+      </button>
+
       <button
         type="button"
         onClick={() => onSelectTab('tailor')}

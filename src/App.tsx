@@ -6,6 +6,7 @@ import { CVEditor } from './components/CVEditor/CVEditor';
 import { KanbanBoard } from './components/Kanban/KanbanBoard';
 import { MetadataEditor } from './components/MetadataEditor';
 import { AIIngestionModal } from './components/AIFeatures/AIIngestionModal';
+import { JobSearchTab } from './components/JobSearch/JobSearchTab';
 
 const AppContent: React.FC = () => {
   const { activeTab, isIngestionModalOpen, setIsIngestionModalOpen } = useCV();
@@ -15,6 +16,7 @@ const AppContent: React.FC = () => {
       <Navbar />
 
       <main className="flex-1 pb-12">
+        {activeTab === 'jobs' && <JobSearchTab />}
         {activeTab === 'tailor' && <AIRoleTailor />}
         {activeTab === 'editor' && <CVEditor />}
         {activeTab === 'kanban' && <KanbanBoard />}

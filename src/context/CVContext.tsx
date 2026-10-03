@@ -19,20 +19,30 @@ import * as updaters from './cvStateUpdaters';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
+export interface PendingTailorJob {
+  jobTitle: string;
+  companyName: string;
+  roleUrl?: string;
+  jobDescription: string;
+}
+
 interface CVContextType {
   cvData: CVData;
   activePreset: RolePreset;
   activeLanguage: string;
   selectedTags: string[];
   activeLayout: 'classic' | 'modern' | 'minimal';
-  activeTab: 'tailor' | 'editor' | 'kanban' | 'metadata';
+  activeTab: 'tailor' | 'editor' | 'kanban' | 'metadata' | 'jobs';
   showAppliedKanban: boolean;
   showArchivedKanban: boolean;
+  pendingTailorJob: PendingTailorJob | null;
   
   // Navigation
-  setActiveTab: (tab: 'tailor' | 'editor' | 'kanban' | 'metadata') => void;
+  setActiveTab: (tab: 'tailor' | 'editor' | 'kanban' | 'metadata' | 'jobs') => void;
   setShowAppliedKanban: (show: boolean) => void;
   setShowArchivedKanban: (show: boolean) => void;
+  setPendingTailorJob: (job: PendingTailorJob | null) => void;
+  applyAndTailorJob: (job: PendingTailorJob) => void;
 
   // Preset & Filtering
   selectPreset: (presetId: string) => void;
@@ -148,11 +158,31 @@ function parseCVDataJSON(jsonString: string): CVData | null {
 
 export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cvData, setCvData] = useState<CVData>(loadInitialCVData);
-  const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata'>('tailor');
+  const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata' | 'jobs'>('tailor');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showAppliedKanban, setShowAppliedKanban] = useState(false);
   const [showArchivedKanban, setShowArchivedKanban] = useState(false);
   const [isIngestionModalOpen, setIsIngestionModalOpen] = useState(false);
+  const [pendingTailorJob, setPendingTailorJob] = useState<PendingTailorJob | null>(null);
+
+  const applyAndTailorJob = (job: PendingTailorJob) => {
+    setCvData(prev => updaters.addKanbanRoleState(prev, {
+      roleTitle: job.jobTitle || 'Target Role',
+      company: job.companyName || 'Target Company',
+      location: 'Remote',
+      status: 'applied',
+      dateApplied: new Date().toISOString().slice(0, 10),
+      roleUrl: job.roleUrl,
+      notes: 'Imported from Remote Job Search'
+    }));
+
+    if (job.roleUrl) {
+      window.open(job.roleUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    setPendingTailorJob(job);
+    setActiveTab('tailor');
+  };
 
   const openIngestionModal = () => setIsIngestionModalOpen(true);
 
@@ -168,42 +198,19 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const selectPreset = (presetId: string) => setCvData(prev => ({ ...prev, activePresetId: presetId }));
 
   const createPreset = (name: string, description?: string) => {
-    const newPreset: RolePreset = {
-      id: `preset-${Date.now()}`,
-      name,
-      description: description || 'Custom role preset',
-      activeTags: [...selectedTags],
-      activeLanguage,
-      activeLayout,
-      metadata: { ...activePreset.metadata, dc_title: `${cvData.profile.name} - ${name}` }
-    };
-    setCvData(prev => ({
-      ...prev,
-      presets: [...prev.presets, newPreset],
-      activePresetId: newPreset.id
-    }));
+    setCvData(prev => updaters.createPresetState(prev, name, selectedTags, description));
   };
 
   const deletePreset = (presetId: string) => {
-    if (cvData.presets.length <= 1) return;
-    setCvData(prev => {
-      const filtered = prev.presets.filter(p => p.id !== presetId);
-      return { ...prev, presets: filtered, activePresetId: filtered[0].id };
-    });
+    setCvData(prev => updaters.deletePresetState(prev, presetId));
   };
 
   const setLanguage = (lang: string) => {
-    setCvData(prev => ({
-      ...prev,
-      presets: prev.presets.map(p => p.id === prev.activePresetId ? { ...p, activeLanguage: lang } : p)
-    }));
+    setCvData(prev => updaters.setLanguageState(prev, lang));
   };
 
   const setLayout = (layout: 'classic' | 'modern' | 'minimal') => {
-    setCvData(prev => ({
-      ...prev,
-      presets: prev.presets.map(p => p.id === prev.activePresetId ? { ...p, activeLayout: layout } : p)
-    }));
+    setCvData(prev => updaters.setLayoutState(prev, layout));
   };
 
   const toggleTagFilter = (tag: string) => {
@@ -242,9 +249,12 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       activeTab,
       showAppliedKanban,
       showArchivedKanban,
+      pendingTailorJob,
       setActiveTab,
       setShowAppliedKanban,
       setShowArchivedKanban,
+      setPendingTailorJob,
+      applyAndTailorJob,
       selectPreset,
       createPreset,
       deletePreset,
