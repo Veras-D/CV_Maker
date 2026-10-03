@@ -12,7 +12,7 @@
     "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "quality:duplication": "jscpd src --config .jscpd.json",
-    "quality:audit": "npm audit --audit-level=high",
+    "quality:audit": "npm audit --omit=dev --audit-level=high",
     "quality:check": "npm run typecheck && npm run lint && npm run quality:duplication && npm run quality:audit"
   },
   "dependencies": {

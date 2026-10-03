@@ -25,8 +25,38 @@ const STOP_WORDS = new Set([
   'zkušenosti', 'tým', 'práce', 'pozice', 'role', 'společnost', 'požadavky', 'nabízíme'
 ]);
 
+const HIGH_PRIORITY_TRIGGERS = /(?:requirements?|qualifications?|must[- ]have|skills?|responsibilities|what you(?:\x27ll| will) do|your role|experience (?:with|in)|proficient in|looking for)/gi;
+const LOW_PRIORITY_TRIGGERS = /(?:about (?:us|the company)|who we are|our company|our product|benefits|we offer|perks)/gi;
+
+export interface ProximityMap {
+  highMatches: number[];
+  lowMatches: number[];
+}
+
 /**
- * Unicode-aware tokenizer filtering out punctuation, single characters, and stop words
+ * Identify character offset spans of high-priority requirement sections vs low-priority background sections
+ */
+export function buildProximityMap(text: string): ProximityMap {
+  const highMatches = Array.from(text.matchAll(HIGH_PRIORITY_TRIGGERS)).map(m => m.index || 0);
+  const lowMatches = Array.from(text.matchAll(LOW_PRIORITY_TRIGGERS)).map(m => m.index || 0);
+  return { highMatches, lowMatches };
+}
+
+/**
+ * Determine weight for a keyword occurrence based on its proximity to section triggers
+ */
+export function getProximityWeight(charIndex: number, map: ProximityMap): number {
+  if (map.highMatches.some(pos => charIndex >= pos && charIndex <= pos + 500)) {
+    return 4;
+  }
+  if (map.lowMatches.some(pos => charIndex >= pos && charIndex <= pos + 300)) {
+    return 1;
+  }
+  return 2;
+}
+
+/**
+ * Unicode-aware tokenizer filtering out punctuation and single characters
  */
 export function tokenizeRaw(text: string): string[] {
   if (!text) return [];

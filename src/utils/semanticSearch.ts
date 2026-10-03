@@ -4,7 +4,9 @@ import {
   tokenizeClean,
   tokenizeRaw,
   getTermFrequency,
-  calculateCosineSimilarity
+  calculateCosineSimilarity,
+  buildProximityMap,
+  getProximityWeight
 } from './textProcessing';
 
 export interface ATSMatchResult {
@@ -21,20 +23,20 @@ export const tokenize = tokenizeRaw;
 export { calculateCosineSimilarity };
 
 /**
- * Score role domains based on job title hints and job description body
+ * Score role domains based on job title hints and job description body with proximity weighting
  */
 function calculateDomainScores(
   titleLower: string,
   titleTokens: Set<string>,
-  jdLower: string,
-  jdTokens: Set<string>
+  jdLower: string
 ): { domainScores: Record<string, number>; foundKeywords: Set<string> } {
   const domainScores: Record<string, number> = {};
   const foundKeywords = new Set<string>();
+  const proximityMap = buildProximityMap(jdLower);
 
   if (/full[- ]?stack/i.test(titleLower)) {
-    domainScores.frontend = (domainScores.frontend || 0) + 12;
-    domainScores.backend = (domainScores.backend || 0) + 12;
+    domainScores.frontend = (domainScores.frontend || 0) + 15;
+    domainScores.backend = (domainScores.backend || 0) + 15;
   }
 
   Object.entries(DOMAIN_TAXONOMY).forEach(([domainId, domainDef]) => {
@@ -42,13 +44,19 @@ function calculateDomainScores(
     domainDef.keywords.forEach(kw => {
       const inTitle = kw.includes(' ') ? titleLower.includes(kw) : titleTokens.has(kw);
       if (inTitle) {
-        score += 10;
+        score += 15;
         foundKeywords.add(kw);
       }
-      const inJD = kw.includes(' ') ? jdLower.includes(kw) : jdTokens.has(kw);
-      if (inJD) {
-        score += 2;
-        foundKeywords.add(kw);
+
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(jdLower)) !== null) {
+        const weight = getProximityWeight(match.index, proximityMap);
+        score += weight;
+        if (weight >= 2) {
+          foundKeywords.add(kw);
+        }
       }
     });
     if (score > 0) domainScores[domainId] = score;
@@ -67,15 +75,8 @@ export function analyzeJobDescription(
   const titleLower = jobTitle.toLowerCase();
   const titleTokens = new Set(tokenizeClean(jobTitle));
   const jdLower = jdText.toLowerCase();
-  const jdTokens = new Set(tokenizeClean(jdText));
 
-  const { domainScores, foundKeywords } = calculateDomainScores(
-    titleLower,
-    titleTokens,
-    jdLower,
-    jdTokens
-  );
-
+  const { domainScores, foundKeywords } = calculateDomainScores(titleLower, titleTokens, jdLower);
   const sorted = Object.entries(domainScores).sort((a, b) => b[1] - a[1]);
   if (sorted.length === 0) {
     return { matchedTags: ['fullstack'], keywords: [] };
@@ -91,6 +92,30 @@ export function analyzeJobDescription(
     matchedTags: matchedTags.length > 0 ? matchedTags : [sorted[0][0]],
     keywords: Array.from(foundKeywords)
   };
+}
+
+/**
+ * Classify a skill category into universal or domain-specific bucket
+ */
+function classifyCategory(catName: string, skills: { name: string }[]): string {
+  const lower = catName.toLowerCase();
+  if (/language|jazyk|programov/i.test(lower)) return 'universal_languages';
+  if (/developer tool|nástroj|practice|general tool/i.test(lower)) return 'universal_tools';
+  if (/test|qa|quality|automation|testov/i.test(lower)) return 'testing';
+  if (/front[- ]?end|ui|ux|web design|styling/i.test(lower)) return 'frontend';
+  if (/back[- ]?end|database|databáz|server|api|sql/i.test(lower)) return 'backend';
+  if (/devops|cloud|infrastruct|sysadmin/i.test(lower)) return 'devops';
+  if (/mobile|mobiln|ios|android/i.test(lower)) return 'mobile';
+  if (/data|ai|machine learning/i.test(lower)) return 'ai_data';
+
+  const counts: Record<string, number> = {};
+  skills.forEach(s => {
+    getDomainsForSkill(s.name).forEach(d => {
+      counts[d] = (counts[d] || 0) + 1;
+    });
+  });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return top ? top[0] : 'other';
 }
 
 /**
@@ -130,7 +155,7 @@ function scoreBulletRelevance(
 }
 
 /**
- * Check if a project matches the job description via tech stack, ontology or text
+ * Check if a project matches the job description via tech stack or target domain
  */
 function evaluateProjectRelevance(
   project: ProjectItem,
@@ -160,7 +185,7 @@ function evaluateProjectRelevance(
 }
 
 /**
- * Filter and rank work experiences based on target domains and matched keywords
+ * Filter and rank work experiences, guaranteeing at least 2 bullets for any included role
  */
 function rankExperiences(
   experiences: WorkExperience[],
@@ -171,27 +196,33 @@ function rankExperiences(
   const ranked = experiences.map(exp => {
     const scoredBullets = exp.bullets.map(bullet => {
       const { isRelevant, score } = scoreBulletRelevance(bullet, jdTF, matchedKeywords, matchedTags);
-      return { bullet: { ...bullet, enabled: isRelevant }, score };
+      return { bullet, isRelevant, score };
     });
 
     scoredBullets.sort((a, b) => b.score - a.score);
-    const updatedBullets = scoredBullets.map(sb => sb.bullet);
-    const hasEnabledBullet = updatedBullets.some(b => b.enabled);
+    const relevantCount = scoredBullets.filter(s => s.isRelevant).length;
     const expTags = exp.tags || [];
     const roleMatchesDomain = expTags.some(t => matchedTags.includes(t));
+    const isExpEnabled = relevantCount > 0 || roleMatchesDomain;
 
-    return {
-      ...exp,
-      enabled: hasEnabledBullet || roleMatchesDomain,
-      bullets: updatedBullets
-    };
+    if (!isExpEnabled) {
+      return { ...exp, enabled: false, bullets: scoredBullets.map(s => ({ ...s.bullet, enabled: false })) };
+    }
+
+    const countToEnable = Math.min(exp.bullets.length, Math.max(2, relevantCount));
+    const updatedBullets = scoredBullets.map((s, idx) => ({
+      ...s.bullet,
+      enabled: idx < countToEnable
+    }));
+
+    return { ...exp, enabled: true, bullets: updatedBullets };
   });
 
   if (ranked.every(e => !e.enabled) && experiences.length > 0) {
     return experiences.map(e => ({
       ...e,
       enabled: true,
-      bullets: e.bullets.map((b, idx) => ({ ...b, enabled: idx < 3 }))
+      bullets: e.bullets.map((b, idx) => ({ ...b, enabled: idx < 2 }))
     }));
   }
 
@@ -199,7 +230,7 @@ function rankExperiences(
 }
 
 /**
- * Filter and prioritize skills based on target domains and matched keywords
+ * Filter categories on the vertical without slicing foundational skills on the horizontal
  */
 function rankSkills(
   skillCategories: SkillCategory[],
@@ -207,26 +238,32 @@ function rankSkills(
   matchedTags: string[]
 ): SkillCategory[] {
   const ranked = skillCategories.map(cat => {
-    const updatedSkills = cat.skills.map(s => {
+    const catType = classifyCategory(cat.categoryName.en || '', cat.skills);
+
+    if (catType === 'universal_languages' || catType === 'universal_tools') {
+      return { ...cat, skills: cat.skills.map(s => ({ ...s, enabled: true })) };
+    }
+
+    if (matchedTags.includes(catType)) {
+      return { ...cat, skills: cat.skills.map(s => ({ ...s, enabled: true })) };
+    }
+
+    const hasDirectKeyword = cat.skills.some(s => {
       const sLower = s.name.toLowerCase();
-      const isDirectMatch = matchedKeywords.some(kw => sLower === kw || sLower.includes(kw) || kw.includes(sLower));
-      const sDomains = getDomainsForSkill(s.name);
-      const skillTags = s.tags || [];
-      const hasDomainMatch = skillTags.some(t => matchedTags.includes(t)) || sDomains.some(d => matchedTags.includes(d));
-
-      return {
-        ...s,
-        enabled: isDirectMatch || hasDomainMatch
-      };
+      return matchedKeywords.some(kw => sLower === kw || sLower.includes(kw) || kw.includes(sLower));
     });
 
-    updatedSkills.sort((a, b) => {
-      if (a.enabled && !b.enabled) return -1;
-      if (!a.enabled && b.enabled) return 1;
-      return 0;
+    if (!hasDirectKeyword) {
+      return { ...cat, skills: cat.skills.map(s => ({ ...s, enabled: false })) };
+    }
+
+    const updated = cat.skills.map(s => {
+      const sLower = s.name.toLowerCase();
+      const direct = matchedKeywords.some(kw => sLower === kw || sLower.includes(kw) || kw.includes(sLower));
+      return { ...s, enabled: direct };
     });
 
-    return { ...cat, skills: updatedSkills };
+    return { ...cat, skills: updated };
   });
 
   const totalEnabled = ranked.reduce((acc, cat) => acc + cat.skills.filter(s => s.enabled).length, 0);
