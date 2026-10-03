@@ -1,5 +1,5 @@
 import { CVData } from '../types/cv';
-import { DOMAIN_TAXONOMY } from './skillOntology';
+import { COMPREHENSIVE_BASE_SEEDS } from './knowledgeBaseSeeds';
 
 export interface KnowledgeDomainNode {
   id: string;
@@ -16,59 +16,18 @@ export interface KnowledgeGraphStore {
 
 const STORAGE_KEY = 'cv_maker_knowledge_graph_v1';
 
-const BASE_SEEDS: Record<string, KnowledgeDomainNode> = {
-  marketing: {
-    id: 'marketing',
-    label: 'Digital Marketing & Growth',
-    keywords: {
-      seo: 10, sem: 10, ppc: 10, 'meta ads': 10, 'google ads': 10,
-      'google analytics': 10, ga4: 8, hubspot: 8, 'content marketing': 8,
-      copywriting: 8, 'email marketing': 8, cro: 8, cac: 8, roas: 8,
-      ltv: 8, 'conversion rate': 8, 'social media': 8, klaviyo: 8,
-      'growth marketing': 8, campaigns: 6, funnel: 6, 'b2b marketing': 6
-    }
-  },
-  design: {
-    id: 'design',
-    label: 'Product & UI/UX Design',
-    keywords: {
-      figma: 10, ui: 10, ux: 10, 'user experience': 10, 'user interface': 10,
-      wireframing: 8, prototyping: 8, 'design system': 8, 'user research': 8,
-      'usability testing': 8, photoshop: 8, illustrator: 8, typography: 6
-    }
-  },
-  sales: {
-    id: 'sales',
-    label: 'Sales & Business Development',
-    keywords: {
-      'b2b sales': 10, 'lead generation': 10, outreach: 8, crm: 8,
-      salesforce: 8, 'account executive': 8, 'pipeline management': 8,
-      prospecting: 8, closing: 8, negotiation: 6, quota: 6
-    }
-  },
-  data_analytics: {
-    id: 'data_analytics',
-    label: 'Data & Business Analytics',
-    keywords: {
-      sql: 10, excel: 10, 'power bi': 10, tableau: 10, dashboards: 8,
-      kpi: 8, metrics: 8, analytics: 8, reporting: 8, 'a/b testing': 8,
-      statistics: 6, 'business intelligence': 8
-    }
-  }
-};
-
 /**
- * Initialize base domain nodes from DOMAIN_TAXONOMY and extra industries
+ * Initialize base domain nodes from comprehensive multi-industry seed dictionary
  */
 function createInitialStore(): KnowledgeGraphStore {
-  const domains: Record<string, KnowledgeDomainNode> = { ...BASE_SEEDS };
+  const domains: Record<string, KnowledgeDomainNode> = {};
 
-  Object.entries(DOMAIN_TAXONOMY).forEach(([id, def]) => {
-    const kwMap: Record<string, number> = {};
-    def.keywords.forEach(kw => {
-      kwMap[kw.toLowerCase()] = 10;
-    });
-    domains[id] = { id, label: def.label, keywords: kwMap };
+  Object.entries(COMPREHENSIVE_BASE_SEEDS).forEach(([id, seed]) => {
+    domains[id] = {
+      id,
+      label: seed.label,
+      keywords: { ...seed.keywords }
+    };
   });
 
   return {
