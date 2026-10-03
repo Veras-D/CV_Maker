@@ -61,6 +61,7 @@ export const JobSearchTab: React.FC = () => {
         onChangeFilters={handleUpdateFilters}
         totalFound={filteredJobs.length}
         appliedCount={appliedCount}
+        isLoading={isLoading}
       />
 
       {/* Job Grid / Loading / Empty */}

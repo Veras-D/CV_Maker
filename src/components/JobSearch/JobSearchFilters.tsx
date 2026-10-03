@@ -10,13 +10,15 @@ export interface JobSearchFiltersProps {
   onChangeFilters: (newFilters: JobSearchFiltersState) => void;
   totalFound: number;
   appliedCount?: number;
+  isLoading?: boolean;
 }
 
 export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
   filters,
   onChangeFilters,
   totalFound,
-  appliedCount
+  appliedCount,
+  isLoading
 }) => {
   const toggleSource = (source: JobSource) => {
     onChangeFilters({
@@ -50,7 +52,14 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
         <span className="text-slate-400">
-          Found <strong className="text-sky-400">{totalFound}</strong> active remote roles
+          {isLoading ? (
+            <span className="flex items-center gap-1.5 text-sky-400">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+              <span>Searching live remote boards...</span>
+            </span>
+          ) : (
+            <>Found <strong className="text-sky-400">{totalFound}</strong> active remote roles</>
+          )}
         </span>
 
         <label className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-850 hover:border-slate-700 text-slate-300 hover:text-slate-100 cursor-pointer transition-colors select-none">

@@ -15,16 +15,25 @@ const SMARTRECRUITERS_COMPANIES = ['deliveryhero', 'redbull'];
 const CACHE_KEY = 'cv_maker_cached_remote_jobs_v2';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-function getCachedJobs(): RemoteJob[] | null {
+let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
+
+export function getCachedJobs(): RemoteJob[] | null {
+  if (memoryCachedJobs && Date.now() - memoryCachedJobs.timestamp < CACHE_TTL_MS) {
+    return memoryCachedJobs.jobs;
+  }
   try {
     const cachedStr = sessionStorage.getItem(CACHE_KEY);
     if (!cachedStr) return null;
     const { timestamp, jobs } = JSON.parse(cachedStr);
-    const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs);
-    return isValid ? jobs : null;
+    const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs) && jobs.length > 0;
+    if (isValid) {
+      memoryCachedJobs = { timestamp, jobs };
+      return jobs;
+    }
   } catch {
     return null;
   }
+  return null;
 }
 
 function capitalize(str: string): string {
@@ -235,6 +244,8 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
 
   // Sort by publishedAt descending
   allJobs.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+  memoryCachedJobs = { timestamp: Date.now(), jobs: allJobs };
 
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), jobs: allJobs }));

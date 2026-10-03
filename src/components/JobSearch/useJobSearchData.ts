@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCV } from '../../context/CVContext';
 import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
-import { fetchAllRemoteJobs } from '../../utils/jobSearchApi';
+import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
 import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 
 export const PAGE_SIZE = 12;
@@ -9,8 +9,8 @@ export const PAGE_SIZE = 12;
 export function useJobSearchData() {
   const { cvData, applyAndTailorJob } = useCV();
 
-  const [allJobs, setAllJobs] = useState<RemoteJob[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allJobs, setAllJobs] = useState<RemoteJob[]>(() => getCachedJobs() || []);
+  const [isLoading, setIsLoading] = useState(() => !getCachedJobs() || getCachedJobs()?.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState<RemoteJob | null>(null);
@@ -34,6 +34,15 @@ export function useJobSearchData() {
   });
 
   const loadJobs = async (force = false) => {
+    if (!force) {
+      const cached = getCachedJobs();
+      if (cached && cached.length > 0) {
+        setAllJobs(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     if (force) setIsRefreshing(true);
     else setIsLoading(true);
 
