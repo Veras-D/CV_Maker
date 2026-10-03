@@ -134,11 +134,6 @@ function matchesSearchQuery(job: RemoteJob, tokens: string[]): boolean {
   return tokens.every(tok => combined.includes(tok));
 }
 
-function isRemoteJobSourceValid(job: RemoteJob): boolean {
-  if (job.source === 'remotive' || job.source === 'jobicy') return true;
-  return isStrictlyRemote(job.location);
-}
-
 function isJobAppliedOrHidden(job: RemoteJob, hideApplied: boolean, kanbanRoles: KanbanRole[]): boolean {
   if (!hideApplied) return false;
   return isJobAlreadyApplied(job, kanbanRoles).isApplied;
@@ -156,7 +151,6 @@ export function filterRemoteJobs(params: FilterJobParams): RemoteJob[] {
 
   return jobs.filter(job => {
     if (!filters.sources[job.source]) return false;
-    if (!isRemoteJobSourceValid(job)) return false;
     if (!matchesTimeFilter(job.publishedAt, filters.postedTime)) return false;
     if (!matchesRegion(job.region, filters.region)) return false;
     if (!matchesSalary(job, filters.minSalary)) return false;

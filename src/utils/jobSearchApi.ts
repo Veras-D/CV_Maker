@@ -9,10 +9,10 @@ import {
 
 const ASHBY_COMPANIES = ['openai', 'linear', 'resend', 'ramp', 'vanta', 'synthesia'];
 const GREENHOUSE_COMPANIES = ['canonical', 'gitlab', 'stripe', 'cloudflare', 'dropbox', 'reddit', 'mongodb'];
-const LEVER_COMPANIES = ['spotify', 'palantir'];
-const SMARTRECRUITERS_COMPANIES = ['deliveryhero', 'redbull'];
+const LEVER_COMPANIES = ['spotify', 'toptal', 'wealthfront', 'neon'];
+const SMARTRECRUITERS_COMPANIES = ['mirantis', 'jitterbit', 'canva', 'invisibletechnologies'];
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v4';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v5';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
@@ -21,7 +21,8 @@ function cleanupOldCaches(): void {
   const obsoleteKeys = [
     'cv_maker_cached_remote_jobs_v1',
     'cv_maker_cached_remote_jobs_v2',
-    'cv_maker_cached_remote_jobs_v3'
+    'cv_maker_cached_remote_jobs_v3',
+    'cv_maker_cached_remote_jobs_v4'
   ];
   for (const key of obsoleteKeys) {
     try {
