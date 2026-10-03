@@ -14,14 +14,14 @@ interface JobFilterControlsRowProps {
 }
 
 const POSTED_TIME_OPTIONS: { id: PostedTimeFilter; label: string }[] = [
-  { id: '24h', label: '24h' },
-  { id: '3d', label: '3d' },
-  { id: '1w', label: '1 Wk' },
-  { id: '2w', label: '2 Wk' },
-  { id: '1mo', label: '1 Mo' },
-  { id: '2mo', label: '2 Mo' },
-  { id: '3mo', label: '3 Mo' },
-  { id: 'any', label: 'Any' }
+  { id: '24h', label: 'Past 24 Hours' },
+  { id: '3d', label: 'Past 3 Days' },
+  { id: '1w', label: 'Past Week' },
+  { id: '2w', label: 'Past 2 Weeks' },
+  { id: '1mo', label: 'Past Month' },
+  { id: '2mo', label: 'Past 2 Months' },
+  { id: '3mo', label: 'Past 3 Months' },
+  { id: 'any', label: 'Any Time' }
 ];
 
 export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
@@ -36,22 +36,17 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <Clock className="w-3 h-3 text-sky-400" />
           <span>Posted Within:</span>
         </label>
-        <div className="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+        <select
+          value={filters.postedTime}
+          onChange={(e) => onChangeFilters({ ...filters, postedTime: e.target.value as PostedTimeFilter })}
+          className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer"
+        >
           {POSTED_TIME_OPTIONS.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => onChangeFilters({ ...filters, postedTime: t.id })}
-              className={`py-1 text-[11px] rounded text-center transition-all cursor-pointer font-medium ${
-                filters.postedTime === t.id
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
+            <option key={t.id} value={t.id}>
               {t.label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Region Filter */}
