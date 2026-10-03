@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { RemoteJob } from '../../types/jobSearch';
 import { KanbanRole } from '../../types/cv';
 import { formatRelativeTime, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
@@ -155,15 +156,15 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
   const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
 
-  return (
+  return ReactDOM.createPortal(
     <div 
-      className="fixed inset-0 z-50 flex justify-end overflow-hidden"
+      className="fixed inset-0 z-[9999] flex justify-end overflow-hidden"
       role="dialog"
       aria-modal="true"
     >
       {/* Backdrop overlay */}
       <div 
-        className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs animate-fade-in transition-opacity cursor-pointer"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md animate-fade-in transition-opacity cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -223,6 +224,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           onClose={onClose}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
