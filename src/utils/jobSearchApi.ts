@@ -12,8 +12,8 @@ const GREENHOUSE_COMPANIES = ['canonical', 'gitlab', 'stripe', 'cloudflare', 'dr
 const LEVER_COMPANIES = ['spotify', 'palantir'];
 const SMARTRECRUITERS_COMPANIES = ['deliveryhero', 'redbull'];
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v2';
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v3';
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
 
@@ -22,7 +22,7 @@ export function getCachedJobs(): RemoteJob[] | null {
     return memoryCachedJobs.jobs;
   }
   try {
-    const cachedStr = sessionStorage.getItem(CACHE_KEY);
+    const cachedStr = localStorage.getItem(CACHE_KEY);
     if (!cachedStr) return null;
     const { timestamp, jobs } = JSON.parse(cachedStr);
     const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs) && jobs.length > 0;
@@ -248,7 +248,7 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
   memoryCachedJobs = { timestamp: Date.now(), jobs: allJobs };
 
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), jobs: allJobs }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), jobs: allJobs }));
   } catch {
     // Quota exceeded or private browsing
   }
