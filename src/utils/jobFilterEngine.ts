@@ -109,10 +109,65 @@ function matchesRegion(jobRegion: RemoteJob['region'], filter: JobSearchFiltersS
   return jobRegion === filter;
 }
 
+function parseSalaryNumbers(cleaned: string, isHourly: boolean, isMonthly: boolean): number[] {
+  const regex = /([0-9]+(?:[.,][0-9]+)?)\s*([kKmM])?/g;
+  const matches = [...cleaned.matchAll(regex)];
+  const nums: number[] = [];
+
+  for (const m of matches) {
+    if (!m[1]) continue;
+    let val = parseFloat(m[1].replace(',', '.'));
+    const unit = (m[2] || '').toLowerCase();
+    if (unit === 'k') {
+      val *= 1000;
+    } else if (unit === 'm') {
+      val *= 1000000;
+    } else if (isHourly) {
+      val *= 2000;
+    } else if (isMonthly && val < 50000) {
+      val *= 12;
+    }
+    if (val > 0) nums.push(Math.round(val));
+  }
+  return nums;
+}
+
+function detectSalaryCurrency(str: string): string {
+  if (/€|EUR/i.test(str)) return 'EUR';
+  if (/£|GBP/i.test(str)) return 'GBP';
+  if (/CAD/i.test(str)) return 'CAD';
+  return 'USD';
+}
+
+export function parseSalaryRange(str?: string): { minSalary?: number; maxSalary?: number; currency?: string } {
+  if (!str || typeof str !== 'string') return {};
+  const trimmed = str.trim();
+  if (!trimmed) return {};
+
+  const isHourly = /hour|hr|\/h/i.test(trimmed);
+  const isMonthly = /month|mo/i.test(trimmed);
+  const cleaned = trimmed.replace(/([0-9])[,.]([0-9]{3})(?![0-9kK])/g, '$1$2');
+  const nums = parseSalaryNumbers(cleaned, isHourly, isMonthly);
+  const currency = detectSalaryCurrency(trimmed);
+
+  if (nums.length === 0) return { currency };
+
+  const minSalary = nums.length === 1 ? nums[0] : Math.min(nums[0], nums[1]);
+  const maxSalary = nums.length === 1 ? nums[0] : Math.max(nums[0], nums[1]);
+  return { minSalary, maxSalary, currency };
+}
+
 function matchesSalary(job: RemoteJob, minFilter: number): boolean {
   if (minFilter <= 0) return true;
-  if (job.maxSalary && job.maxSalary >= minFilter) return true;
-  if (job.minSalary && job.minSalary >= minFilter) return true;
+  let min = job.minSalary;
+  let max = job.maxSalary;
+  if (min === undefined && max === undefined && job.salarySummary) {
+    const parsed = parseSalaryRange(job.salarySummary);
+    min = parsed.minSalary;
+    max = parsed.maxSalary;
+  }
+  if (max && max >= minFilter) return true;
+  if (min && min >= minFilter) return true;
   return false;
 }
 

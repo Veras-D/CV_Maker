@@ -1,5 +1,10 @@
 import { RemoteJob } from '../types/jobSearch';
-import { detectJobRegion, isStrictlyRemote, detectContractDuration } from './jobFilterEngine';
+import { 
+  detectJobRegion, 
+  isStrictlyRemote, 
+  detectContractDuration,
+  parseSalaryRange
+} from './jobFilterEngine';
 
 export function stripHtml(input: string): string {
   if (!input) return '';
@@ -60,6 +65,7 @@ export async function fetchRemotiveJobs(): Promise<RemoteJob[]> {
       const plain = stripHtml(raw.description || '');
       const durationInfo = detectContractDuration(raw.title, plain);
       const isContract = raw.job_type === 'contract' || raw.job_type === 'freelance' || Boolean(durationInfo.duration);
+      const salaryRange = parseSalaryRange(raw.salary);
 
       return {
         id: `remotive-${raw.id}`,
@@ -72,6 +78,9 @@ export async function fetchRemotiveJobs(): Promise<RemoteJob[]> {
         region: detectJobRegion(loc),
         publishedAt: raw.publication_date || new Date().toISOString(),
         salarySummary: raw.salary || undefined,
+        minSalary: salaryRange.minSalary,
+        maxSalary: salaryRange.maxSalary,
+        currency: salaryRange.currency,
         descriptionPlain: plain,
         department: raw.category,
         employmentType: isContract ? 'contract' : raw.job_type === 'part_time' ? 'part-time' : 'full-time',
@@ -95,6 +104,78 @@ interface JobicyRawJob {
   jobExcerpt?: string;
   jobDescription?: string;
   jobIndustry?: string[];
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  salaryCurrency?: string | null;
+  salaryPeriod?: string | null;
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  CAD: '$',
+  EUR: '€',
+  GBP: '£'
+};
+
+const PERIOD_LABELS: Record<string, string> = {
+  hourly: ' / hr',
+  monthly: ' / mo',
+  yearly: ' / yr'
+};
+
+const PERIOD_MULTIPLIERS: Record<string, number> = {
+  hourly: 2000,
+  monthly: 12,
+  yearly: 1
+};
+
+function buildSalarySummary(min?: number, max?: number, sym = '$', periodLabel = ' / yr'): string {
+  if (min && max) {
+    return `${sym}${min.toLocaleString('en-US')} - ${sym}${max.toLocaleString('en-US')}${periodLabel}`;
+  }
+  if (min) return `From ${sym}${min.toLocaleString('en-US')}${periodLabel}`;
+  if (max) return `Up to ${sym}${max.toLocaleString('en-US')}${periodLabel}`;
+  return '';
+}
+
+function sanitizePositiveNumber(val?: number | null): number | undefined {
+  if (typeof val === 'number' && val > 0) return val;
+  return undefined;
+}
+
+function calcAnnualized(val?: number, mult = 1): number | undefined {
+  if (!val) return undefined;
+  return Math.round(val * mult);
+}
+
+function resolvePeriodMultiplier(period?: string | null): number {
+  if (!period) return 1;
+  return PERIOD_MULTIPLIERS[period.toLowerCase()] || 1;
+}
+
+function formatJobicySalary(raw: JobicyRawJob): {
+  salarySummary?: string;
+  minSalary?: number;
+  maxSalary?: number;
+  currency?: string;
+} {
+  const min = sanitizePositiveNumber(raw.salaryMin);
+  const max = sanitizePositiveNumber(raw.salaryMax);
+  if (!min && !max) return {};
+
+  const curr = raw.salaryCurrency || 'USD';
+  const period = (raw.salaryPeriod || 'yearly').toLowerCase();
+  const sym = CURRENCY_SYMBOLS[curr] || `${curr} `;
+  const periodLabel = PERIOD_LABELS[period] || ' / yr';
+  const mult = resolvePeriodMultiplier(raw.salaryPeriod);
+  const summary = buildSalarySummary(min, max, sym, periodLabel);
+
+  return {
+    salarySummary: summary || undefined,
+    minSalary: calcAnnualized(min, mult),
+    maxSalary: calcAnnualized(max, mult),
+    currency: curr
+  };
 }
 
 export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
@@ -113,6 +194,7 @@ export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
       const types = (raw.jobType || []).map(t => t.toLowerCase());
       const isContract = types.some(t => t.includes('contract') || t.includes('freelance')) || Boolean(durationInfo.duration);
       const isPartTime = types.some(t => t.includes('part-time'));
+      const salaryInfo = formatJobicySalary(raw);
 
       return {
         id: `jobicy-${raw.id}`,
@@ -124,6 +206,10 @@ export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
         location: loc,
         region: detectJobRegion(loc),
         publishedAt: raw.pubDate || new Date().toISOString(),
+        salarySummary: salaryInfo.salarySummary,
+        minSalary: salaryInfo.minSalary,
+        maxSalary: salaryInfo.maxSalary,
+        currency: salaryInfo.currency,
         descriptionPlain: plain,
         department: raw.jobIndustry?.[0],
         employmentType: isContract ? 'contract' : isPartTime ? 'part-time' : 'full-time',
