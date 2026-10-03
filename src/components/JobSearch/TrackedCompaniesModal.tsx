@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { X, Search, Plus, Check, Loader2, Sparkles, Building2, RefreshCw } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { 
@@ -55,11 +56,7 @@ const CompanyModalHeader: React.FC<{
         <p className="text-xs text-slate-400">Manage tracked companies across Ashby, Greenhouse, Lever, and SmartRecruiters</p>
       </div>
     </div>
-    <button
-      type="button"
-      onClick={onClose}
-      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-    >
+    <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors">
       <X className="w-5 h-5" />
     </button>
   </div>
@@ -142,11 +139,7 @@ const AddCompanyForm: React.FC<{
         className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 h-[34px]"
       />
       <div className="w-40 shrink-0">
-        <CustomSelect
-          options={ATS_OPTIONS}
-          value={selectedAts}
-          onChange={(val) => onAtsChange(val as AtsType | 'auto')}
-        />
+        <CustomSelect options={ATS_OPTIONS} value={selectedAts} onChange={(val) => onAtsChange(val as AtsType | 'auto')} />
       </div>
       <button
         type="submit"
@@ -278,16 +271,30 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
     setSyncMessage(`✓ Synced live with Y Combinator (${liveYc.length} active hiring startups).`);
   };
 
+  const handleCloseModal = () => {
+    onCompaniesChanged();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+  return ReactDOM.createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Full-screen backdrop covering everything including navbar */}
       <div 
-        className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
-        role="dialog"
-        aria-modal="true"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md animate-fade-in transition-opacity cursor-pointer"
+        onClick={handleCloseModal}
+        aria-hidden="true"
+      />
+
+      <div 
+        className="relative z-10 w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
       >
-        <CompanyModalHeader totalEnabled={totalEnabled} totalCompanies={companies.length} onClose={() => { onCompaniesChanged(); onClose(); }} />
+        <CompanyModalHeader totalEnabled={totalEnabled} totalCompanies={companies.length} onClose={handleCloseModal} />
 
         <div className="p-3 sm:p-4 bg-slate-950/40 border-b border-slate-800/80 space-y-3">
           <ModalToolbar
@@ -336,7 +343,7 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
           <span className="text-xs text-slate-400">{totalEnabled} companies selected</span>
           <button
             type="button"
-            onClick={() => { onCompaniesChanged(); onClose(); }}
+            onClick={handleCloseModal}
             className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-sky-600/20 transition-all cursor-pointer"
           >
             <Check className="w-4 h-4" />
@@ -344,6 +351,7 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
