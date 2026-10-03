@@ -268,7 +268,8 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
     const updated = companies.map(c => (liveSlugs.has(c.slug) ? { ...c, isYc: true } : c));
     saveTrackedCompanies(updated);
     setCompanies(updated);
-    setSyncMessage(`✓ Synced live with Y Combinator (${liveYc.length} active hiring startups).`);
+    const matchedCount = updated.filter(c => c.isYc).length;
+    setSyncMessage(`✓ Verified ${matchedCount} Y Combinator companies in your watchlist from live YC feed.`);
   };
 
   const handleCloseModal = () => {
