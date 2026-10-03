@@ -160,13 +160,13 @@ export function runLocalAITailor(params: {
     cvData
   });
 
-  // Extract rich experiences for narrative synthesis
+  // Extract rich experiences for narrative synthesis (English)
   const richExperiences: SynthesizerExperience[] = matchResult.rankedExperiences
     .filter(e => e.enabled)
     .map(e => ({
-      role: e.roleTitle[language] || e.roleTitle.en || '',
+      role: e.roleTitle.en || e.roleTitle[language] || '',
       company: e.company || '',
-      bullets: e.bullets.filter(b => b.enabled).map(b => b.text[language] || b.text.en || '').filter(Boolean)
+      bullets: e.bullets.filter(b => b.enabled).map(b => b.text.en || b.text[language] || '').filter(Boolean)
     }))
     .filter(e => e.bullets.length > 0 || e.company);
 
@@ -181,7 +181,7 @@ export function runLocalAITailor(params: {
     experiences: richExperiences,
     tone: 'professional',
     seed: 0,
-    language
+    language: 'en'
   });
 
   const newCoverLetter: CoverLetter = {

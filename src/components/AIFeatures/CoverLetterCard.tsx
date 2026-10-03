@@ -3,7 +3,6 @@ import { CoverLetterTone } from '../../utils/coverLetterSynthesizer';
 import { CoverLetterToneSelector } from './CoverLetterToneSelector';
 
 export interface CoverLetterCardProps {
-  activeLanguage: string;
   coverLetterEditable: string;
   currentTone: CoverLetterTone;
   onCoverLetterChange: (v: string) => void;
@@ -14,7 +13,6 @@ export interface CoverLetterCardProps {
 }
 
 export const CoverLetterCard: React.FC<CoverLetterCardProps> = ({
-  activeLanguage,
   coverLetterEditable,
   currentTone,
   onCoverLetterChange,
@@ -27,7 +25,7 @@ export const CoverLetterCard: React.FC<CoverLetterCardProps> = ({
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-bold text-slate-200">
-          Tailored Cover Letter ({activeLanguage.toUpperCase()})
+          Tailored Cover Letter (English)
         </h4>
         <span className="text-[11px] text-slate-400">Editable preview</span>
       </div>

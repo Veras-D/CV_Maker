@@ -40,9 +40,9 @@ function regenerateLetter(opts: RegenerateOptions): string {
   const experiences = tailoredOutput.matchResult.rankedExperiences
     .filter(e => e.enabled)
     .map(e => ({
-      role: e.roleTitle[activeLanguage] || e.roleTitle.en || '',
+      role: e.roleTitle.en || e.roleTitle[activeLanguage] || '',
       company: e.company || '',
-      bullets: e.bullets.filter(b => b.enabled).map(b => b.text[activeLanguage] || b.text.en || '').filter(Boolean)
+      bullets: e.bullets.filter(b => b.enabled).map(b => b.text.en || b.text[activeLanguage] || '').filter(Boolean)
     }))
     .filter(e => e.bullets.length > 0 || e.company);
 
@@ -55,7 +55,7 @@ function regenerateLetter(opts: RegenerateOptions): string {
     experiences,
     tone,
     seed,
-    language: activeLanguage as LanguageCode
+    language: 'en'
   });
 }
 
@@ -173,7 +173,6 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
         </div>
 
         <CoverLetterCard
-          activeLanguage={activeLanguage}
           coverLetterEditable={coverLetterEditable}
           currentTone={currentTone}
           onCoverLetterChange={onCoverLetterChange}

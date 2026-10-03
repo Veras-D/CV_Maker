@@ -232,46 +232,7 @@ function buildClosingParagraph(p: ClosingParams): string {
   return `${item.body}\n\n${item.signoff}\n${p.name || 'Candidate'}`;
 }
 
-function synthesizePortugueseLetter(p: CoverLetterSynthesizerParams): string {
-  const company = p.companyName.trim() || 'equipe de recrutamento';
-  const role = p.jobTitle.trim() || 'Desenvolvedor de Software';
-  const skills = formatDistinctSkills(p.matchedKeywords);
-  const domains = formatDomainPhrase(p.matchedTags);
-  const name = p.candidateName.trim() || 'Candidato';
-
-  const opening = `Prezada equipe da ${company},
-
-Escrevo para manifestar meu grande interesse na posição de ${role}. Com sólida experiência em ${domains} e atuação prática com tecnologias como ${skills}, estou confiante na minha capacidade de agregar valor imediato e soluções de alto impacto para a equipe.`;
-
-  const validExps = p.experiences.filter(e => e.bullets && e.bullets.length > 0);
-  let expProse = `Ao longo da minha trajetória em ${domains}, especializei-me no desenvolvimento de sistemas confiáveis e escaláveis utilizando ${skills}, com foco em código limpo, automação de testes e boas práticas de engenharia.`;
-  if (validExps.length > 0) {
-    const e1 = validExps[0];
-    const b1 = cleanBulletText(e1.bullets[0]);
-    expProse = e1.company 
-      ? `Recentemente na ${e1.company}, atuando como ${e1.role || 'Engenheiro'}, ${lowerFirst(b1)}`
-      : `Em minha atuação recente, ${lowerFirst(b1)}`;
-    if (e1.bullets.length > 1) {
-      const b2 = cleanBulletText(e1.bullets[1]);
-      expProse += ` Em paralelo, ${lowerFirst(b2)}`;
-    }
-  }
-
-  const alignment = `O que mais me atrai na oportunidade da ${company} é o compromisso com a excelência técnica e inovação. Meu objetivo é aplicar minhas competências em ${skills} para construir produtos escaláveis e de alta qualidade.`;
-
-  const closing = `Agradeço pela atenção e consideração, e coloco-me à inteira disposição para conversarmos em uma entrevista sobre como posso contribuir para os próximos objetivos da equipe.
-
-Atenciosamente,
-${name}`;
-
-  return `${opening}\n\n${expProse}\n\n${alignment}\n\n${closing}`;
-}
-
 export function synthesizeCoverLetterProse(params: CoverLetterSynthesizerParams): string {
-  if (params.language === 'pt') {
-    return synthesizePortugueseLetter(params);
-  }
-
   const company = params.companyName.trim() || 'the Company';
   const role = params.jobTitle.trim() || 'Software Engineer';
   const tone = params.tone || 'professional';
@@ -291,14 +252,10 @@ export function synthesizeCoverLetterProse(params: CoverLetterSynthesizerParams)
 }
 
 export function synthesizeCoverLetter(params: CoverLetterSynthesizerParams): Record<string, string> {
-  const enLetter = synthesizeCoverLetterProse({ ...params, language: 'en' });
-  const langLetter = params.language && params.language !== 'en'
-    ? synthesizeCoverLetterProse(params)
-    : enLetter;
-
+  const enLetter = synthesizeCoverLetterProse(params);
   return {
     en: enLetter,
-    [params.language || 'en']: langLetter
+    [params.language || 'en']: enLetter
   };
 }
 
