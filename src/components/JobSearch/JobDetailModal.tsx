@@ -1,7 +1,7 @@
 import React from 'react';
 import { RemoteJob } from '../../types/jobSearch';
 import { KanbanRole } from '../../types/cv';
-import { formatRelativeTime } from '../../utils/jobFilterEngine';
+import { formatRelativeTime, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 import { X, ExternalLink, Sparkles, CheckCircle2, Globe, DollarSign, Building } from 'lucide-react';
 
 export interface JobDetailModalProps {
@@ -19,11 +19,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 }) => {
   if (!job) return null;
 
-  const appliedInfo = kanbanRoles.find(k => {
-    if (k.roleUrl && job.url && k.roleUrl.trim().toLowerCase() === job.url.trim().toLowerCase()) return true;
-    return k.company.trim().toLowerCase() === job.company.trim().toLowerCase() &&
-           k.roleTitle.trim().toLowerCase() === job.title.trim().toLowerCase();
-  });
+  const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
@@ -42,7 +38,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-slate-700 bg-slate-800 uppercase tracking-wider text-slate-300">
                 {job.source}
               </span>
-              {appliedInfo && (
+              {(job.employmentType === 'contract' || job.employmentType === 'freelance' || job.contractDuration) && (
+                <span className="bg-amber-950/80 text-amber-300 border border-amber-800/80 text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span>⚡ Contract{job.contractDurationLabel ? ` (${job.contractDurationLabel})` : ''}</span>
+                </span>
+              )}
+              {appliedInfo.isApplied && (
                 <span className="bg-emerald-950 text-emerald-400 border border-emerald-700/80 text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Already Applied {appliedInfo.dateApplied ? `(${appliedInfo.dateApplied})` : ''}</span>

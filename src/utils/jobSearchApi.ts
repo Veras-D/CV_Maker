@@ -1,11 +1,18 @@
 import { RemoteJob } from '../types/jobSearch';
-import { detectJobRegion, isStrictlyRemote } from './jobFilterEngine';
+import { detectJobRegion, isStrictlyRemote, detectContractDuration } from './jobFilterEngine';
+import { 
+  stripHtml, 
+  fetchRemotiveJobs, 
+  fetchJobicyJobs, 
+  fetchSmartRecruitersCompany 
+} from './jobSearchAggregators';
 
 const ASHBY_COMPANIES = ['openai', 'linear', 'resend', 'ramp', 'vanta', 'synthesia'];
 const GREENHOUSE_COMPANIES = ['canonical', 'gitlab', 'stripe', 'cloudflare', 'dropbox', 'reddit', 'mongodb'];
 const LEVER_COMPANIES = ['spotify', 'palantir'];
+const SMARTRECRUITERS_COMPANIES = ['deliveryhero', 'redbull'];
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v1';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v2';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 function getCachedJobs(): RemoteJob[] | null {
@@ -18,22 +25,6 @@ function getCachedJobs(): RemoteJob[] | null {
   } catch {
     return null;
   }
-}
-
-export function stripHtml(html: string): string {
-  if (!html) return '';
-  return html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 function capitalize(str: string): string {
@@ -68,6 +59,9 @@ function parseAshbyJob(raw: AshbyRawJob, companySlug: string): RemoteJob | null 
   if (!isStrictlyRemote(loc, raw.workplaceType)) return null;
 
   const compSummary = raw.compensation?.summaryComponents?.[0];
+  const plain = raw.descriptionPlain || stripHtml(raw.descriptionHtml || '');
+  const durationInfo = detectContractDuration(raw.title, plain);
+  const isContract = raw.title.toLowerCase().includes('contract') || Boolean(durationInfo.duration);
 
   return {
     id: `ashby-${companySlug}-${raw.id}`,
@@ -83,9 +77,12 @@ function parseAshbyJob(raw: AshbyRawJob, companySlug: string): RemoteJob | null 
     minSalary: compSummary?.minValue,
     maxSalary: compSummary?.maxValue,
     currency: compSummary?.currencyCode,
-    descriptionPlain: raw.descriptionPlain || stripHtml(raw.descriptionHtml || ''),
+    descriptionPlain: plain,
     descriptionHtml: raw.descriptionHtml,
-    department: raw.department
+    department: raw.department,
+    employmentType: isContract ? 'contract' : 'full-time',
+    contractDuration: durationInfo.duration,
+    contractDurationLabel: durationInfo.label
   };
 }
 
@@ -105,6 +102,10 @@ function parseGreenhouseJob(raw: GreenhouseRawJob, companySlug: string): RemoteJ
   const loc = raw.location?.name || 'Remote';
   if (!isStrictlyRemote(loc)) return null;
 
+  const plain = stripHtml(raw.content || '');
+  const durationInfo = detectContractDuration(raw.title, plain);
+  const isContract = raw.title.toLowerCase().includes('contract') || Boolean(durationInfo.duration);
+
   return {
     id: `gh-${companySlug}-${raw.id}`,
     title: raw.title,
@@ -115,9 +116,12 @@ function parseGreenhouseJob(raw: GreenhouseRawJob, companySlug: string): RemoteJ
     location: loc,
     region: detectJobRegion(loc),
     publishedAt: raw.updated_at || raw.first_published || new Date().toISOString(),
-    descriptionPlain: stripHtml(raw.content || ''),
+    descriptionPlain: plain,
     descriptionHtml: raw.content,
-    department: raw.departments?.[0]?.name
+    department: raw.departments?.[0]?.name,
+    employmentType: isContract ? 'contract' : 'full-time',
+    contractDuration: durationInfo.duration,
+    contractDurationLabel: durationInfo.label
   };
 }
 
@@ -140,6 +144,10 @@ function parseLeverJob(raw: LeverRawJob, companySlug: string): RemoteJob | null 
   const loc = raw.categories?.location || 'Remote';
   if (!isStrictlyRemote(loc, raw.workplaceType)) return null;
 
+  const plain = raw.descriptionPlain || stripHtml(raw.description || '');
+  const durationInfo = detectContractDuration(raw.text, plain);
+  const isContract = raw.text.toLowerCase().includes('contract') || Boolean(durationInfo.duration);
+
   return {
     id: `lever-${companySlug}-${raw.id}`,
     title: raw.text,
@@ -150,9 +158,12 @@ function parseLeverJob(raw: LeverRawJob, companySlug: string): RemoteJob | null 
     location: loc,
     region: detectJobRegion(loc),
     publishedAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
-    descriptionPlain: raw.descriptionPlain || stripHtml(raw.description || ''),
+    descriptionPlain: plain,
     descriptionHtml: raw.description,
-    department: raw.categories?.department
+    department: raw.categories?.department,
+    employmentType: isContract ? 'contract' : 'full-time',
+    contractDuration: durationInfo.duration,
+    contractDurationLabel: durationInfo.label
   };
 }
 
@@ -195,7 +206,7 @@ async function fetchLeverCompany(companySlug: string): Promise<RemoteJob[]> {
 export function buildGoogleAtsSearchUrl(query: string): string {
   const q = query.trim();
   const term = q ? `"${q}"` : '"software engineer"';
-  const rawQuery = `(site:jobs.ashbyhq.com OR site:job-boards.greenhouse.io OR site:boards.greenhouse.io OR site:jobs.lever.co) ${term} remote`;
+  const rawQuery = `(site:jobs.ashbyhq.com OR site:job-boards.greenhouse.io OR site:boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.smartrecruiters.com OR site:remotive.com OR site:jobicy.com) ${term} remote`;
   return `https://www.google.com/search?q=${encodeURIComponent(rawQuery)}`;
 }
 
@@ -208,7 +219,10 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
   const promises: Promise<RemoteJob[]>[] = [
     ...ASHBY_COMPANIES.map(c => fetchAshbyCompany(c)),
     ...GREENHOUSE_COMPANIES.map(c => fetchGreenhouseCompany(c)),
-    ...LEVER_COMPANIES.map(c => fetchLeverCompany(c))
+    ...LEVER_COMPANIES.map(c => fetchLeverCompany(c)),
+    ...SMARTRECRUITERS_COMPANIES.map(c => fetchSmartRecruitersCompany(c)),
+    fetchRemotiveJobs(),
+    fetchJobicyJobs()
   ];
 
   const results = await Promise.allSettled(promises);

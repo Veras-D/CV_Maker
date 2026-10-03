@@ -1,4 +1,4 @@
-import { RemoteJob, JobSearchFiltersState } from '../types/jobSearch';
+import { RemoteJob, JobSearchFiltersState, EmploymentType, ContractDuration } from '../types/jobSearch';
 import { KanbanRole } from '../types/cv';
 
 const EU_KEYWORDS = ['europe', 'emea', 'eu', 'uk', 'united kingdom', 'germany', 'france', 'spain', 'poland', 'czech', 'portugal', 'netherlands', 'ireland', 'sweden', 'london', 'berlin', 'paris', 'amsterdam', 'madrid'];
@@ -27,6 +27,23 @@ export function isStrictlyRemote(locationStr: string, workplaceType?: string): b
   if (wp === 'inperson' || wp === 'on-site' || wp === 'onsite') return false;
 
   return REMOTE_INDICATORS.some(ind => loc.includes(ind));
+}
+
+const REGEX_1MO = /\b(?:(?:1|one)[ -](?:months?|mos?)|30[ -]days?|4[ -]weeks?|interim|short[- ]term)\b/;
+const REGEX_1_3MO = /\b(?:(?:2|3|two|three)[ -](?:months?|mos?)|1[ -](?:to[ -])?3[ -](?:months?|mos?)|(?:8|12)[ -]weeks?)\b/;
+const REGEX_3_6MO = /\b(?:(?:4|5|6|four|five|six)[ -](?:months?|mos?)|3[ -](?:to[ -])?6[ -](?:months?|mos?))\b/;
+const REGEX_6MO_PLUS = /\b(?:(?:[7-9]|1[0-2])[ -](?:months?|mos?)|(?:6\+|12\+)[ -](?:months?|mos?)|1[ -]year|long[- ]term contract)\b/;
+
+export function detectContractDuration(title: string, description: string): {
+  duration?: '1mo' | '1-3mo' | '3-6mo' | '6mo+';
+  label?: string;
+} {
+  const text = `${title} ${description}`.toLowerCase();
+  if (REGEX_1MO.test(text)) return { duration: '1mo', label: '1 Mo' };
+  if (REGEX_1_3MO.test(text)) return { duration: '1-3mo', label: '1–3 Mo' };
+  if (REGEX_3_6MO.test(text)) return { duration: '3-6mo', label: '3–6 Mo' };
+  if (REGEX_6MO_PLUS.test(text)) return { duration: '6mo+', label: '6+ Mo' };
+  return {};
 }
 
 export function isJobAlreadyApplied(
@@ -80,6 +97,25 @@ function matchesSalary(job: RemoteJob, minFilter: number): boolean {
   return false;
 }
 
+function matchesEmploymentType(job: RemoteJob, filter: EmploymentType): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'contract') {
+    return job.employmentType === 'contract' || job.employmentType === 'freelance' || Boolean(job.contractDuration);
+  }
+  if (filter === 'full-time') {
+    return job.employmentType === 'full-time' || !job.employmentType;
+  }
+  if (filter === 'part-time') {
+    return job.employmentType === 'part-time';
+  }
+  return true;
+}
+
+function matchesContractDuration(job: RemoteJob, filter: ContractDuration): boolean {
+  if (filter === 'all') return true;
+  return job.contractDuration === filter;
+}
+
 interface FilterJobParams {
   jobs: RemoteJob[];
   filters: JobSearchFiltersState;
@@ -96,6 +132,8 @@ export function filterRemoteJobs(params: FilterJobParams): RemoteJob[] {
     if (!matchesTimeFilter(job.publishedAt, filters.postedTime)) return false;
     if (!matchesRegion(job.region, filters.region)) return false;
     if (!matchesSalary(job, filters.minSalary)) return false;
+    if (!matchesEmploymentType(job, filters.employmentType)) return false;
+    if (!matchesContractDuration(job, filters.contractDuration)) return false;
 
     if (filters.hideApplied) {
       const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);

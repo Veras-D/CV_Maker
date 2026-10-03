@@ -19,9 +19,18 @@ export function useJobSearchData() {
     query: '',
     postedTime: '1w',
     region: 'worldwide',
-    sources: { ashby: true, greenhouse: true, lever: true },
+    sources: {
+      ashby: true,
+      greenhouse: true,
+      lever: true,
+      smartrecruiters: true,
+      remotive: true,
+      jobicy: true
+    },
     minSalary: 0,
-    hideApplied: false
+    hideApplied: false,
+    employmentType: 'all',
+    contractDuration: 'all'
   });
 
   const loadJobs = async (force = false) => {

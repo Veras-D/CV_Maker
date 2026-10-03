@@ -40,7 +40,7 @@ export const JobSearchTab: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-400">
-            Live public jobs from Ashby, Greenhouse, and Lever boards with automated 1-click ATS tailoring.
+            Live public jobs from Ashby, Greenhouse, Lever, SmartRecruiters, Remotive, and Jobicy with contract duration matching and 1-click ATS tailoring.
           </p>
         </div>
 

@@ -15,12 +15,20 @@
 
 ---
 
-A modern, high-performance desktop application and career management hub. Features an **Applicant Tracking System (ATS) compliant pure-vector PDF engine**, a **100% local client-side RAG & semantic role-tailoring suite**, a **multi-source profile ingestion engine**, a **drag-and-drop job application Kanban tracker**, and an **obsidian dark theme** built for speed and complete data privacy.
+A modern, high-performance desktop application and career management hub. Features an **Applicant Tracking System (ATS) compliant pure-vector PDF engine**, a **live multi-source Remote Job Discovery & ATS Search engine**, a **100% local client-side RAG & semantic role-tailoring suite**, a **multi-source profile ingestion engine**, a **drag-and-drop job application Kanban tracker**, and an **obsidian dark theme** built for speed and complete data privacy.
 
 ---
 
 ## ✨ Features
 
+- 🔍 **Live Remote Job Discovery & Multi-ATS Hub**:
+  - **Multi-Source Aggregation**: Direct live integration with public APIs and ATS platforms: **AshbyHQ**, **Greenhouse**, **Lever**, **SmartRecruiters**, **Remotive**, and **Jobicy**.
+  - **Strict Remote Filtering**: Enforces 100% remote positions and excludes on-site/local roles. Supports strict Worldwide/Global (location-agnostic) as default, alongside EU, US, LATAM, and APAC regions.
+  - **Contract & Freelance Duration Engine**: Specialized filtering for short-term and contract opportunities (`1 Month / Short-term`, `1–3 Months`, `3–6 Months`, `6+ Months`, and `Part-Time`) via smart title and description regex parsing.
+  - **Kanban Cross-Referencing**: Automatically matches search results against tracked roles in your Kanban board by posting URL or company + title. Displays applied badges with dates and provides a `"Don't show already applied jobs"` toggle with dynamic badge counts.
+  - **1-Click "Apply & Tailor" Workflow**: In a single click, opens the official job listing in your browser, registers the application in Kanban under `applied`, and switches directly to the AI Tailor tab pre-filled for immediate ATS resume keyword matching and English cover letter synthesis.
+  - **Google ATS Search Shortcut**: 1-click launcher generating optimized boolean queries across ATS boards (`site:jobs.ashbyhq.com OR site:job-boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.smartrecruiters.com ...`).
+  - **Responsive Page-by-Page Pagination**: Clean 12-item paginated grid with status indicator (`Showing X to Y of Z jobs`), dynamic page numbers with ellipsis, and smooth scroll-to-top.
 - 🎯 **100% Pure Vector PDF Engine**: Crisp vector text generation (`jsPDF` + `pdf-lib`) with embedded Dublin Core metadata, zero raster artifacts, and full ATS parseability.
 - 🤖 **100% Local Semantic RAG & ATS Matcher**: Zero cloud API dependencies. Client-side BM25 inverted index, vector cosine term-frequency scoring, 2,500+ tech lexicon, and instant tailored cover letter synthesis.
 - 📥 **Multi-Source Profile Ingestion**:
@@ -41,10 +49,11 @@ A modern, high-performance desktop application and career management hub. Featur
 ### Frontend & UI
 - **Framework**: React 18 with TypeScript (Strict mode, zero `any`)
 - **Styling**: Tailwind CSS with custom Obsidian Design System
+- **Job Discovery & Aggregation**: Ashby, Greenhouse, Lever, SmartRecruiters, Remotive, and Jobicy public REST APIs
 - **PDF Generation**: jsPDF (Native Vector Drawing) + pdf-lib (Dublin Core Metadata Injection)
 - **Local AI & RAG**: Native TypeScript BM25 index & TF-IDF vector cosine matching (<5ms latency)
 - **Icons**: Lucide React
-- **Build Tool**: Vite 5
+- **Build Tool**: Vite 6
 
 ### Desktop Backend
 - **Core Engine**: Tauri v2
@@ -65,6 +74,7 @@ A modern, high-performance desktop application and career management hub. Featur
 graph TD
     Client[🖥️ React UI / Tailwind CSS]
     Context[State Management / CVContext]
+    JobDiscovery[🔍 Remote Job Discovery & ATS Hub\nAshby / Greenhouse / Lever / SmartRecruiters / Remotive / Jobicy]
     LocalRAG[🤖 100% Local RAG & ATS Engine]
     Ingestion[📥 Multi-Source Ingestion Engine\nPDF / JSON / GitHub / Web]
     Kanban[📋 Application Kanban Board]
@@ -73,6 +83,8 @@ graph TD
     DesktopBinary[📦 Standalone AppImage / DMG / MSI]
 
     Client -->|User Interactions| Context
+    Context -->|Search & Fetch Remote Postings| JobDiscovery
+    JobDiscovery -->|1-Click Apply & Tailor| Context
     Context -->|Role Requirements| LocalRAG
     Context -->|Import External Profile| Ingestion
     Context -->|Pipeline State| Kanban
@@ -83,6 +95,7 @@ graph TD
 
     style Client fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
     style Context fill:#1e293b,stroke:#0284c7,stroke-width:2px,color:#fff
+    style JobDiscovery fill:#0284c7,stroke:#38bdf8,color:#fff
     style LocalRAG fill:#0369a1,stroke:#38bdf8,color:#fff
     style Ingestion fill:#047857,stroke:#10b981,color:#fff
     style Kanban fill:#065f46,stroke:#34d399,color:#fff
@@ -99,26 +112,31 @@ graph TD
 CV_Maker/
 ├── .github/
 │   └── workflows/
-│       ├── quality-gate.yml      # Automated 5-stage Quality & Security Gate CI
-│       └── release.yml           # Multi-platform Linux/macOS/Windows release CI
+│       ├── quality-gate.yml         # Automated 5-stage Quality & Security Gate CI
+│       └── release.yml              # Multi-platform Linux/macOS/Windows release CI
 ├── src/
 │   ├── components/
-│   │   ├── AIFeatures/           # AI Role Tailor, ATS Scorecard & Multi-Source Ingestion
+│   │   ├── AIFeatures/              # AI Role Tailor, ATS Scorecard, Auto-Apply & Multi-Source Ingestion
 │   │   │   ├── AIIngestionModal.tsx
 │   │   │   ├── AIRoleTailor.tsx
 │   │   │   ├── AIRoleTailorHeader.tsx
 │   │   │   ├── ATSScoreCard.tsx
+│   │   │   ├── CoverLetterCard.tsx
+│   │   │   ├── CoverLetterToneSelector.tsx
 │   │   │   ├── IngestionSourceTabs.tsx
 │   │   │   ├── IngestionTabPanels.tsx
 │   │   │   ├── TailoredOutputView.tsx
+│   │   │   ├── tailorExportHelpers.ts
+│   │   │   ├── useAIRoleTailorState.ts
+│   │   │   ├── useTailorAutoApply.ts
 │   │   │   └── VacancyDetailsForm.tsx
-│   │   ├── Common/               # CustomSelect, CustomDatePicker, CustomCurrencyInput, ProModal
+│   │   ├── Common/                  # CustomSelect, CustomDatePicker, CustomCurrencyInput, ProModal
 │   │   │   ├── CustomCurrencyInput.tsx
 │   │   │   ├── CustomDatePicker.tsx
 │   │   │   ├── CustomSelect.tsx
 │   │   │   ├── DatePickerCalendarDropdown.tsx
 │   │   │   └── ProModal.tsx
-│   │   ├── CVEditor/             # Modularized Resume Section Editors
+│   │   ├── CVEditor/                # Modularized Resume Section Editors
 │   │   │   ├── BulletListEditor.tsx
 │   │   │   ├── CVEditor.tsx
 │   │   │   ├── EducationSection.tsx
@@ -131,10 +149,22 @@ CV_Maker/
 │   │   │   ├── ProjectsSection.tsx
 │   │   │   ├── SkillCategoryCard.tsx
 │   │   │   └── SkillsEditor.tsx
-│   │   ├── CVPreview/            # Classic ATS Resume preview template
+│   │   ├── CVPreview/               # Classic ATS Resume preview template
 │   │   │   ├── CVPreview.tsx
 │   │   │   └── ClassicTemplate.tsx
-│   │   ├── Kanban/               # Drag-and-drop application pipeline board
+│   │   ├── JobSearch/               # Live Remote Job Discovery, ATS Aggregation & Filters
+│   │   │   ├── JobCard.tsx
+│   │   │   ├── JobCardBadges.tsx
+│   │   │   ├── JobCardFooter.tsx
+│   │   │   ├── JobDetailModal.tsx
+│   │   │   ├── JobFilterControlsRow.tsx
+│   │   │   ├── JobPagination.tsx
+│   │   │   ├── JobSearchBar.tsx
+│   │   │   ├── JobSearchFilters.tsx
+│   │   │   ├── JobSearchTab.tsx
+│   │   │   ├── JobSourceCheckboxes.tsx
+│   │   │   └── useJobSearchData.ts
+│   │   ├── Kanban/                  # Drag-and-drop application pipeline board
 │   │   │   ├── ActiveColumn.tsx
 │   │   │   ├── ArchivedColumn.tsx
 │   │   │   ├── DeleteConfirmationModal.tsx
@@ -144,37 +174,41 @@ CV_Maker/
 │   │   │   ├── KanbanHeader.tsx
 │   │   │   ├── KanbanRoleFormFields.tsx
 │   │   │   └── KanbanRoleModal.tsx
-│   │   ├── Navbar.tsx            # Global navigation & PDF export triggers
-│   │   ├── NavWorkspaceTabs.tsx  # Top-level workspace tab switcher
-│   │   └── MetadataEditor.tsx    # Dublin Core PDF metadata editor
+│   │   ├── Navbar.tsx               # Global navigation & PDF export triggers
+│   │   ├── NavWorkspaceTabs.tsx     # Top-level workspace tab switcher
+│   │   └── MetadataEditor.tsx       # Dublin Core PDF metadata editor
 │   ├── context/
-│   │   ├── CVContext.tsx         # Central React Context state provider
-│   │   └── cvStateUpdaters.ts    # Pure state updaters & persistence logic
+│   │   ├── CVContext.tsx            # Central React Context state provider & 1-click apply handler
+│   │   └── cvStateUpdaters.ts       # Pure state updaters & persistence logic
 │   ├── types/
-│   │   └── cv.ts                 # TypeScript data contracts & interfaces
+│   │   ├── cv.ts                    # Resume, Kanban & Profile TypeScript contracts
+│   │   └── jobSearch.ts             # JobSearch, sources, contract duration & filter contracts
 │   ├── utils/
-│   │   ├── aiService.ts          # Baseline AI interface types
-│   │   ├── ingestionService.ts   # Multi-source scraper (Files, GitHub, Web, Text)
-│   │   ├── localAiEngine.ts      # 100% local cover letter & summary synthesis
-│   │   ├── pdfDrawSections.ts    # Modularized jsPDF canvas section drawers
-│   │   ├── pdfExport.ts          # Pure vector PDF export orchestrator
-│   │   ├── pdfMetadata.ts        # pdf-lib Dublin Core / XMP metadata injector
-│   │   ├── semanticSearch.ts     # Client-side BM25 & cosine vector search engine
-│   │   └── urlHelper.ts          # Desktop WebView safe external URL handler
-│   ├── App.tsx                   # Main layout container
-│   ├── main.tsx                  # React DOM entry point
-│   └── index.css                 # Obsidian dark theme layers & styles
+│   │   ├── aiService.ts             # Baseline AI interface types
+│   │   ├── ingestionService.ts      # Multi-source scraper (Files, GitHub, Web, Text)
+│   │   ├── jobFilterEngine.ts       # Strict remote detector, contract duration & region classifiers
+│   │   ├── jobSearchAggregators.ts  # Remotive, Jobicy & SmartRecruiters REST fetchers
+│   │   ├── jobSearchApi.ts          # Multi-ATS fetch orchestrator & Google search query builder
+│   │   ├── localAiEngine.ts         # 100% local cover letter & summary synthesis
+│   │   ├── pdfDrawSections.ts       # Modularized jsPDF canvas section drawers
+│   │   ├── pdfExport.ts             # Pure vector PDF export orchestrator
+│   │   ├── pdfMetadata.ts           # pdf-lib Dublin Core / XMP metadata injector
+│   │   ├── semanticSearch.ts        # Client-side BM25 & cosine vector search engine
+│   │   └── urlHelper.ts             # Desktop WebView safe external URL handler
+│   ├── App.tsx                      # Main layout container & tab routing
+│   ├── main.tsx                     # React DOM entry point
+│   └── index.css                    # Obsidian dark theme layers & styles
 ├── src-tauri/
 │   ├── src/
-│   │   └── main.rs               # Tauri Rust application entry point
-│   ├── Cargo.toml                # Rust dependencies & metadata
-│   └── tauri.conf.json           # Window & bundle configuration
-├── .eslintrc.json                # Strict linting, complexity & security rules
-├── .jscpd.json                   # Copy/paste clone detection configuration
-├── build_app.sh                  # Internal Docker AppImage packaging script
-├── build_desktop_docker.sh       # Zero-dependency host build script
-├── DESIGN_GUIDE.md               # Visual design system specifications
-└── package.json                  # Dependencies & automated quality scripts
+│   │   └── main.rs                  # Tauri Rust application entry point
+│   ├── Cargo.toml                   # Rust dependencies & metadata
+│   └── tauri.conf.json              # Window & bundle configuration
+├── .eslintrc.json                   # Strict linting, complexity & security rules
+├── .jscpd.json                      # Copy/paste clone detection configuration
+├── build_app.sh                     # Internal Docker AppImage packaging script
+├── build_desktop_docker.sh          # Zero-dependency host build script
+├── DESIGN_GUIDE.md                  # Visual design system specifications
+└── package.json                     # Dependencies & automated quality scripts
 ```
 
 ---
