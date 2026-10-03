@@ -57,7 +57,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative inline-block w-full text-left ${className}`}>
+    <div ref={containerRef} className={`relative inline-block w-full text-left ${isOpen ? 'z-30' : ''} ${className}`}>
       <button
         type="button"
         onClick={handleToggle}

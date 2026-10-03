@@ -7,21 +7,55 @@ import {
   ContractDuration
 } from '../../types/jobSearch';
 import { Clock, Globe, DollarSign, Briefcase, Zap } from 'lucide-react';
+import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 
 interface JobFilterControlsRowProps {
   filters: JobSearchFiltersState;
   onChangeFilters: (newFilters: JobSearchFiltersState) => void;
 }
 
-const POSTED_TIME_OPTIONS: { id: PostedTimeFilter; label: string }[] = [
-  { id: '24h', label: 'Past 24 Hours' },
-  { id: '3d', label: 'Past 3 Days' },
-  { id: '1w', label: 'Past Week' },
-  { id: '2w', label: 'Past 2 Weeks' },
-  { id: '1mo', label: 'Past Month' },
-  { id: '2mo', label: 'Past 2 Months' },
-  { id: '3mo', label: 'Past 3 Months' },
-  { id: 'any', label: 'Any Time' }
+const POSTED_TIME_OPTIONS: SelectOption[] = [
+  { value: '24h', label: 'Past 24 Hours' },
+  { value: '3d', label: 'Past 3 Days' },
+  { value: '1w', label: 'Past Week' },
+  { value: '2w', label: 'Past 2 Weeks' },
+  { value: '1mo', label: 'Past Month' },
+  { value: '2mo', label: 'Past 2 Months' },
+  { value: '3mo', label: 'Past 3 Months' },
+  { value: 'any', label: 'Any Time' }
+];
+
+const REGION_OPTIONS: SelectOption[] = [
+  { value: 'worldwide', label: '🌐 Worldwide Only (Strict)' },
+  { value: 'eu', label: '🇪🇺 Europe / EMEA' },
+  { value: 'us', label: '🇺🇸 United States' },
+  { value: 'latam', label: '🌎 Latin America' },
+  { value: 'apac', label: '🌏 Asia-Pacific' },
+  { value: 'any', label: '🌍 Any Remote Region' }
+];
+
+const EMPLOYMENT_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'all', label: 'All Employment Types' },
+  { value: 'contract', label: '⚡ Contract / Freelance' },
+  { value: 'full-time', label: 'Full-Time' },
+  { value: 'part-time', label: 'Part-Time' }
+];
+
+const CONTRACT_DURATION_OPTIONS: SelectOption[] = [
+  { value: 'all', label: 'Any Duration' },
+  { value: '1mo', label: '⚡ 1 Month / Short-term' },
+  { value: '1-3mo', label: '⚡ 1 – 3 Months' },
+  { value: '3-6mo', label: '⚡ 3 – 6 Months' },
+  { value: '6mo+', label: '⚡ 6+ Months (Long-term)' }
+];
+
+const SALARY_OPTIONS: SelectOption[] = [
+  { value: '0', label: 'Any / Not Specified' },
+  { value: '60000', label: '$60,000+ / yr' },
+  { value: '90000', label: '$90,000+ / yr' },
+  { value: '120000', label: '$120,000+ / yr' },
+  { value: '150000', label: '$150,000+ / yr' },
+  { value: '200000', label: '$200,000+ / yr' }
 ];
 
 export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
@@ -36,17 +70,11 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <Clock className="w-3 h-3 text-sky-400" />
           <span>Posted Within:</span>
         </label>
-        <select
+        <CustomSelect
+          options={POSTED_TIME_OPTIONS}
           value={filters.postedTime}
-          onChange={(e) => onChangeFilters({ ...filters, postedTime: e.target.value as PostedTimeFilter })}
-          className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer"
-        >
-          {POSTED_TIME_OPTIONS.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => onChangeFilters({ ...filters, postedTime: val as PostedTimeFilter })}
+        />
       </div>
 
       {/* Region Filter */}
@@ -55,18 +83,11 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <Globe className="w-3 h-3 text-sky-400" />
           <span>Remote Region:</span>
         </label>
-        <select
+        <CustomSelect
+          options={REGION_OPTIONS}
           value={filters.region}
-          onChange={(e) => onChangeFilters({ ...filters, region: e.target.value as JobRegionFilter })}
-          className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer"
-        >
-          <option value="worldwide">🌐 Worldwide Only (Strict)</option>
-          <option value="eu">🇪🇺 Europe / EMEA</option>
-          <option value="us">🇺🇸 United States</option>
-          <option value="latam">🌎 Latin America</option>
-          <option value="apac">🌏 Asia-Pacific</option>
-          <option value="any">🌍 Any Remote Region</option>
-        </select>
+          onChange={(val) => onChangeFilters({ ...filters, region: val as JobRegionFilter })}
+        />
       </div>
 
       {/* Employment Type */}
@@ -75,16 +96,11 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <Briefcase className="w-3 h-3 text-sky-400" />
           <span>Job Type:</span>
         </label>
-        <select
+        <CustomSelect
+          options={EMPLOYMENT_TYPE_OPTIONS}
           value={filters.employmentType}
-          onChange={(e) => onChangeFilters({ ...filters, employmentType: e.target.value as EmploymentType })}
-          className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer"
-        >
-          <option value="all">All Employment Types</option>
-          <option value="contract">⚡ Contract / Freelance</option>
-          <option value="full-time">Full-Time</option>
-          <option value="part-time">Part-Time</option>
-        </select>
+          onChange={(val) => onChangeFilters({ ...filters, employmentType: val as EmploymentType })}
+        />
       </div>
 
       {/* Contract Duration Filter */}
@@ -93,21 +109,11 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <Zap className="w-3 h-3 text-amber-400" />
           <span>Contract Duration:</span>
         </label>
-        <select
+        <CustomSelect
+          options={CONTRACT_DURATION_OPTIONS}
           value={filters.contractDuration}
-          onChange={(e) => onChangeFilters({ ...filters, contractDuration: e.target.value as ContractDuration })}
-          className={`w-full bg-slate-950 border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none cursor-pointer ${
-            filters.contractDuration !== 'all' || filters.employmentType === 'contract'
-              ? 'border-amber-700/80 text-amber-200 focus:border-amber-500'
-              : 'border-slate-800 hover:border-slate-700 text-slate-200 focus:border-sky-500'
-          }`}
-        >
-          <option value="all">Any Duration</option>
-          <option value="1mo">⚡ 1 Month / Short-term</option>
-          <option value="1-3mo">⚡ 1 – 3 Months</option>
-          <option value="3-6mo">⚡ 3 – 6 Months</option>
-          <option value="6mo+">⚡ 6+ Months (Long-term)</option>
-        </select>
+          onChange={(val) => onChangeFilters({ ...filters, contractDuration: val as ContractDuration })}
+        />
       </div>
 
       {/* Salary Filter */}
@@ -116,18 +122,11 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <DollarSign className="w-3 h-3 text-emerald-400" />
           <span>Min Salary:</span>
         </label>
-        <select
-          value={filters.minSalary}
-          onChange={(e) => onChangeFilters({ ...filters, minSalary: Number(e.target.value) })}
-          className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer"
-        >
-          <option value={0}>Any / Not Specified</option>
-          <option value={60000}>$60,000+ / yr</option>
-          <option value={90000}>$90,000+ / yr</option>
-          <option value={120000}>$120,000+ / yr</option>
-          <option value={150000}>$150,000+ / yr</option>
-          <option value={200000}>$200,000+ / yr</option>
-        </select>
+        <CustomSelect
+          options={SALARY_OPTIONS}
+          value={String(filters.minSalary)}
+          onChange={(val) => onChangeFilters({ ...filters, minSalary: Number(val) })}
+        />
       </div>
     </div>
   );
