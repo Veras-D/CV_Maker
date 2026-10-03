@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ExternalLink, X } from 'lucide-react';
 import { RemoteJob } from '../../types/jobSearch';
 import { getJobSearchSuggestions } from '../../utils/jobSuggestionEngine';
+import { openExternalUrl } from '../../utils/urlHelper';
 import { JobSearchDropdown } from './JobSearchDropdown';
 
 export interface JobSearchBarProps {
@@ -126,8 +127,12 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
               href={googleAtsUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                openExternalUrl(googleAtsUrl);
+              }}
               title="Search this query directly on Google across all Ashby, Greenhouse, and Lever boards"
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-[11px] font-medium flex items-center gap-1 transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>Google ATS</span>
               <ExternalLink className="w-3 h-3" />

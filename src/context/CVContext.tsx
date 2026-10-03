@@ -16,6 +16,7 @@ import {
 import { IngestionResult, mergeIngestionIntoCVData } from '../utils/ingestionService';
 import { bootstrapKnowledgeGraphFromCV } from '../utils/knowledgeGraph';
 import * as updaters from './cvStateUpdaters';
+import { openExternalUrl } from '../utils/urlHelper';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -177,7 +178,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }));
 
     if (job.roleUrl) {
-      window.open(job.roleUrl, '_blank', 'noopener,noreferrer');
+      openExternalUrl(job.roleUrl);
     }
 
     setPendingTailorJob(job);

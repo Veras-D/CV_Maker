@@ -2,6 +2,7 @@ import React from 'react';
 import { RemoteJob } from '../../types/jobSearch';
 import { KanbanRole } from '../../types/cv';
 import { formatRelativeTime, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
+import { openExternalUrl } from '../../utils/urlHelper';
 import { X, ExternalLink, Sparkles, CheckCircle2, Globe, DollarSign, Building } from 'lucide-react';
 
 export interface JobDetailModalProps {
@@ -103,7 +104,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 href={job.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openExternalUrl(job.url);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <span>Direct Listing</span>
                 <ExternalLink className="w-3.5 h-3.5" />

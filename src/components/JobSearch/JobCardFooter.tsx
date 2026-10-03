@@ -1,6 +1,7 @@
 import React from 'react';
 import { RemoteJob } from '../../types/jobSearch';
 import { ExternalLink, Sparkles } from 'lucide-react';
+import { openExternalUrl } from '../../utils/urlHelper';
 
 interface JobCardFooterProps {
   job: RemoteJob;
@@ -31,8 +32,12 @@ export const JobCardFooter: React.FC<JobCardFooterProps> = ({
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
-            title="Open job link in new tab"
+            onClick={(e) => {
+              e.preventDefault();
+              openExternalUrl(job.url);
+            }}
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            title="Open job link in browser"
           >
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
