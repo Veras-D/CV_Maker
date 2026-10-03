@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Search, Plus, Check, Loader2, Sparkles, Building2, RefreshCw } from 'lucide-react';
+import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { 
   TrackedCompany, 
   AtsType, 
@@ -25,6 +26,14 @@ const ATS_BADGE_COLORS: Record<AtsType, string> = {
   lever: 'bg-amber-950/80 text-amber-300 border-amber-800/60',
   smartrecruiters: 'bg-blue-950/80 text-blue-300 border-blue-800/60'
 };
+
+const ATS_OPTIONS: SelectOption[] = [
+  { value: 'auto', label: 'Auto-Detect' },
+  { value: 'ashby', label: 'Ashby' },
+  { value: 'greenhouse', label: 'Greenhouse' },
+  { value: 'lever', label: 'Lever' },
+  { value: 'smartrecruiters', label: 'SmartRecruiters' }
+];
 
 const CompanyModalHeader: React.FC<{
   totalEnabled: number;
@@ -130,23 +139,19 @@ const AddCompanyForm: React.FC<{
         value={newSlug}
         onChange={(e) => onSlugChange(e.target.value)}
         placeholder="Add custom company slug (e.g. field-ai, databricks)..."
-        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 h-[34px]"
       />
-      <select
-        value={selectedAts}
-        onChange={(e) => onAtsChange(e.target.value as AtsType | 'auto')}
-        className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500"
-      >
-        <option value="auto">Auto-Detect</option>
-        <option value="ashby">Ashby</option>
-        <option value="greenhouse">Greenhouse</option>
-        <option value="lever">Lever</option>
-        <option value="smartrecruiters">SmartRecruiters</option>
-      </select>
+      <div className="w-40 shrink-0">
+        <CustomSelect
+          options={ATS_OPTIONS}
+          value={selectedAts}
+          onChange={(val) => onAtsChange(val as AtsType | 'auto')}
+        />
+      </div>
       <button
         type="submit"
         disabled={isAdding || !newSlug.trim()}
-        className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
+        className="px-3 py-1.5 h-[34px] rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer shrink-0"
       >
         {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
         <span>Add</span>
