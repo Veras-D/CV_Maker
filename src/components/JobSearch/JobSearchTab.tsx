@@ -23,7 +23,8 @@ export const JobSearchTab: React.FC = () => {
     handleApplyAndTailor,
     loadJobs,
     appliedCount,
-    kanbanRoles
+    kanbanRoles,
+    allJobs
   } = useJobSearchData();
 
   return (
@@ -60,6 +61,7 @@ export const JobSearchTab: React.FC = () => {
         filters={filters}
         onChangeFilters={handleUpdateFilters}
         totalFound={filteredJobs.length}
+        jobs={allJobs}
         appliedCount={appliedCount}
         isLoading={isLoading}
       />

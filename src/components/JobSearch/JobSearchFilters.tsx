@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobSearchFiltersState, JobSource } from '../../types/jobSearch';
+import { JobSearchFiltersState, JobSource, RemoteJob } from '../../types/jobSearch';
 import { buildGoogleAtsSearchUrl } from '../../utils/jobSearchApi';
 import { JobSearchBar } from './JobSearchBar';
 import { JobFilterControlsRow } from './JobFilterControlsRow';
@@ -9,6 +9,7 @@ export interface JobSearchFiltersProps {
   filters: JobSearchFiltersState;
   onChangeFilters: (newFilters: JobSearchFiltersState) => void;
   totalFound: number;
+  jobs?: RemoteJob[];
   appliedCount?: number;
   isLoading?: boolean;
 }
@@ -17,6 +18,7 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
   filters,
   onChangeFilters,
   totalFound,
+  jobs,
   appliedCount,
   isLoading
 }) => {
@@ -38,6 +40,7 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
         query={filters.query}
         onQueryChange={(q) => onChangeFilters({ ...filters, query: q })}
         googleAtsUrl={googleAtsUrl}
+        jobs={jobs}
       />
 
       <JobFilterControlsRow

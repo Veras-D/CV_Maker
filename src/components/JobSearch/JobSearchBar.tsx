@@ -1,35 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ExternalLink, X } from 'lucide-react';
+import { RemoteJob } from '../../types/jobSearch';
+import { getJobSearchSuggestions } from '../../utils/jobSuggestionEngine';
+import { JobSearchDropdown } from './JobSearchDropdown';
 
 export interface JobSearchBarProps {
   query: string;
   onQueryChange: (q: string) => void;
   googleAtsUrl: string;
+  jobs?: RemoteJob[];
 }
-
-const COMMON_ROLE_SUGGESTIONS = [
-  'Forward Deployed Engineer',
-  'Software Engineer',
-  'QA Automation Engineer',
-  'Frontend Engineer',
-  'Backend Engineer',
-  'Full-Stack Developer',
-  'DevOps Engineer',
-  'Site Reliability Engineer',
-  'Data Engineer',
-  'Machine Learning Engineer',
-  'Product Manager'
-];
 
 const PAST_SEARCHES_KEY = 'cv_maker_past_job_searches_v1';
 
 export const JobSearchBar: React.FC<JobSearchBarProps> = ({
   query,
   onQueryChange,
-  googleAtsUrl
+  googleAtsUrl,
+  jobs = []
 }) => {
   const [pastSearches, setPastSearches] = useState<string[]>([]);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
     try {
@@ -39,6 +31,12 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
       // Ignore localStorage parse error
     }
   }, []);
+
+  const suggestions = useMemo(() => getJobSearchSuggestions(query, jobs), [query, jobs]);
+
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [query]);
 
   const saveSearchTerm = (term: string) => {
     const trimmed = term.trim();
@@ -63,22 +61,40 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
     }
   };
 
-  const handleQueryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      saveSearchTerm(query);
-      setIsInputFocused(false);
-    }
-  };
-
   const handleSelectSuggestion = (term: string) => {
     saveSearchTerm(term);
     onQueryChange(term);
     setIsInputFocused(false);
   };
 
-  const filteredSuggestions = COMMON_ROLE_SUGGESTIONS.filter(s => 
-    query && s.toLowerCase().includes(query.toLowerCase()) && s.toLowerCase() !== query.toLowerCase()
-  ).slice(0, 5);
+  const handleKeyDownNavigation = (key: string): boolean => {
+    if (key === 'ArrowDown' && suggestions.length > 0) {
+      setSelectedIndex(prev => (prev + 1) % suggestions.length);
+      return true;
+    }
+    if (key === 'ArrowUp' && suggestions.length > 0) {
+      setSelectedIndex(prev => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+      return true;
+    }
+    return false;
+  };
+
+  const handleQueryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (handleKeyDownNavigation(e.key)) {
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        handleSelectSuggestion(suggestions[selectedIndex].label);
+      } else {
+        saveSearchTerm(query);
+        setIsInputFocused(false);
+      }
+    } else if (e.key === 'Escape') {
+      setIsInputFocused(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -92,7 +108,7 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
             onKeyDown={handleQueryKeyDown}
-            placeholder="Search role title (e.g. Forward Deployed Engineer, QA Tester, Python)..."
+            placeholder="Search role title, company, or tech stack (e.g. Distributed, Stripe, Go, React)..."
             className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-xl pl-10 pr-28 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner"
           />
           {query && (
@@ -116,19 +132,14 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
           </a>
         </div>
 
-        {isInputFocused && filteredSuggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-30 overflow-hidden divide-y divide-slate-800/60 animate-in fade-in">
-            {filteredSuggestions.map(sug => (
-              <div
-                key={sug}
-                onMouseDown={() => handleSelectSuggestion(sug)}
-                className="px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer flex items-center justify-between"
-              >
-                <span>{sug}</span>
-                <span className="text-[10px] text-slate-500">Suggestion</span>
-              </div>
-            ))}
-          </div>
+        {isInputFocused && suggestions.length > 0 && (
+          <JobSearchDropdown
+            suggestions={suggestions}
+            query={query}
+            selectedIndex={selectedIndex}
+            onSelectSuggestion={handleSelectSuggestion}
+            onHoverIndex={setSelectedIndex}
+          />
         )}
       </div>
 

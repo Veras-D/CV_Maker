@@ -160,6 +160,7 @@ CV_Maker/
 │   │   │   ├── JobFilterControlsRow.tsx
 │   │   │   ├── JobPagination.tsx
 │   │   │   ├── JobSearchBar.tsx
+│   │   │   ├── JobSearchDropdown.tsx
 │   │   │   ├── JobSearchFilters.tsx
 │   │   │   ├── JobSearchTab.tsx
 │   │   │   ├── JobSourceCheckboxes.tsx
@@ -189,6 +190,7 @@ CV_Maker/
 │   │   ├── jobFilterEngine.ts       # Strict remote detector, contract duration & region classifiers
 │   │   ├── jobSearchAggregators.ts  # Remotive, Jobicy & SmartRecruiters REST fetchers
 │   │   ├── jobSearchApi.ts          # Multi-ATS fetch orchestrator & Google search query builder
+│   │   ├── jobSuggestionEngine.ts   # Hybrid role, company & tech taxonomy search suggestion engine
 │   │   ├── localAiEngine.ts         # 100% local cover letter & summary synthesis
 │   │   ├── pdfDrawSections.ts       # Modularized jsPDF canvas section drawers
 │   │   ├── pdfExport.ts             # Pure vector PDF export orchestrator
