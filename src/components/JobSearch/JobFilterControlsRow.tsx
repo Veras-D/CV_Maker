@@ -13,6 +13,17 @@ interface JobFilterControlsRowProps {
   onChangeFilters: (newFilters: JobSearchFiltersState) => void;
 }
 
+const POSTED_TIME_OPTIONS: { id: PostedTimeFilter; label: string }[] = [
+  { id: '24h', label: '24h' },
+  { id: '3d', label: '3d' },
+  { id: '1w', label: '1 Wk' },
+  { id: '2w', label: '2 Wk' },
+  { id: '1mo', label: '1 Mo' },
+  { id: '2mo', label: '2 Mo' },
+  { id: '3mo', label: '3 Mo' },
+  { id: 'any', label: 'Any' }
+];
+
 export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
   filters,
   onChangeFilters
@@ -26,18 +37,18 @@ export const JobFilterControlsRow: React.FC<JobFilterControlsRowProps> = ({
           <span>Posted Within:</span>
         </label>
         <div className="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-          {(['1d', '1w', '1mo', 'any'] as PostedTimeFilter[]).map(t => (
+          {POSTED_TIME_OPTIONS.map(t => (
             <button
-              key={t}
+              key={t.id}
               type="button"
-              onClick={() => onChangeFilters({ ...filters, postedTime: t })}
+              onClick={() => onChangeFilters({ ...filters, postedTime: t.id })}
               className={`py-1 text-[11px] rounded text-center transition-all cursor-pointer font-medium ${
-                filters.postedTime === t
+                filters.postedTime === t.id
                   ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {t === '1d' ? '24h' : t === '1w' ? '1 Wk' : t === '1mo' ? '1 Mo' : 'Any'}
+              {t.label}
             </button>
           ))}
         </div>

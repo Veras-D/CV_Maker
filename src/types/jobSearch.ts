@@ -1,6 +1,6 @@
 export type JobSource = 'ashby' | 'greenhouse' | 'lever' | 'smartrecruiters' | 'remotive' | 'jobicy';
 
-export type PostedTimeFilter = '1d' | '1w' | '1mo' | 'any';
+export type PostedTimeFilter = '24h' | '3d' | '1w' | '2w' | '1mo' | '2mo' | '3mo' | 'any';
 
 export type JobRegionFilter = 'worldwide' | 'eu' | 'us' | 'latam' | 'apac' | 'any';
 

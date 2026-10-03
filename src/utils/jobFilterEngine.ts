@@ -71,17 +71,25 @@ export function isJobAlreadyApplied(
   };
 }
 
+const TIME_FILTER_HOURS: Record<string, number> = {
+  '24h': 24,
+  '3d': 24 * 3,
+  '1w': 24 * 7,
+  '2w': 24 * 14,
+  '1mo': 24 * 30,
+  '2mo': 24 * 60,
+  '3mo': 24 * 90
+};
+
 function matchesTimeFilter(publishedAt: string, filter: JobSearchFiltersState['postedTime']): boolean {
-  if (filter === 'any') return true;
+  const maxHours = TIME_FILTER_HOURS[filter];
+  if (!maxHours) return true;
+
   const pubTime = new Date(publishedAt).getTime();
   if (isNaN(pubTime)) return true;
-  const now = Date.now();
-  const diffHours = (now - pubTime) / (1000 * 60 * 60);
 
-  if (filter === '1d') return diffHours <= 24;
-  if (filter === '1w') return diffHours <= 24 * 7;
-  if (filter === '1mo') return diffHours <= 24 * 30;
-  return true;
+  const diffHours = (Date.now() - pubTime) / (1000 * 60 * 60);
+  return diffHours <= maxHours;
 }
 
 function matchesRegion(jobRegion: RemoteJob['region'], filter: JobSearchFiltersState['region']): boolean {
