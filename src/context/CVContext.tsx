@@ -14,6 +14,7 @@ import {
   createEmptyCVData
 } from '../types/cv';
 import { IngestionResult, mergeIngestionIntoCVData } from '../utils/ingestionService';
+import { bootstrapKnowledgeGraphFromCV } from '../utils/knowledgeGraph';
 import * as updaters from './cvStateUpdaters';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
@@ -157,6 +158,7 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cvData));
+    bootstrapKnowledgeGraphFromCV(cvData);
   }, [cvData]);
 
   const activePreset = cvData.presets.find(p => p.id === cvData.activePresetId) || cvData.presets[0];

@@ -1,5 +1,11 @@
 import { CVData, WorkExperience, SkillCategory, ProjectItem, WorkBullet } from '../types/cv';
-import { DOMAIN_TAXONOMY, getDomainsForSkill } from './skillOntology';
+import { getDomainsForSkill } from './skillOntology';
+import {
+  getDynamicDomains,
+  classifyCategory,
+  bootstrapKnowledgeGraphFromCV,
+  learnFromJobPosting
+} from './knowledgeGraph';
 import {
   tokenizeClean,
   tokenizeRaw,
@@ -33,13 +39,14 @@ function calculateDomainScores(
   const domainScores: Record<string, number> = {};
   const foundKeywords = new Set<string>();
   const proximityMap = buildProximityMap(jdLower);
+  const activeDomains = getDynamicDomains();
 
   if (/full[- ]?stack/i.test(titleLower)) {
     domainScores.frontend = (domainScores.frontend || 0) + 15;
     domainScores.backend = (domainScores.backend || 0) + 15;
   }
 
-  Object.entries(DOMAIN_TAXONOMY).forEach(([domainId, domainDef]) => {
+  Object.entries(activeDomains).forEach(([domainId, domainDef]) => {
     let score = domainScores[domainId] || 0;
     domainDef.keywords.forEach(kw => {
       const inTitle = kw.includes(' ') ? titleLower.includes(kw) : titleTokens.has(kw);
@@ -95,30 +102,6 @@ export function analyzeJobDescription(
 }
 
 /**
- * Classify a skill category into universal or domain-specific bucket
- */
-function classifyCategory(catName: string, skills: { name: string }[]): string {
-  const lower = catName.toLowerCase();
-  if (/language|jazyk|programov/i.test(lower)) return 'universal_languages';
-  if (/developer tool|nástroj|practice|general tool/i.test(lower)) return 'universal_tools';
-  if (/test|qa|quality|automation|testov/i.test(lower)) return 'testing';
-  if (/front[- ]?end|ui|ux|web design|styling/i.test(lower)) return 'frontend';
-  if (/back[- ]?end|database|databáz|server|api|sql/i.test(lower)) return 'backend';
-  if (/devops|cloud|infrastruct|sysadmin/i.test(lower)) return 'devops';
-  if (/mobile|mobiln|ios|android/i.test(lower)) return 'mobile';
-  if (/data|ai|machine learning/i.test(lower)) return 'ai_data';
-
-  const counts: Record<string, number> = {};
-  skills.forEach(s => {
-    getDomainsForSkill(s.name).forEach(d => {
-      counts[d] = (counts[d] || 0) + 1;
-    });
-  });
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return top ? top[0] : 'other';
-}
-
-/**
  * Score and rank experience bullets based on keywords, domains, and clean similarity
  */
 function scoreBulletRelevance(
@@ -130,6 +113,7 @@ function scoreBulletRelevance(
   const bText = `${bullet.text.en || ''} ${bullet.text.cs || ''}`.toLowerCase();
   const bTF = getTermFrequency(tokenizeClean(bText));
   const cosineSim = calculateCosineSimilarity(jdTF, bTF);
+  const activeDomains = getDynamicDomains();
 
   let keywordBonus = 0;
   matchedKeywords.forEach(kw => {
@@ -142,7 +126,7 @@ function scoreBulletRelevance(
   if (hasTagMatch) domainBonus += 0.3;
 
   matchedTags.forEach(tag => {
-    const domainDef = DOMAIN_TAXONOMY[tag];
+    const domainDef = activeDomains[tag];
     if (domainDef && domainDef.keywords.some(k => bText.includes(k))) {
       domainBonus += 0.2;
     }
@@ -314,10 +298,17 @@ export function performHybridSemanticMatch(params: {
   cvData: CVData;
 }): ATSMatchResult {
   const { jobTitle, companyName, jobDescription, cvData } = params;
+
+  // Bootstrap knowledge graph from candidate's CV data
+  bootstrapKnowledgeGraphFromCV(cvData);
+
   const fullJD = `${jobTitle} ${companyName} ${jobDescription}`;
   const jdTokens = tokenizeClean(fullJD);
   const jdTF = getTermFrequency(jdTokens);
   const { matchedTags, keywords: matchedKeywords } = analyzeJobDescription(jobDescription, jobTitle);
+
+  // Learn new terms from the job posting
+  learnFromJobPosting(jobTitle, jobDescription, matchedTags);
 
   const rankedExperiences = rankExperiences(cvData.experiences, jdTF, matchedKeywords, matchedTags);
   const rankedSkills = rankSkills(cvData.skillCategories, matchedKeywords, matchedTags);
