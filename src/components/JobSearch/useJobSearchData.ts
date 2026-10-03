@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCV } from '../../context/CVContext';
 import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
 import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
@@ -9,14 +9,29 @@ export const PAGE_SIZE = 12;
 let lastFetchTimestamp = 0;
 const FRESHNESS_THRESHOLD_MS = 5 * 60 * 1000;
 
+function hasWorldwideJobs(jobs: RemoteJob[] | null): boolean {
+  return Boolean(jobs?.some(j => j.region === 'worldwide'));
+}
+
+function isCacheSufficient(jobs: RemoteJob[] | null, lastTimestamp: number): boolean {
+  if (!jobs || jobs.length < 20) return false;
+  const isFresh = lastTimestamp > 0 && Date.now() - lastTimestamp < FRESHNESS_THRESHOLD_MS;
+  return isFresh && hasWorldwideJobs(jobs);
+}
+
 export function useJobSearchData() {
   const { cvData, applyAndTailorJob } = useCV();
 
   const [allJobs, setAllJobs] = useState<RemoteJob[]>(() => getCachedJobs() || []);
-  const [isLoading, setIsLoading] = useState(() => !getCachedJobs() || getCachedJobs()?.length === 0);
+  const [isLoading, setIsLoading] = useState(() => !hasWorldwideJobs(getCachedJobs()));
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState<RemoteJob | null>(null);
+
+  const allJobsRef = useRef(allJobs);
+  useEffect(() => {
+    allJobsRef.current = allJobs;
+  }, [allJobs]);
 
   const [filters, setFilters] = useState<JobSearchFiltersState>({
     query: '',
@@ -37,29 +52,34 @@ export function useJobSearchData() {
   });
 
   const loadJobs = useCallback(async (force = false) => {
-    const isStale = Date.now() - lastFetchTimestamp > FRESHNESS_THRESHOLD_MS;
+    const cached = getCachedJobs();
 
-    if (!force) {
-      const cached = getCachedJobs();
-      if (cached && cached.length > 0) {
-        setAllJobs(cached);
-        if (!isStale) {
-          setIsLoading(false);
-          return;
-        }
-      }
+    // Only skip fetching if we already have valid cached data WITH worldwide jobs AND it was fetched fresh in this session
+    if (!force && isCacheSufficient(cached, lastFetchTimestamp)) {
+      setAllJobs(cached!);
+      setIsLoading(false);
+      return;
+    }
+
+    // Immediately surface cached jobs if present so user sees instant content while refreshing
+    if (cached?.length) {
+      setAllJobs(cached);
     }
 
     if (force) {
       setIsRefreshing(true);
-    } else {
+    } else if (!hasWorldwideJobs(allJobsRef.current)) {
       setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
     }
 
     try {
       const data = await fetchAllRemoteJobs(true);
-      setAllJobs(data);
-      lastFetchTimestamp = Date.now();
+      if (data.length > 0) {
+        setAllJobs(data);
+        lastFetchTimestamp = Date.now();
+      }
     } catch (err) {
       console.error("Failed to fetch jobs:", err);
     } finally {

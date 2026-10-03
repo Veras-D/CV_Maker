@@ -17,6 +17,7 @@ import { IngestionResult, mergeIngestionIntoCVData } from '../utils/ingestionSer
 import { bootstrapKnowledgeGraphFromCV } from '../utils/knowledgeGraph';
 import * as updaters from './cvStateUpdaters';
 import { openExternalUrl } from '../utils/urlHelper';
+import { fetchAllRemoteJobs, getCachedJobs } from '../utils/jobSearchApi';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -191,6 +192,16 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cvData));
     bootstrapKnowledgeGraphFromCV(cvData);
   }, [cvData]);
+
+  useEffect(() => {
+    // Silently pre-fetch remote jobs in the background on startup
+    // so jobs are immediately available when user navigates to the Job Discovery tab
+    const cached = getCachedJobs();
+    const hasWorldwide = cached && cached.some(j => j.region === 'worldwide');
+    if (!cached || !hasWorldwide) {
+      fetchAllRemoteJobs(false).catch(() => {});
+    }
+  }, []);
 
   const activePreset = cvData.presets.find(p => p.id === cvData.activePresetId) || cvData.presets[0];
   const activeLanguage = activePreset?.activeLanguage || 'en';

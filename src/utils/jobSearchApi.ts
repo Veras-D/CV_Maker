@@ -8,7 +8,7 @@ import {
 } from './jobSearchAggregators';
 import { getSavedTrackedCompanies, TrackedCompany } from './companyWatchlistService';
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v9';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v10';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
@@ -22,7 +22,8 @@ function cleanupOldCaches(): void {
     'cv_maker_cached_remote_jobs_v5',
     'cv_maker_cached_remote_jobs_v6',
     'cv_maker_cached_remote_jobs_v7',
-    'cv_maker_cached_remote_jobs_v8'
+    'cv_maker_cached_remote_jobs_v8',
+    'cv_maker_cached_remote_jobs_v9'
   ];
   for (const key of obsoleteKeys) {
     try {
@@ -81,7 +82,12 @@ function saveJobsToCache(jobs: RemoteJob[]): void {
   if (!Array.isArray(jobs) || jobs.length === 0) return;
   memoryCachedJobs = { timestamp: Date.now(), jobs };
   cleanupOldCaches();
-  const compactJobs = jobs.slice(0, 500).map(toCompactJob);
+
+  // Prioritize worldwide roles so cache slice is never starved of worldwide jobs
+  const worldwide = jobs.filter(j => j.region === 'worldwide');
+  const others = jobs.filter(j => j.region !== 'worldwide');
+  const prioritized = [...worldwide, ...others];
+  const compactJobs = prioritized.slice(0, 500).map(toCompactJob);
   persistToStorage(compactJobs);
 }
 
@@ -305,20 +311,34 @@ function fetchCompanyJobs(company: TrackedCompany): Promise<RemoteJob[]> {
   }
 }
 
+async function batchPromises<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency = 6
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = [];
+  for (let i = 0; i < tasks.length; i += concurrency) {
+    const chunk = tasks.slice(i, i + concurrency);
+    const chunkResults = await Promise.allSettled(chunk.map(fn => fn()));
+    results.push(...chunkResults);
+  }
+  return results;
+}
+
 export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJob[]> {
   if (!forceRefresh) {
     const cached = getCachedJobs();
-    if (cached && cached.length >= 20) return cached;
+    const hasWorldwide = cached && cached.some(j => j.region === 'worldwide');
+    if (cached && cached.length >= 20 && hasWorldwide) return cached;
   }
 
   const enabledCompanies = getSavedTrackedCompanies().filter(c => c.enabled);
-  const promises: Promise<RemoteJob[]>[] = [
-    ...enabledCompanies.map(c => fetchCompanyJobs(c)),
-    fetchRemotiveJobs(),
-    fetchJobicyJobs()
+  const tasks: (() => Promise<RemoteJob[]>)[] = [
+    () => fetchRemotiveJobs(),
+    () => fetchJobicyJobs(),
+    ...enabledCompanies.map(c => () => fetchCompanyJobs(c))
   ];
 
-  const results = await Promise.allSettled(promises);
+  const results = await batchPromises(tasks, 6);
   const allJobs: RemoteJob[] = [];
 
   for (const r of results) {
