@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, FileText, CheckCircle2 } from 'lucide-react';
 import { ClassicTemplate } from '../CVPreview/ClassicTemplate';
 import { LocalTailorOutput } from '../../utils/localAiEngine';
 import { CVData, LanguageCode, RolePreset } from '../../types/cv';
 import { ATSScoreCard } from './ATSScoreCard';
+import { CoverLetterCard } from './CoverLetterCard';
+import { 
+  CoverLetterTone, 
+  synthesizeCoverLetterProse, 
+  getEstimatedReadingTime 
+} from '../../utils/coverLetterSynthesizer';
 
 export interface TailoredOutputViewProps {
   tailoredOutput: LocalTailorOutput | null;
@@ -21,6 +27,38 @@ export interface TailoredOutputViewProps {
   onDownloadPDF: () => void;
 }
 
+interface RegenerateOptions {
+  tailoredOutput: LocalTailorOutput;
+  cvData: CVData;
+  activeLanguage: string;
+  tone: CoverLetterTone;
+  seed: number;
+}
+
+function regenerateLetter(opts: RegenerateOptions): string {
+  const { tailoredOutput, cvData, activeLanguage, tone, seed } = opts;
+  const experiences = tailoredOutput.matchResult.rankedExperiences
+    .filter(e => e.enabled)
+    .map(e => ({
+      role: e.roleTitle[activeLanguage] || e.roleTitle.en || '',
+      company: e.company || '',
+      bullets: e.bullets.filter(b => b.enabled).map(b => b.text[activeLanguage] || b.text.en || '').filter(Boolean)
+    }))
+    .filter(e => e.bullets.length > 0 || e.company);
+
+  return synthesizeCoverLetterProse({
+    candidateName: cvData.profile.name || 'Candidate',
+    companyName: tailoredOutput.coverLetter.companyName || '',
+    jobTitle: tailoredOutput.coverLetter.jobTitle || '',
+    matchedTags: tailoredOutput.matchResult.matchedTags,
+    matchedKeywords: tailoredOutput.matchResult.matchedKeywords,
+    experiences,
+    tone,
+    seed,
+    language: activeLanguage as LanguageCode
+  });
+}
+
 export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
   tailoredOutput,
   cvData,
@@ -36,6 +74,38 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
   onDownloadCoverLetter,
   onDownloadPDF
 }) => {
+  const [currentTone, setCurrentTone] = useState<CoverLetterTone>('professional');
+  const [variationSeed, setVariationSeed] = useState(0);
+
+  const handleSelectTone = (tone: CoverLetterTone) => {
+    setCurrentTone(tone);
+    if (!tailoredOutput) return;
+    const newProse = regenerateLetter({
+      tailoredOutput,
+      cvData,
+      activeLanguage,
+      tone,
+      seed: variationSeed
+    });
+    onCoverLetterChange(newProse);
+  };
+
+  const handleShuffleVariation = () => {
+    const nextSeed = variationSeed + 1;
+    setVariationSeed(nextSeed);
+    if (!tailoredOutput) return;
+    const newProse = regenerateLetter({
+      tailoredOutput,
+      cvData,
+      activeLanguage,
+      tone: currentTone,
+      seed: nextSeed
+    });
+    onCoverLetterChange(newProse);
+  };
+
+  const { words, minutes } = getEstimatedReadingTime(coverLetterEditable);
+
   if (tailoredOutput) {
     return (
       <div className="space-y-4">
@@ -102,20 +172,16 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
           />
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-slate-200">
-              Tailored Cover Letter ({activeLanguage.toUpperCase()})
-            </h4>
-            <span className="text-[11px] text-slate-400">Editable preview</span>
-          </div>
-          <textarea
-            rows={8}
-            value={coverLetterEditable}
-            onChange={(e) => onCoverLetterChange(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-lg p-3.5 text-xs text-slate-100 placeholder:text-slate-500 leading-relaxed font-sans focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner resize-y"
-          />
-        </div>
+        <CoverLetterCard
+          activeLanguage={activeLanguage}
+          coverLetterEditable={coverLetterEditable}
+          currentTone={currentTone}
+          onCoverLetterChange={onCoverLetterChange}
+          onSelectTone={handleSelectTone}
+          onShuffleVariation={handleShuffleVariation}
+          words={words}
+          minutes={minutes}
+        />
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-x-auto">
           <h4 className="text-xs font-bold text-slate-300 mb-2">ATS Tailored Resume Preview</h4>

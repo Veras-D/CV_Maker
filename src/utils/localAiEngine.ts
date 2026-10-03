@@ -10,16 +10,17 @@ export interface LocalTailorOutput {
   updatedData: CVData;
 }
 
-/**
- * Format bullet list cleanly for cover letters
- */
-function formatBulletList(bullets: string[]): string {
-  if (bullets.length === 0) return '';
-  return bullets.map(b => `• ${b}`).join('\n');
-}
+import { 
+  synthesizeCoverLetter, 
+  CoverLetterTone, 
+  SynthesizerExperience 
+} from './coverLetterSynthesizer';
+
+export type { CoverLetterTone, SynthesizerExperience };
+export { synthesizeCoverLetter };
 
 /**
- * Synthesize a professional, ATS-optimized Cover Letter locally in English
+ * Synthesize a professional, ATS-optimized Cover Letter locally with dynamic narrative prose
  */
 export function generateLocalCoverLetter(params: {
   candidateName: string;
@@ -29,35 +30,24 @@ export function generateLocalCoverLetter(params: {
   matchedKeywords: string[];
   topBullets: string[];
   language?: LanguageCode;
+  tone?: CoverLetterTone;
+  seed?: number;
 }): Record<string, string> {
-  const { candidateName, companyName, jobTitle, matchedTags, matchedKeywords, topBullets } = params;
-  const name = candidateName.trim() || 'Candidate';
-  const company = companyName.trim() || 'Hiring Team';
-  const role = jobTitle.trim() || 'Software Engineer';
-  
-  const domainText = matchedTags.slice(0, 2).map(getDomainLabel).join(' & ') || 'Software Engineering';
-  const skillHighlight = matchedKeywords.slice(0, 5).map(formatTechnologyName).join(', ') || 'modern software engineering practices';
-  const validBullets = topBullets.filter(Boolean).slice(0, 2);
-
-  const impactSection = validBullets.length > 0
-    ? `Key achievements and technical contributions relevant to this role:\n${formatBulletList(validBullets)}`
-    : `Throughout my career, I have specialized in building resilient, high-performance applications and scalable distributed systems using modern industry standards.`;
-
-  const letterText = `Dear Hiring Team at ${company},
-
-I am writing to express my strong interest in the ${role} position. With comprehensive expertise in ${domainText}—specifically leveraging ${skillHighlight}—I am confident in my ability to immediately deliver scalable, high-quality solutions for your team.
-
-${impactSection}
-
-I am deeply drawn to ${company}'s technical vision and would welcome the opportunity to discuss how my engineering background, proactive mindset, and architectural discipline can contribute to your upcoming product milestones.
-
-Sincerely,
-${name}`;
-
-  return {
-    en: letterText,
-    [params.language || 'en']: letterText
-  };
+  return synthesizeCoverLetter({
+    candidateName: params.candidateName,
+    companyName: params.companyName,
+    jobTitle: params.jobTitle,
+    matchedTags: params.matchedTags,
+    matchedKeywords: params.matchedKeywords,
+    experiences: [{
+      role: params.jobTitle,
+      company: params.companyName,
+      bullets: params.topBullets
+    }],
+    tone: params.tone || 'professional',
+    seed: params.seed ?? 0,
+    language: params.language
+  });
 }
 
 /**
@@ -170,22 +160,27 @@ export function runLocalAITailor(params: {
     cvData
   });
 
-  // Extract top matching bullets for cover letter synthesis
-  const topBullets = matchResult.rankedExperiences
+  // Extract rich experiences for narrative synthesis
+  const richExperiences: SynthesizerExperience[] = matchResult.rankedExperiences
     .filter(e => e.enabled)
-    .flatMap(e => e.bullets.filter(b => b.enabled).map(b => b.text[language] || b.text.en || ''))
-    .filter(Boolean)
-    .slice(0, 3);
+    .map(e => ({
+      role: e.roleTitle[language] || e.roleTitle.en || '',
+      company: e.company || '',
+      bullets: e.bullets.filter(b => b.enabled).map(b => b.text[language] || b.text.en || '').filter(Boolean)
+    }))
+    .filter(e => e.bullets.length > 0 || e.company);
 
   // 2. Stage 3: Local Synthesis
   const candidateName = cvData.profile.name || 'Candidate';
-  const coverLetters = generateLocalCoverLetter({
+  const coverLetters = synthesizeCoverLetter({
     candidateName,
     companyName,
     jobTitle,
     matchedTags: matchResult.matchedTags,
     matchedKeywords: matchResult.matchedKeywords,
-    topBullets,
+    experiences: richExperiences,
+    tone: 'professional',
+    seed: 0,
     language
   });
 
