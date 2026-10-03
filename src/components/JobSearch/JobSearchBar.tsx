@@ -109,27 +109,30 @@ export const JobSearchBar: React.FC<JobSearchBarProps> = ({
             onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
             onKeyDown={handleQueryKeyDown}
             placeholder="Search role title, company, or tech stack (e.g. Distributed, Stripe, Go, React)..."
-            className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-xl pl-10 pr-28 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner"
+            className="w-full bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-sky-500 rounded-xl pl-10 pr-36 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 transition-colors shadow-inner"
           />
-          {query && (
-            <button
-              type="button"
-              onClick={() => onQueryChange('')}
-              className="absolute right-24 text-slate-400 hover:text-slate-200 p-1"
+          <div className="absolute right-2 flex items-center gap-2.5">
+            {query && (
+              <button
+                type="button"
+                onClick={() => onQueryChange('')}
+                className="text-slate-400 hover:text-slate-200 p-1 rounded hover:bg-slate-800 transition-colors"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <a
+              href={googleAtsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Search this query directly on Google across all Ashby, Greenhouse, and Lever boards"
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-[11px] font-medium flex items-center gap-1 transition-colors"
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <a
-            href={googleAtsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Search this query directly on Google across all Ashby, Greenhouse, and Lever boards"
-            className="absolute right-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-[11px] font-medium flex items-center gap-1 transition-colors"
-          >
-            <span>Google ATS</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
+              <span>Google ATS</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
         {isInputFocused && suggestions.length > 0 && (
