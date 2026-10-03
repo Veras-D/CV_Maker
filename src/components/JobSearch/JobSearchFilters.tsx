@@ -13,12 +13,14 @@ export interface JobSearchFiltersProps {
   filters: JobSearchFiltersState;
   onChangeFilters: (newFilters: JobSearchFiltersState) => void;
   totalFound: number;
+  appliedCount?: number;
 }
 
 export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
   filters,
   onChangeFilters,
-  totalFound
+  totalFound,
+  appliedCount
 }) => {
   const toggleSource = (source: JobSource) => {
     onChangeFilters({
@@ -135,14 +137,19 @@ export const JobSearchFilters: React.FC<JobSearchFiltersProps> = ({
           Found <strong className="text-sky-400">{totalFound}</strong> active remote roles
         </span>
 
-        <label className="flex items-center gap-2 text-slate-400 hover:text-slate-200 cursor-pointer">
+        <label className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-850 hover:border-slate-700 text-slate-300 hover:text-slate-100 cursor-pointer transition-colors select-none">
           <input
             type="checkbox"
             checked={filters.hideApplied}
             onChange={(e) => onChangeFilters({ ...filters, hideApplied: e.target.checked })}
-            className="rounded bg-slate-950 border-slate-700 text-sky-600 focus:ring-0 cursor-pointer"
+            className="rounded bg-slate-900 border-slate-700 text-sky-600 focus:ring-0 cursor-pointer"
           />
-          <span>Hide already applied roles</span>
+          <span className="font-medium">Don&apos;t show already applied jobs</span>
+          {typeof appliedCount === 'number' && appliedCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold">
+              {appliedCount} applied
+            </span>
+          )}
         </label>
       </div>
     </div>

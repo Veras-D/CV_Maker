@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useCV } from '../../context/CVContext';
 import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
 import { fetchAllRemoteJobs } from '../../utils/jobSearchApi';
-import { filterRemoteJobs } from '../../utils/jobFilterEngine';
+import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 
 export const PAGE_SIZE = 12;
 
@@ -53,6 +53,8 @@ export function useJobSearchData() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const appliedCount = allJobs.filter(job => isJobAlreadyApplied(job, cvData.kanbanRoles).isApplied).length;
+
   const filteredJobs = filterRemoteJobs({
     jobs: allJobs,
     filters,
@@ -88,6 +90,7 @@ export function useJobSearchData() {
     paginatedJobs,
     handleApplyAndTailor,
     loadJobs,
+    appliedCount,
     kanbanRoles: cvData.kanbanRoles
   };
 }
