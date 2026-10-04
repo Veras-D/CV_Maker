@@ -11,9 +11,9 @@ import {
   setYcCompaniesEnabled,
   setAllCompaniesEnabled,
   removeTrackedCompany,
-  addCustomTrackedCompany,
-  fetchLiveYcCompanies
+  addCustomTrackedCompany
 } from '../../utils/companyWatchlistService';
+import { fetchLiveYcDirectory, isDynamicYcBusiness } from '../../utils/dynamicYcService';
 
 export interface TrackedCompaniesModalProps {
   isOpen: boolean;
@@ -214,7 +214,12 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setCompanies(getSavedTrackedCompanies());
+      const saved = getSavedTrackedCompanies();
+      const synchronized = saved.map(c => ({
+        ...c,
+        isYc: isDynamicYcBusiness(c.name, c.slug)
+      }));
+      setCompanies(synchronized);
       setSearchQuery('');
       setAddError('');
       setSyncMessage('');
@@ -258,14 +263,16 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
   const handleSyncYc = async () => {
     setIsSyncingYc(true);
     setSyncMessage('');
-    const liveYc = await fetchLiveYcCompanies();
+    const liveKeys = await fetchLiveYcDirectory(true);
     setIsSyncingYc(false);
-    if (liveYc.length === 0) {
+    if (!liveKeys || liveKeys.size === 0) {
       setSyncMessage('YC feed reached, all companies are up-to-date.');
       return;
     }
-    const liveSlugs = new Set(liveYc.map(y => y.slug));
-    const updated = companies.map(c => (liveSlugs.has(c.slug) ? { ...c, isYc: true } : c));
+    const updated = companies.map(c => ({
+      ...c,
+      isYc: isDynamicYcBusiness(c.name, c.slug)
+    }));
     saveTrackedCompanies(updated);
     setCompanies(updated);
     const matchedCount = updated.filter(c => c.isYc).length;

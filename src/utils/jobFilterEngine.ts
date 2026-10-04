@@ -196,7 +196,8 @@ function matchesSearchQuery(job: RemoteJob, tokens: string[]): boolean {
   const compLower = job.company.toLowerCase();
   const deptLower = (job.department || '').toLowerCase();
   const descSnippet = (job.descriptionPlain || '').slice(0, 2000).toLowerCase();
-  const combined = `${titleLower} ${compLower} ${deptLower} ${descSnippet}`;
+  const ycTag = job.isYc ? 'yc ycombinator y-combinator' : '';
+  const combined = `${titleLower} ${compLower} ${deptLower} ${ycTag} ${descSnippet}`;
   return tokens.every(tok => combined.includes(tok));
 }
 

@@ -7,8 +7,9 @@ import {
   fetchSmartRecruitersCompany 
 } from './jobSearchAggregators';
 import { getSavedTrackedCompanies, TrackedCompany } from './companyWatchlistService';
+import { isDynamicYcBusiness, fetchLiveYcDirectory } from './dynamicYcService';
 
-const CACHE_KEY = 'cv_maker_cached_remote_jobs_v10';
+const CACHE_KEY = 'cv_maker_cached_remote_jobs_v11';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 let memoryCachedJobs: { timestamp: number; jobs: RemoteJob[] } | null = null;
@@ -23,7 +24,8 @@ function cleanupOldCaches(): void {
     'cv_maker_cached_remote_jobs_v6',
     'cv_maker_cached_remote_jobs_v7',
     'cv_maker_cached_remote_jobs_v8',
-    'cv_maker_cached_remote_jobs_v9'
+    'cv_maker_cached_remote_jobs_v9',
+    'cv_maker_cached_remote_jobs_v10'
   ];
   for (const key of obsoleteKeys) {
     try {
@@ -55,7 +57,8 @@ function toCompactJob(job: RemoteJob): RemoteJob {
     department: job.department,
     employmentType: job.employmentType,
     contractDuration: job.contractDuration,
-    contractDurationLabel: job.contractDurationLabel
+    contractDurationLabel: job.contractDurationLabel,
+    isYc: job.isYc
   };
 }
 
@@ -92,22 +95,35 @@ function saveJobsToCache(jobs: RemoteJob[]): void {
 }
 
 export function getCachedJobs(): RemoteJob[] | null {
+  let jobs: RemoteJob[] | null = null;
+  let timestamp = 0;
+
   if (memoryCachedJobs && Date.now() - memoryCachedJobs.timestamp < CACHE_TTL_MS) {
-    return memoryCachedJobs.jobs;
-  }
-  try {
-    const cachedStr = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
-    if (!cachedStr) return null;
-    const { timestamp, jobs } = JSON.parse(cachedStr);
-    const isValid = Date.now() - timestamp < CACHE_TTL_MS && Array.isArray(jobs) && jobs.length >= 20;
-    if (isValid) {
-      memoryCachedJobs = { timestamp, jobs };
-      return jobs;
+    jobs = memoryCachedJobs.jobs;
+    timestamp = memoryCachedJobs.timestamp;
+  } else {
+    try {
+      const cachedStr = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
+      const parsed = cachedStr ? JSON.parse(cachedStr) : null;
+      const isValid = parsed && Date.now() - parsed.timestamp < CACHE_TTL_MS && Array.isArray(parsed.jobs) && parsed.jobs.length >= 20;
+      if (isValid) {
+        jobs = parsed.jobs;
+        timestamp = parsed.timestamp;
+      }
+    } catch {
+      return null;
     }
-  } catch {
-    return null;
   }
-  return null;
+
+  if (!jobs) return null;
+
+  // Always dynamically ensure isYc is up to date against dynamic YC directory
+  const enriched = jobs.map(j => ({
+    ...j,
+    isYc: isDynamicYcBusiness(j.company)
+  }));
+  memoryCachedJobs = { timestamp: timestamp || Date.now(), jobs: enriched };
+  return enriched;
 }
 
 function capitalize(str: string): string {
@@ -164,7 +180,8 @@ function parseAshbyJob(raw: AshbyRawJob, companySlug: string): RemoteJob | null 
     department: raw.department,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
-    contractDurationLabel: durationInfo.label
+    contractDurationLabel: durationInfo.label,
+    isYc: isDynamicYcBusiness(capitalize(companySlug), companySlug)
   };
 }
 
@@ -202,7 +219,8 @@ function parseGreenhouseJob(raw: GreenhouseRawJob, companySlug: string): RemoteJ
     department: raw.departments?.[0]?.name,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
-    contractDurationLabel: durationInfo.label
+    contractDurationLabel: durationInfo.label,
+    isYc: isDynamicYcBusiness(raw.company_name || capitalize(companySlug), companySlug)
   };
 }
 
@@ -243,7 +261,8 @@ function parseLeverJob(raw: LeverRawJob, companySlug: string): RemoteJob | null 
     department: raw.categories?.department,
     employmentType: isContract ? 'contract' : 'full-time',
     contractDuration: durationInfo.duration,
-    contractDurationLabel: durationInfo.label
+    contractDurationLabel: durationInfo.label,
+    isYc: isDynamicYcBusiness(capitalize(companySlug), companySlug)
   };
 }
 
@@ -296,19 +315,30 @@ export function buildGoogleAtsSearchUrl(query: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(rawQuery)}`;
 }
 
-function fetchCompanyJobs(company: TrackedCompany): Promise<RemoteJob[]> {
+async function fetchCompanyJobs(company: TrackedCompany): Promise<RemoteJob[]> {
+  let jobs: RemoteJob[] = [];
   switch (company.ats) {
     case 'ashby':
-      return fetchAshbyCompany(company.slug);
+      jobs = await fetchAshbyCompany(company.slug);
+      break;
     case 'greenhouse':
-      return fetchGreenhouseCompany(company.slug);
+      jobs = await fetchGreenhouseCompany(company.slug);
+      break;
     case 'lever':
-      return fetchLeverCompany(company.slug);
+      jobs = await fetchLeverCompany(company.slug);
+      break;
     case 'smartrecruiters':
-      return fetchSmartRecruitersCompany(company.slug);
+      jobs = await fetchSmartRecruitersCompany(company.slug);
+      break;
     default:
-      return Promise.resolve([]);
+      return [];
   }
+
+  const isYc = isDynamicYcBusiness(company.name, company.slug);
+  return jobs.map(j => ({
+    ...j,
+    isYc: isYc || isDynamicYcBusiness(j.company)
+  }));
 }
 
 async function batchPromises<T>(
@@ -331,6 +361,9 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
     if (cached && cached.length >= 20 && hasWorldwide) return cached;
   }
 
+  // Pre-fetch live YC directory in background if not already warm
+  void fetchLiveYcDirectory(false);
+
   const enabledCompanies = getSavedTrackedCompanies().filter(c => c.enabled);
   const tasks: (() => Promise<RemoteJob[]>)[] = [
     () => fetchRemotiveJobs(),
@@ -349,7 +382,13 @@ export async function fetchAllRemoteJobs(forceRefresh = false): Promise<RemoteJo
   // Sort by publishedAt descending
   allJobs.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-  saveJobsToCache(allJobs);
+  // Ensure dynamic YC verification across all aggregated and company jobs
+  const enrichedJobs = allJobs.map(j => ({
+    ...j,
+    isYc: isDynamicYcBusiness(j.company)
+  }));
 
-  return allJobs;
+  saveJobsToCache(enrichedJobs);
+
+  return enrichedJobs;
 }

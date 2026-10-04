@@ -21,6 +21,14 @@ export const JobCardBadges: React.FC<JobCardBadgesProps> = ({ job, sourceStyle, 
         <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider ${sourceStyle.bg} ${sourceStyle.text} ${sourceStyle.border}`}>
           {job.source}
         </span>
+        {job.isYc && (
+          <span 
+            className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-950/70 border border-orange-800/60 text-orange-400 tracking-wider shadow-sm select-none"
+            title="Y Combinator Company"
+          >
+            YC
+          </span>
+        )}
         {isContract && (
           <span className="bg-amber-950/80 text-amber-300 border border-amber-800/80 text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
             <span>⚡ Contract{job.contractDurationLabel ? ` (${job.contractDurationLabel})` : ''}</span>

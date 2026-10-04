@@ -28,6 +28,7 @@ export interface RemoteJob {
   employmentType?: 'full-time' | 'contract' | 'freelance' | 'part-time' | 'other';
   contractDuration?: '1mo' | '1-3mo' | '3-6mo' | '6mo+';
   contractDurationLabel?: string;
+  isYc?: boolean;
 }
 
 export interface JobSearchFiltersState {

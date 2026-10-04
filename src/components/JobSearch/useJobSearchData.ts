@@ -3,6 +3,7 @@ import { useCV } from '../../context/CVContext';
 import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
 import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
 import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
+import { isDynamicYcBusiness, YC_DIRECTORY_UPDATED_EVENT } from '../../utils/dynamicYcService';
 
 export const PAGE_SIZE = 12;
 
@@ -91,6 +92,26 @@ export function useJobSearchData() {
   useEffect(() => {
     loadJobs(false);
   }, [loadJobs]);
+
+  useEffect(() => {
+    const handleYcUpdate = () => {
+      setAllJobs(prev => {
+        let changed = false;
+        const updated = prev.map(j => {
+          const isYc = isDynamicYcBusiness(j.company);
+          if (isYc !== j.isYc) {
+            changed = true;
+            return { ...j, isYc };
+          }
+          return j;
+        });
+        return changed ? updated : prev;
+      });
+    };
+
+    window.addEventListener(YC_DIRECTORY_UPDATED_EVENT, handleYcUpdate);
+    return () => window.removeEventListener(YC_DIRECTORY_UPDATED_EVENT, handleYcUpdate);
+  }, []);
 
   const handleUpdateFilters = (newFilters: JobSearchFiltersState) => {
     setFilters(newFilters);

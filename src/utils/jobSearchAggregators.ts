@@ -5,6 +5,7 @@ import {
   detectContractDuration,
   parseSalaryRange
 } from './jobFilterEngine';
+import { isDynamicYcBusiness } from './dynamicYcService';
 
 export function stripHtml(input: string): string {
   if (!input) return '';
@@ -85,7 +86,8 @@ export async function fetchRemotiveJobs(): Promise<RemoteJob[]> {
         department: raw.category,
         employmentType: isContract ? 'contract' : raw.job_type === 'part_time' ? 'part-time' : 'full-time',
         contractDuration: durationInfo.duration,
-        contractDurationLabel: durationInfo.label
+        contractDurationLabel: durationInfo.label,
+        isYc: isDynamicYcBusiness(raw.company_name)
       };
     });
   } catch {
@@ -214,7 +216,8 @@ export async function fetchJobicyJobs(): Promise<RemoteJob[]> {
         department: raw.jobIndustry?.[0],
         employmentType: isContract ? 'contract' : isPartTime ? 'part-time' : 'full-time',
         contractDuration: durationInfo.duration,
-        contractDurationLabel: durationInfo.label
+        contractDurationLabel: durationInfo.label,
+        isYc: isDynamicYcBusiness(raw.companyName)
       };
     });
   } catch {
@@ -258,7 +261,8 @@ function parseSmartRecruitersJob(raw: SmartRecruitersRawJob, companySlug: string
     department: raw.department?.label,
     employmentType: isContract ? 'contract' : isPartTime ? 'part-time' : 'full-time',
     contractDuration: durationInfo.duration,
-    contractDurationLabel: durationInfo.label
+    contractDurationLabel: durationInfo.label,
+    isYc: isDynamicYcBusiness(compName, companySlug)
   };
 }
 

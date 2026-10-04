@@ -18,6 +18,7 @@ import { bootstrapKnowledgeGraphFromCV } from '../utils/knowledgeGraph';
 import * as updaters from './cvStateUpdaters';
 import { openExternalUrl } from '../utils/urlHelper';
 import { fetchAllRemoteJobs, getCachedJobs } from '../utils/jobSearchApi';
+import { fetchLiveYcDirectory } from '../utils/dynamicYcService';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -194,8 +195,10 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }, [cvData]);
 
   useEffect(() => {
-    // Silently pre-fetch remote jobs in the background on startup
-    // so jobs are immediately available when user navigates to the Job Discovery tab
+    // Silently pre-fetch dynamic YC directory & remote jobs in the background on startup
+    // so jobs and YC badges are immediately available when user navigates to the Job Discovery tab
+    fetchLiveYcDirectory(false).catch(() => {});
+
     const cached = getCachedJobs();
     const hasWorldwide = cached && cached.some(j => j.region === 'worldwide');
     if (!cached || !hasWorldwide) {

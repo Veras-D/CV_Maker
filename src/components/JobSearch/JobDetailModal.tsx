@@ -182,6 +182,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-slate-700 bg-slate-800 uppercase tracking-wider text-slate-300">
                 {job.source}
               </span>
+              {job.isYc && (
+                <span 
+                  className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-950/70 border border-orange-800/60 text-orange-400 tracking-wider shadow-sm select-none"
+                  title="Y Combinator Company"
+                >
+                  YC
+                </span>
+              )}
               {appliedInfo.isApplied && (
                 <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
