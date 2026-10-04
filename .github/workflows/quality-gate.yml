@@ -33,14 +33,17 @@ jobs:
       - name: 'Gate 3: Code Duplication & Clone Detection'
         run: npm run quality:duplication
 
-      - name: 'Gate 4: Security Gate (Dependency CVE Audit)'
+      - name: 'Gate 4: Automated Unit Tests (Vitest)'
+        run: npm run test:run
+
+      - name: 'Gate 5: Security Gate (Dependency CVE Audit)'
         run: npm run quality:audit
 
-      - name: 'Gate 5: Production Build Verification'
+      - name: 'Gate 6: Production Build Verification'
         run: npx vite build
 
   security-secret-scan:
-    name: 'Gate 4: Security Gate (Gitleaks Secret Scanning)'
+    name: 'Gate 7: Security Gate (Gitleaks Secret Scanning)'
     runs-on: ubuntu-latest
 
     steps:
