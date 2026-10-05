@@ -55,7 +55,17 @@ const BASE_COMPANIES: TrackedCompany[] = [
   { slug: 'canva', name: 'Canva', ats: 'smartrecruiters', enabled: true },
   { slug: 'mirantis', name: 'Mirantis', ats: 'smartrecruiters', enabled: true },
   { slug: 'jitterbit', name: 'Jitterbit', ats: 'smartrecruiters', enabled: true },
-  { slug: 'invisibletechnologies', name: 'Invisible Technologies', ats: 'smartrecruiters', enabled: true }
+  { slug: 'invisibletechnologies', name: 'Invisible Technologies', ats: 'smartrecruiters', enabled: true },
+
+  // Contract, QA & Global Tech Talent Networks
+  { slug: 'testlio', name: 'Testlio (QA & Freelance Testing)', ats: 'greenhouse', enabled: true },
+  { slug: 'telus-digital', name: 'Telus Digital (QA & AI Contracts)', ats: 'ashby', enabled: true },
+  { slug: 'turing', name: 'Turing (AI & Developer Contracts)', ats: 'greenhouse', enabled: true },
+  { slug: 'distantjob', name: 'DistantJob (Remote Developer Staffing)', ats: 'greenhouse', enabled: true },
+  { slug: 'moduscreate', name: 'Modus Create (Global Tech Consulting)', ats: 'greenhouse', enabled: true },
+  { slug: 'thoughtworks', name: 'Thoughtworks (Dev & QA Consulting)', ats: 'greenhouse', enabled: true },
+  { slug: 'braintrust', name: 'Braintrust (Developer Talent Network)', ats: 'ashby', enabled: true },
+  { slug: 'andela', name: 'Andela (Global Tech Talent)', ats: 'ashby', enabled: true }
 ];
 
 export function getDefaultCompanies(): TrackedCompany[] {
@@ -68,6 +78,14 @@ export function getSavedTrackedCompanies(): TrackedCompany[] {
     if (!raw) return getDefaultCompanies();
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      const existingSlugs = new Set(parsed.map((c: TrackedCompany) => c.slug));
+      const defaults = getDefaultCompanies();
+      const missing = defaults.filter(d => !existingSlugs.has(d.slug));
+      if (missing.length > 0) {
+        const merged = [...parsed, ...missing];
+        saveTrackedCompanies(merged);
+        return merged;
+      }
       return parsed;
     }
   } catch {
