@@ -17,6 +17,8 @@ export const JobSearchTab: React.FC = () => {
     pageSize,
     selectedJob,
     setSelectedJob,
+    clickedJobIds,
+    markJobAsClicked,
     filters,
     handleUpdateFilters,
     handlePageChange,
@@ -102,8 +104,10 @@ export const JobSearchTab: React.FC = () => {
                 key={job.id}
                 job={job}
                 kanbanRoles={kanbanRoles}
+                isClicked={clickedJobIds.has(job.id)}
                 onSelectJob={setSelectedJob}
                 onApplyAndTailor={handleApplyAndTailor}
+                onMarkClicked={markJobAsClicked}
               />
             ))}
           </div>
@@ -122,6 +126,7 @@ export const JobSearchTab: React.FC = () => {
       <JobDetailModal
         job={selectedJob}
         kanbanRoles={kanbanRoles}
+        isClicked={selectedJob ? clickedJobIds.has(selectedJob.id) : false}
         onClose={() => setSelectedJob(null)}
         onApplyAndTailor={handleApplyAndTailor}
       />

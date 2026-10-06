@@ -8,19 +8,24 @@ interface JobCardFooterProps {
   isApplied: boolean;
   onSelectJob: (job: RemoteJob) => void;
   onApplyAndTailor: (job: RemoteJob) => void;
+  onMarkClicked?: (jobId: string) => void;
 }
 
 export const JobCardFooter: React.FC<JobCardFooterProps> = ({
   job,
   isApplied,
   onSelectJob,
-  onApplyAndTailor
+  onApplyAndTailor,
+  onMarkClicked
 }) => {
   return (
     <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80 mt-1">
       <button
         type="button"
-        onClick={() => onSelectJob(job)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectJob(job);
+        }}
         className="text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
       >
         View Details
@@ -34,6 +39,8 @@ export const JobCardFooter: React.FC<JobCardFooterProps> = ({
             rel="noopener noreferrer"
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
+              onMarkClicked?.(job.id);
               openExternalUrl(job.url);
             }}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
@@ -45,7 +52,10 @@ export const JobCardFooter: React.FC<JobCardFooterProps> = ({
 
         <button
           type="button"
-          onClick={() => onApplyAndTailor(job)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onApplyAndTailor(job);
+          }}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${
             isApplied
               ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'

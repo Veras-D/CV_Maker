@@ -9,8 +9,10 @@ import { JobCardFooter } from './JobCardFooter';
 export interface JobCardProps {
   job: RemoteJob;
   kanbanRoles: KanbanRole[];
+  isClicked?: boolean;
   onSelectJob: (job: RemoteJob) => void;
   onApplyAndTailor: (job: RemoteJob) => void;
+  onMarkClicked?: (jobId: string) => void;
 }
 
 const SOURCE_COLORS: Record<RemoteJob['source'], { bg: string; text: string; border: string }> = {
@@ -25,26 +27,42 @@ const SOURCE_COLORS: Record<RemoteJob['source'], { bg: string; text: string; bor
 export const JobCard: React.FC<JobCardProps> = ({
   job,
   kanbanRoles,
+  isClicked = false,
   onSelectJob,
-  onApplyAndTailor
+  onApplyAndTailor,
+  onMarkClicked
 }) => {
   const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
   const sourceStyle = SOURCE_COLORS[job.source] || SOURCE_COLORS.greenhouse;
+  const isViewed = isClicked && !appliedInfo.isApplied;
 
   return (
-    <div className={`bg-slate-900 border rounded-xl p-4 transition-all hover:border-slate-700 flex flex-col justify-between gap-3 ${
-      appliedInfo.isApplied ? 'border-emerald-900/60 bg-slate-900/90' : 'border-slate-800'
-    }`}>
+    <div 
+      onClick={() => onSelectJob(job)}
+      className={`border rounded-xl p-4 transition-all flex flex-col justify-between gap-3 cursor-pointer group ${
+        appliedInfo.isApplied 
+          ? 'border-emerald-900/60 bg-slate-900/90 hover:border-emerald-700/80 shadow-sm' 
+          : isViewed
+            ? 'border-slate-800/60 bg-slate-950/60 opacity-80 hover:opacity-100 hover:border-slate-700 hover:bg-slate-900/80'
+            : 'border-slate-800 bg-slate-900 hover:border-slate-700'
+      }`}
+    >
       <div className="space-y-2">
         <JobCardBadges
           job={job}
           sourceStyle={sourceStyle}
           appliedInfo={appliedInfo}
+          isClicked={isClicked}
         />
 
         <h3 
-          onClick={() => onSelectJob(job)}
-          className="text-sm sm:text-base font-bold text-slate-100 hover:text-sky-400 transition-colors cursor-pointer line-clamp-2"
+          className={`text-sm sm:text-base font-bold transition-colors line-clamp-2 ${
+            appliedInfo.isApplied
+              ? 'text-slate-100 group-hover:text-emerald-400'
+              : isViewed
+                ? 'text-slate-400 group-hover:text-slate-200'
+                : 'text-slate-100 group-hover:text-sky-400'
+          }`}
         >
           {job.title}
         </h3>
@@ -63,7 +81,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           )}
         </div>
 
-        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+        <p className={`text-xs line-clamp-2 leading-relaxed ${isViewed ? 'text-slate-500' : 'text-slate-400'}`}>
           {job.descriptionPlain || 'No description provided.'}
         </p>
       </div>
@@ -73,6 +91,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         isApplied={appliedInfo.isApplied}
         onSelectJob={onSelectJob}
         onApplyAndTailor={onApplyAndTailor}
+        onMarkClicked={onMarkClicked}
       />
     </div>
   );

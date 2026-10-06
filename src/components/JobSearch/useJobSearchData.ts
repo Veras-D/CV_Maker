@@ -4,6 +4,7 @@ import { RemoteJob, JobSearchFiltersState } from '../../types/jobSearch';
 import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
 import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 import { isDynamicYcBusiness, YC_DIRECTORY_UPDATED_EVENT } from '../../utils/dynamicYcService';
+import { getClickedJobIds, markJobAsClicked, CLICKED_JOBS_UPDATED_EVENT } from '../../utils/clickedJobsService';
 
 export const PAGE_SIZE = 12;
 
@@ -28,6 +29,7 @@ export function useJobSearchData() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState<RemoteJob | null>(null);
+  const [clickedJobIds, setClickedJobIds] = useState<Set<string>>(() => getClickedJobIds());
 
   const allJobsRef = useRef(allJobs);
   useEffect(() => {
@@ -113,6 +115,15 @@ export function useJobSearchData() {
     return () => window.removeEventListener(YC_DIRECTORY_UPDATED_EVENT, handleYcUpdate);
   }, []);
 
+  useEffect(() => {
+    const handleClickedUpdate = () => {
+      setClickedJobIds(new Set(getClickedJobIds()));
+    };
+
+    window.addEventListener(CLICKED_JOBS_UPDATED_EVENT, handleClickedUpdate);
+    return () => window.removeEventListener(CLICKED_JOBS_UPDATED_EVENT, handleClickedUpdate);
+  }, []);
+
   const handleUpdateFilters = (newFilters: JobSearchFiltersState) => {
     setFilters(newFilters);
     setCurrentPage(1);
@@ -135,7 +146,15 @@ export function useJobSearchData() {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
 
+  const handleSelectJob = useCallback((job: RemoteJob | null) => {
+    if (job) {
+      markJobAsClicked(job.id);
+    }
+    setSelectedJob(job);
+  }, []);
+
   const handleApplyAndTailor = (job: RemoteJob) => {
+    markJobAsClicked(job.id);
     applyAndTailorJob({
       jobTitle: job.title,
       companyName: job.company,
@@ -152,7 +171,9 @@ export function useJobSearchData() {
     totalPages,
     pageSize: PAGE_SIZE,
     selectedJob,
-    setSelectedJob,
+    setSelectedJob: handleSelectJob,
+    clickedJobIds,
+    markJobAsClicked,
     filters,
     handleUpdateFilters,
     handlePageChange,
