@@ -1,6 +1,7 @@
 import React from 'react';
 import { WorkBullet, LanguageCode } from '../../types/cv';
 import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 export interface BulletListEditorProps {
   expId: string;
@@ -37,7 +38,7 @@ export const BulletListEditor: React.FC<BulletListEditorProps> = ({
         {bullets.map((b) => {
           const currentText = b.text[activeLanguage] || b.text.en || '';
           return (
-            <div key={b.id} className="bg-slate-900 border border-slate-800 p-2 rounded-lg space-y-2">
+            <div key={b.id} className="bg-slate-900 border border-slate-800 p-2 rounded-lg space-y-1.5">
               <div className="flex items-start gap-2">
                 <button
                   type="button"
@@ -47,15 +48,27 @@ export const BulletListEditor: React.FC<BulletListEditorProps> = ({
                   {b.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                 </button>
 
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Architected and deployed microservices reducing API latency by 45%..."
-                  value={currentText}
-                  onChange={(e) => onUpdateBullet(expId, b.id, { text: { ...b.text, [activeLanguage]: e.target.value } })}
-                  className={`flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none ${
-                    !b.enabled ? 'line-through text-slate-500' : ''
-                  }`}
-                />
+                <div className="flex-1 space-y-1">
+                  <textarea
+                    rows={2}
+                    maxLength={EDITOR_LIMITS.MAX_BULLET_CHARS}
+                    placeholder="e.g. Architected and deployed microservices reducing API latency by 45%..."
+                    value={currentText}
+                    onChange={(e) => onUpdateBullet(expId, b.id, { text: { ...b.text, [activeLanguage]: e.target.value } })}
+                    className={`w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none ${
+                      !b.enabled ? 'line-through text-slate-500' : ''
+                    }`}
+                  />
+                  <div className="flex justify-end">
+                    <span className={`text-[10px] font-mono ${
+                      currentText.length >= EDITOR_LIMITS.MAX_BULLET_CHARS - 20
+                        ? 'text-amber-400'
+                        : 'text-slate-500'
+                    }`}>
+                      {currentText.length}/{EDITOR_LIMITS.MAX_BULLET_CHARS}
+                    </span>
+                  </div>
+                </div>
 
                 <button
                   type="button"

@@ -3,6 +3,7 @@ import { WorkExperience, WorkBullet, LanguageCode } from '../../types/cv';
 import { Trash2, Eye, EyeOff, Calendar } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
 import { BulletListEditor } from './BulletListEditor';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 interface DateSelectorsProps {
   startDate: string;
@@ -258,11 +259,21 @@ export const ExperienceItemCard: React.FC<ExperienceItemCardProps> = ({
       />
 
       <div>
-        <label className="block text-[11px] font-medium text-slate-400 mb-1">
-          Position Executive Summary ({activeLanguage.toUpperCase()})
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-[11px] font-medium text-slate-400">
+            Position Executive Summary ({activeLanguage.toUpperCase()})
+          </label>
+          <span className={`text-[10px] font-mono ${
+            currentSummary.length >= EDITOR_LIMITS.MAX_POSITION_SUMMARY_CHARS - 20
+              ? 'text-amber-400'
+              : 'text-slate-500'
+          }`}>
+            {currentSummary.length}/{EDITOR_LIMITS.MAX_POSITION_SUMMARY_CHARS}
+          </span>
+        </div>
         <textarea
           rows={2}
+          maxLength={EDITOR_LIMITS.MAX_POSITION_SUMMARY_CHARS}
           placeholder="e.g. Spearheaded core platform infrastructure, delivering scalable microservices and leading sprint planning..."
           value={currentSummary}
           onChange={(e) => onUpdate(exp.id, {

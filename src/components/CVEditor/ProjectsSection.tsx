@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProjectItem, LanguageCode } from '../../types/cv';
 import { FolderGit2, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 export interface ProjectsSectionProps {
   projects: ProjectItem[];
@@ -19,6 +20,7 @@ const ProjectCardItem: React.FC<{
   onToggleEnabled: (id: string) => void;
 }> = ({ project: p, activeLanguage, onUpdate, onDelete, onToggleEnabled }) => {
   const [techStackText, setTechStackText] = useState(p.techStack.join(', '));
+  const currentDesc = p.description[activeLanguage] || p.description.en || '';
 
   useEffect(() => {
     const joined = p.techStack.join(', ');
@@ -30,7 +32,11 @@ const ProjectCardItem: React.FC<{
 
   const handleTechStackChange = (val: string) => {
     setTechStackText(val);
-    const parsed = val.split(',').map(s => s.trim()).filter(Boolean);
+    const parsed = val
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, EDITOR_LIMITS.MAX_PROJECT_TAGS);
     onUpdate(p.id, { techStack: parsed });
   };
 
@@ -71,18 +77,34 @@ const ProjectCardItem: React.FC<{
           className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
         />
 
-        <textarea
-          rows={2}
-          placeholder={`e.g. Real-time distributed task orchestrator built with React and Rust (${activeLanguage.toUpperCase()})...`}
-          value={p.description[activeLanguage] || p.description.en || ''}
-          onChange={(e) => onUpdate(p.id, {
-            description: { ...p.description, [activeLanguage]: e.target.value }
-          })}
-          className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none font-sans"
-        />
+        <div className="space-y-1">
+          <div className="flex justify-between items-center text-[10px] text-slate-400">
+            <span>Description ({activeLanguage.toUpperCase()})</span>
+            <span className={`font-mono ${
+              currentDesc.length >= EDITOR_LIMITS.MAX_PROJECT_DESC_CHARS - 20 ? 'text-amber-400' : 'text-slate-500'
+            }`}>
+              {currentDesc.length}/{EDITOR_LIMITS.MAX_PROJECT_DESC_CHARS}
+            </span>
+          </div>
+          <textarea
+            rows={2}
+            maxLength={EDITOR_LIMITS.MAX_PROJECT_DESC_CHARS}
+            placeholder={`e.g. Real-time distributed task orchestrator built with React and Rust (${activeLanguage.toUpperCase()})...`}
+            value={currentDesc}
+            onChange={(e) => onUpdate(p.id, {
+              description: { ...p.description, [activeLanguage]: e.target.value }
+            })}
+            className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-sky-500 resize-none font-sans"
+          />
+        </div>
 
         <div>
-          <label className="block text-[10px] text-slate-400 font-medium mb-1">Tech Stack (comma separated)</label>
+          <label className="block text-[10px] text-slate-400 font-medium mb-1 flex items-center justify-between">
+            <span>Tech Stack (comma separated)</span>
+            <span className="font-mono text-slate-500 text-[10px]">
+              {p.techStack.length}/{EDITOR_LIMITS.MAX_PROJECT_TAGS} tags max
+            </span>
+          </label>
           <input
             type="text"
             placeholder="e.g. React, TypeScript, Rust, Tailwind CSS"

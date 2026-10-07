@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SkillCategory, LanguageCode } from '../../types/cv';
 import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 export interface SkillCategoryCardProps {
   cat: SkillCategory;
@@ -22,9 +23,10 @@ export const SkillCategoryCard: React.FC<SkillCategoryCardProps> = ({
   onAddSkill
 }) => {
   const [skillInput, setSkillInput] = useState('');
+  const isMaxSkills = cat.skills.length >= EDITOR_LIMITS.MAX_CATEGORY_SKILLS;
 
   const handleAdd = () => {
-    if (skillInput.trim()) {
+    if (skillInput.trim() && !isMaxSkills) {
       onAddSkill(cat.id, skillInput.trim());
       setSkillInput('');
     }
@@ -40,14 +42,19 @@ export const SkillCategoryCard: React.FC<SkillCategoryCardProps> = ({
           onChange={(e) => onUpdateCategoryName(cat.id, e.target.value)}
           className="bg-transparent text-xs font-bold text-sky-400 placeholder:text-sky-400/50 focus:outline-none focus:border-b border-sky-500"
         />
-        <button
-          type="button"
-          onClick={() => onDeleteCategory(cat.id)}
-          className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
-          title="Delete Skill Category"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-500 font-mono">
+            {cat.skills.length}/{EDITOR_LIMITS.MAX_CATEGORY_SKILLS} max
+          </span>
+          <button
+            type="button"
+            onClick={() => onDeleteCategory(cat.id)}
+            className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
+            title="Delete Skill Category"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -82,7 +89,8 @@ export const SkillCategoryCard: React.FC<SkillCategoryCardProps> = ({
       <div className="flex gap-2 pt-1">
         <input
           type="text"
-          placeholder="Add skill (e.g. Terraform)..."
+          placeholder={isMaxSkills ? "Max skills reached" : "Add skill (e.g. Terraform)..."}
+          disabled={isMaxSkills}
           value={skillInput}
           onChange={(e) => setSkillInput(e.target.value)}
           onKeyDown={(e) => {
@@ -91,12 +99,19 @@ export const SkillCategoryCard: React.FC<SkillCategoryCardProps> = ({
               handleAdd();
             }
           }}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+          className={`flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none focus:border-sky-500 ${
+            isMaxSkills ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         />
         <button
           type="button"
           onClick={handleAdd}
-          className="bg-slate-800 hover:bg-slate-750 text-sky-400 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+          disabled={isMaxSkills}
+          className={`border px-2.5 py-1 rounded-lg text-xs font-semibold ${
+            isMaxSkills
+              ? 'bg-slate-800 text-slate-600 border-slate-800 cursor-not-allowed'
+              : 'bg-slate-800 hover:bg-slate-750 text-sky-400 border-slate-700 cursor-pointer'
+          }`}
         >
           <Plus className="w-3.5 h-3.5" />
         </button>

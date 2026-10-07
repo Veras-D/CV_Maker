@@ -12,6 +12,7 @@ import {
   UserProfile
 } from '../types/cv';
 import { normalizeRoleUrl } from '../utils/kanbanUtils';
+import { EDITOR_LIMITS } from '../utils/editorLimits';
 
 export const updateProfileState = (data: CVData, updated: Partial<UserProfile>): CVData => ({
   ...data,
@@ -97,6 +98,7 @@ export const deleteBulletState = (data: CVData, expId: string, bulletId: string)
 });
 
 export const addSkillCategoryState = (data: CVData, nameEn: string, nameCs?: string): CVData => {
+  if (data.skillCategories.length >= EDITOR_LIMITS.MAX_SKILL_CATEGORIES) return data;
   const newCat: SkillCategory = {
     id: `cat-${Date.now()}`,
     categoryName: { en: nameEn, ...(nameCs ? { cs: nameCs } : {}) },
@@ -121,6 +123,9 @@ export const deleteSkillCategoryState = (data: CVData, catId: string): CVData =>
 });
 
 export const addSkillState = (data: CVData, catId: string, name: string, tags: string[]): CVData => {
+  const targetCat = data.skillCategories.find(c => c.id === catId);
+  if (targetCat && targetCat.skills.length >= EDITOR_LIMITS.MAX_CATEGORY_SKILLS) return data;
+
   const newSkill = {
     id: `sk-${Date.now()}`,
     name,
@@ -215,18 +220,21 @@ export const toggleEducationEnabledState = (data: CVData, id: string): CVData =>
   education: data.education.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e)
 });
 
-export const addLanguageState = (data: CVData): CVData => ({
-  ...data,
-  languages: [
-    ...data.languages,
-    {
-      id: `lang-${Date.now()}`,
-      language: { en: "Language Name", cs: "Název Jazyka" },
-      proficiency: { en: "Proficiency Level", cs: "Úroveň" },
-      enabled: true
-    }
-  ]
-});
+export const addLanguageState = (data: CVData): CVData => {
+  if (data.languages.length >= EDITOR_LIMITS.MAX_LANGUAGES) return data;
+  return {
+    ...data,
+    languages: [
+      ...data.languages,
+      {
+        id: `lang-${Date.now()}`,
+        language: { en: "Language Name", cs: "Název Jazyka" },
+        proficiency: { en: "Proficiency Level", cs: "Úroveň" },
+        enabled: true
+      }
+    ]
+  };
+};
 
 export const updateLanguageState = (data: CVData, id: string, updated: Partial<LanguageItem>): CVData => ({
   ...data,

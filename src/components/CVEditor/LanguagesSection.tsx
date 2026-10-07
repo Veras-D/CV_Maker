@@ -2,6 +2,7 @@ import React from 'react';
 import { LanguageItem, LanguageCode } from '../../types/cv';
 import { Globe, Plus, Trash2 } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 const PROFICIENCY_LEVELS: SelectOption[] = [
   { value: 'Native / Bilingual', label: 'Native / Bilingual' },
@@ -28,6 +29,8 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
   onUpdate,
   onDelete
 }) => {
+  const isMaxLanguages = languages.length >= EDITOR_LIMITS.MAX_LANGUAGES;
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md">
       <div className="flex items-center justify-between mb-4">
@@ -35,14 +38,24 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
           <Globe className="w-4 h-4 text-sky-400" />
           <span>Languages</span>
         </h3>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Language</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-slate-500 font-mono">
+            {languages.length}/{EDITOR_LIMITS.MAX_LANGUAGES} max
+          </span>
+          <button
+            type="button"
+            onClick={onAdd}
+            disabled={isMaxLanguages}
+            className={`text-xs font-semibold flex items-center gap-1 ${
+              isMaxLanguages
+                ? 'text-slate-600 cursor-not-allowed'
+                : 'text-sky-400 hover:text-sky-300 cursor-pointer'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Language</span>
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">

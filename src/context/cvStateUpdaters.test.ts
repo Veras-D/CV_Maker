@@ -8,9 +8,13 @@ import {
   addKanbanRoleState,
   updateKanbanRoleStatusState,
   updateKanbanRoleState,
-  createPresetState
+  createPresetState,
+  addLanguageState,
+  addSkillCategoryState,
+  addSkillState
 } from './cvStateUpdaters';
 import { createEmptyCVData } from '../types/cv';
+import { EDITOR_LIMITS } from '../utils/editorLimits';
 
 describe('cvStateUpdaters', () => {
   it('updates user profile immutably', () => {
@@ -133,5 +137,35 @@ describe('cvStateUpdaters', () => {
     expect(newPreset).toBeDefined();
     expect(newPreset?.activeTags).toEqual(['react', 'leadership']);
     expect(withPreset.activePresetId).toBe(newPreset?.id);
+  });
+
+  it('enforces maximum languages limit', () => {
+    let state = createEmptyCVData();
+    state.languages = [];
+    for (let i = 0; i < EDITOR_LIMITS.MAX_LANGUAGES + 3; i++) {
+      state = addLanguageState(state);
+    }
+    expect(state.languages).toHaveLength(EDITOR_LIMITS.MAX_LANGUAGES);
+  });
+
+  it('enforces maximum skill categories limit', () => {
+    let state = createEmptyCVData();
+    state.skillCategories = [];
+    for (let i = 0; i < EDITOR_LIMITS.MAX_SKILL_CATEGORIES + 3; i++) {
+      state = addSkillCategoryState(state, `Cat ${i}`);
+    }
+    expect(state.skillCategories).toHaveLength(EDITOR_LIMITS.MAX_SKILL_CATEGORIES);
+  });
+
+  it('enforces maximum skills per category limit', () => {
+    let state = createEmptyCVData();
+    state.skillCategories = [];
+    state = addSkillCategoryState(state, 'Frontend');
+    const catId = state.skillCategories[0].id;
+
+    for (let i = 0; i < EDITOR_LIMITS.MAX_CATEGORY_SKILLS + 3; i++) {
+      state = addSkillState(state, catId, `Skill ${i}`, ['tag']);
+    }
+    expect(state.skillCategories[0].skills).toHaveLength(EDITOR_LIMITS.MAX_CATEGORY_SKILLS);
   });
 });

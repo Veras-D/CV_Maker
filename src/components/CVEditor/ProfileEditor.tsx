@@ -2,6 +2,7 @@ import React from 'react';
 import { useCV } from '../../context/CVContext';
 import { User } from 'lucide-react';
 import { ProfileContactInputs } from './ProfileContactInputs';
+import { EDITOR_LIMITS } from '../../utils/editorLimits';
 
 export const ProfileEditor: React.FC = () => {
   const { cvData, updateProfile, activeLanguage } = useCV();
@@ -36,10 +37,20 @@ export const ProfileEditor: React.FC = () => {
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-xs font-semibold text-slate-400">Executive Summary</label>
-            <span className="text-[10px] text-sky-400 font-mono">Editing: {activeLanguage.toUpperCase()}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-mono ${
+                (profile.summary[activeLanguage] || profile.summary.en || '').length >= EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS - 30
+                  ? 'text-amber-400'
+                  : 'text-slate-500'
+              }`}>
+                {(profile.summary[activeLanguage] || profile.summary.en || '').length}/{EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS}
+              </span>
+              <span className="text-[10px] text-sky-400 font-mono">Editing: {activeLanguage.toUpperCase()}</span>
+            </div>
           </div>
           <textarea
             rows={3}
+            maxLength={EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS}
             placeholder="e.g. Versatile software engineer with 6+ years of experience designing, building, and scaling resilient web applications and distributed cloud systems..."
             value={profile.summary[activeLanguage] || profile.summary.en || ''}
             onChange={(e) => updateProfile({
