@@ -14,6 +14,7 @@ import {
   addCustomTrackedCompany
 } from '../../utils/companyWatchlistService';
 import { fetchLiveYcDirectory, isDynamicYcBusiness } from '../../utils/dynamicYcService';
+import { CompanySearchAutocomplete } from './CompanySearchAutocomplete';
 
 export interface TrackedCompaniesModalProps {
   isOpen: boolean;
@@ -131,14 +132,16 @@ const AddCompanyForm: React.FC<{
 }> = ({ newSlug, onSlugChange, selectedAts, onAtsChange, isAdding, addError, onSubmit }) => (
   <form onSubmit={onSubmit} className="space-y-1.5 pt-1">
     <div className="flex items-center gap-2">
-      <input
-        type="text"
+      <CompanySearchAutocomplete
         value={newSlug}
-        onChange={(e) => onSlugChange(e.target.value)}
-        placeholder="Add custom company slug (e.g. field-ai, databricks)..."
-        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 h-[34px]"
+        onChange={onSlugChange}
+        onSelectSuggestion={(slug, ats) => {
+          onSlugChange(slug);
+          if (ats) onAtsChange(ats);
+        }}
+        disabled={isAdding}
       />
-      <div className="w-40 shrink-0">
+      <div className="w-36 shrink-0">
         <CustomSelect options={ATS_OPTIONS} value={selectedAts} onChange={(val) => onAtsChange(val as AtsType | 'auto')} />
       </div>
       <button

@@ -13,6 +13,12 @@ export function cleanCompanyKey(str: string): string {
 // In-memory set of live YC keys
 let liveYcKeys: Set<string> | null = null;
 let activeFetchPromise: Promise<Set<string>> | null = null;
+let liveDirectoryCompanies: LiveDirectoryCompany[] | null = null;
+
+export interface LiveDirectoryCompany {
+  name: string;
+  slug: string;
+}
 
 function getSeedYcKeys(): Set<string> {
   const seed = new Set<string>();
@@ -24,6 +30,56 @@ function getSeedYcKeys(): Set<string> {
     }
   }
   return seed;
+}
+
+export function getLiveDirectoryCompanies(): LiveDirectoryCompany[] {
+  if (liveDirectoryCompanies && liveDirectoryCompanies.length > 0) {
+    return liveDirectoryCompanies;
+  }
+
+  try {
+    const cached = localStorage.getItem(YC_CACHE_KEY);
+    const parsed = cached ? JSON.parse(cached) : null;
+    if (parsed && Array.isArray(parsed.companies) && parsed.companies.length > 0) {
+      const list = parsed.companies as LiveDirectoryCompany[];
+      liveDirectoryCompanies = list;
+      return list;
+    }
+  } catch {
+    // Storage access fallback
+  }
+
+  // Fallback to initial seed companies from watchlist
+  const seed: LiveDirectoryCompany[] = [];
+  for (const c of getDefaultCompanies()) {
+    seed.push({ name: c.name, slug: c.slug });
+  }
+  return seed;
+}
+
+export function searchLiveDirectory(query: string, limit = 8): LiveDirectoryCompany[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+
+  const companies = getLiveDirectoryCompanies();
+  const matches: { company: LiveDirectoryCompany; score: number }[] = [];
+
+  for (const c of companies) {
+    const nameLower = c.name.toLowerCase();
+    const slugLower = c.slug.toLowerCase();
+    let score = 0;
+    if (nameLower === q || slugLower === q) score = 100;
+    else if (nameLower.startsWith(q) || slugLower.startsWith(q)) score = 80;
+    else if (nameLower.includes(q)) score = 50;
+    else if (slugLower.includes(q)) score = 30;
+
+    if (score > 0) {
+      matches.push({ company: c, score });
+    }
+  }
+
+  matches.sort((a, b) => b.score - a.score || a.company.name.localeCompare(b.company.name));
+  return matches.slice(0, limit).map(m => m.company);
 }
 
 export function getLiveYcKeys(): Set<string> {
@@ -87,15 +143,26 @@ function isYcCacheFresh(): boolean {
   }
 }
 
-function parseYcItems(items: YcRawItem[]): { freshKeys: Set<string>; rawList: string[] } {
+function parseYcItems(items: YcRawItem[]): {
+  freshKeys: Set<string>;
+  rawList: string[];
+  directoryList: LiveDirectoryCompany[];
+} {
   const freshKeys = new Set<string>();
   const rawList: string[] = [];
+  const directoryList: LiveDirectoryCompany[] = [];
+  const seenSlugs = new Set<string>();
 
   for (const item of items) {
     if (item.slug) {
       const s = cleanCompanyKey(item.slug);
       freshKeys.add(s);
       rawList.push(s);
+      const slugLower = item.slug.toLowerCase();
+      if (item.name && !seenSlugs.has(slugLower)) {
+        seenSlugs.add(slugLower);
+        directoryList.push({ name: item.name, slug: item.slug });
+      }
     }
     if (item.name) {
       const n = cleanCompanyKey(item.name);
@@ -111,7 +178,7 @@ function parseYcItems(items: YcRawItem[]): { freshKeys: Set<string>; rawList: st
     }
   }
 
-  return { freshKeys, rawList };
+  return { freshKeys, rawList, directoryList };
 }
 
 async function requestLiveYcFeed(): Promise<Response | null> {
@@ -147,11 +214,19 @@ export async function fetchLiveYcDirectory(force = false): Promise<Set<string>> 
       if (!res) return getLiveYcKeys();
 
       const items: YcRawItem[] = await res.json();
-      const { freshKeys, rawList } = parseYcItems(items);
+      const { freshKeys, rawList, directoryList } = parseYcItems(items);
 
       liveYcKeys = freshKeys;
+      liveDirectoryCompanies = directoryList;
       try {
-        localStorage.setItem(YC_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: rawList }));
+        localStorage.setItem(
+          YC_CACHE_KEY,
+          JSON.stringify({
+            timestamp: Date.now(),
+            data: rawList,
+            companies: directoryList.slice(0, 1500)
+          })
+        );
       } catch {
         // Storage quota ignored
       }

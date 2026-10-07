@@ -131,6 +131,61 @@ interface AtsCandidate {
   url: string;
 }
 
+const CORP_SUFFIX_REGEX = /(?:,\s*)?(?:\b(inc|incorporated|llc|ltd|limited|corp|corporation|co|company|gmbh|sro|holding|group|technologies|software|solutions)\b|s\.r\.o\.?|a\.s\.?)/gi;
+
+function extractGreenhouseSlug(url: URL, firstPart?: string): string | null {
+  const forParam = url.searchParams.get('for');
+  if (forParam) return forParam.toLowerCase();
+  return firstPart && firstPart !== 'embed' ? firstPart.toLowerCase() : null;
+}
+
+export function extractAtsAndSlugFromUrl(input: string): { slug: string; ats: AtsType } | null {
+  try {
+    const trimmed = input.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return null;
+    const url = new URL(trimmed);
+    const host = url.hostname.toLowerCase();
+    const firstPart = url.pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
+
+    if (host.includes('greenhouse.io')) {
+      const ghSlug = extractGreenhouseSlug(url, firstPart);
+      return ghSlug ? { slug: ghSlug, ats: 'greenhouse' } : null;
+    }
+    if (host.includes('ashbyhq.com') && firstPart) return { slug: firstPart.toLowerCase(), ats: 'ashby' };
+    if (host.includes('lever.co') && firstPart) return { slug: firstPart.toLowerCase(), ats: 'lever' };
+    if (host.includes('smartrecruiters.com') && firstPart) return { slug: firstPart.toLowerCase(), ats: 'smartrecruiters' };
+  } catch {
+    // Invalid URL fallback
+  }
+  return null;
+}
+
+export function generateCandidateSlugs(input: string): string[] {
+  if (!input || typeof input !== 'string') return [];
+  const trimmed = input.trim();
+  if (trimmed.length < 2) return [];
+
+  const candidates = new Set<string>();
+
+  const fullHyphen = trimmed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (fullHyphen) candidates.add(fullHyphen);
+
+  const stripped = trimmed
+    .replace(CORP_SUFFIX_REGEX, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (stripped) candidates.add(stripped);
+
+  const compact = stripped.replace(/-/g, '');
+  if (compact && compact !== stripped) candidates.add(compact);
+
+  return Array.from(candidates).filter(c => c.length >= 2 && c.length <= 50);
+}
+
 function getCandidateEndpoints(slug: string): AtsCandidate[] {
   return [
     { ats: 'greenhouse', url: `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs` },
@@ -140,61 +195,77 @@ function getCandidateEndpoints(slug: string): AtsCandidate[] {
   ];
 }
 
-export async function detectCompanyAts(rawSlug: string): Promise<{ slug: string; ats: AtsType } | null> {
-  const normalized = rawSlug.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
-  if (!normalized) return null;
-
-  const candidates = getCandidateEndpoints(normalized);
-  for (const c of candidates) {
+async function probeCandidateEndpoints(endpoints: AtsCandidate[]): Promise<AtsType | null> {
+  for (const c of endpoints) {
     try {
-      const res = await fetch(c.url, { method: 'HEAD', signal: AbortSignal.timeout(3500) });
-      if (res.ok) return { slug: normalized, ats: c.ats };
+      const res = await fetch(c.url, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+      if (res.ok) return c.ats;
     } catch {
-      // Continue to next ATS candidate
+      // Continue next endpoint
     }
+  }
+  return null;
+}
+
+export async function detectCompanyAts(
+  queryOrSlug: string,
+  preferredAts?: AtsType
+): Promise<{ slug: string; ats: AtsType } | null> {
+  const fromUrl = extractAtsAndSlugFromUrl(queryOrSlug);
+  if (fromUrl) return fromUrl;
+
+  const candidates = generateCandidateSlugs(queryOrSlug);
+  if (candidates.length === 0) return null;
+
+  for (const slug of candidates) {
+    const endpoints = getCandidateEndpoints(slug);
+    const sorted = preferredAts
+      ? [...endpoints.filter(e => e.ats === preferredAts), ...endpoints.filter(e => e.ats !== preferredAts)]
+      : endpoints;
+
+    const detectedAts = await probeCandidateEndpoints(sorted);
+    if (detectedAts) return { slug, ats: detectedAts };
   }
   return null;
 }
 
 export async function addCustomTrackedCompany(
   currentList: TrackedCompany[],
-  rawSlug: string,
+  rawInput: string,
   explicitAts?: AtsType
 ): Promise<{ success: boolean; list: TrackedCompany[]; error?: string }> {
-  const normalized = rawSlug.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
-  if (!normalized) return { success: false, list: currentList, error: 'Please enter a valid company slug.' };
+  const trimmed = rawInput.trim();
+  if (!trimmed) {
+    return { success: false, list: currentList, error: 'Please enter a company name, slug, or career URL.' };
+  }
 
-  const existing = currentList.find(c => c.slug === normalized);
+  const detected = await detectCompanyAts(trimmed, explicitAts);
+  if (!detected) {
+    return {
+      success: false,
+      list: currentList,
+      error: `Could not verify "${trimmed}" across Ashby, Greenhouse, Lever, or SmartRecruiters. Check the company's job board link.`
+    };
+  }
+
+  const existing = currentList.find(c => c.slug === detected.slug);
   if (existing) {
     if (!existing.enabled) {
-      const updated = toggleCompanyEnabled(currentList, normalized);
+      const updated = toggleCompanyEnabled(currentList, detected.slug);
       return { success: true, list: updated };
     }
-    return { success: false, list: currentList, error: `"${normalized}" is already in your tracked list.` };
+    return { success: false, list: currentList, error: `"${existing.name}" (${detected.slug}) is already in your tracked list.` };
   }
 
-  let detectedAts = explicitAts;
-  if (!detectedAts) {
-    const res = await detectCompanyAts(normalized);
-    if (!res) {
-      return {
-        success: false,
-        list: currentList,
-        error: `Could not verify "${normalized}" on Ashby, Greenhouse, Lever, or SmartRecruiters.`
-      };
-    }
-    detectedAts = res.ats;
-  }
-
-  const displayName = normalized
+  const displayName = detected.slug
     .split('-')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
   const newCompany: TrackedCompany = {
-    slug: normalized,
+    slug: detected.slug,
     name: displayName,
-    ats: detectedAts,
+    ats: detected.ats,
     isCustom: true,
     enabled: true
   };
