@@ -224,7 +224,7 @@ export const ExperienceItemCard: React.FC<ExperienceItemCardProps> = ({
 
         <div>
           <label className="block text-[11px] font-medium text-slate-400 mb-1">
-            Role Title ({activeLanguage.toUpperCase()})
+            Role Title
           </label>
           <input
             type="text"
@@ -261,7 +261,7 @@ export const ExperienceItemCard: React.FC<ExperienceItemCardProps> = ({
       <div>
         <div className="flex justify-between items-center mb-1">
           <label className="block text-[11px] font-medium text-slate-400">
-            Position Executive Summary ({activeLanguage.toUpperCase()})
+            Position Executive Summary
           </label>
           <span className={`text-[10px] font-mono ${
             currentSummary.length >= EDITOR_LIMITS.MAX_POSITION_SUMMARY_CHARS - 20

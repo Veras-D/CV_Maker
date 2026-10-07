@@ -79,7 +79,7 @@ const ProjectCardItem: React.FC<{
 
         <div className="space-y-1">
           <div className="flex justify-between items-center text-[10px] text-slate-400">
-            <span>Description ({activeLanguage.toUpperCase()})</span>
+            <span>Description</span>
             <span className={`font-mono ${
               currentDesc.length >= EDITOR_LIMITS.MAX_PROJECT_DESC_CHARS - 20 ? 'text-amber-400' : 'text-slate-500'
             }`}>
@@ -89,7 +89,7 @@ const ProjectCardItem: React.FC<{
           <textarea
             rows={2}
             maxLength={EDITOR_LIMITS.MAX_PROJECT_DESC_CHARS}
-            placeholder={`e.g. Real-time distributed task orchestrator built with React and Rust (${activeLanguage.toUpperCase()})...`}
+            placeholder="e.g. Real-time distributed task orchestrator built with React and Rust..."
             value={currentDesc}
             onChange={(e) => onUpdate(p.id, {
               description: { ...p.description, [activeLanguage]: e.target.value }

@@ -19,9 +19,8 @@ export const ProfileEditor: React.FC = () => {
 
       <div className="mt-4 pt-4 border-t border-slate-800 space-y-4">
         <div>
-          <div className="flex justify-between items-center mb-1">
+          <div className="mb-1">
             <label className="text-xs font-semibold text-slate-400">Professional Headline</label>
-            <span className="text-[10px] text-sky-400 font-mono">Editing: {activeLanguage.toUpperCase()}</span>
           </div>
           <input
             type="text"
@@ -37,16 +36,13 @@ export const ProfileEditor: React.FC = () => {
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-xs font-semibold text-slate-400">Executive Summary</label>
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-mono ${
-                (profile.summary[activeLanguage] || profile.summary.en || '').length >= EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS - 30
-                  ? 'text-amber-400'
-                  : 'text-slate-500'
-              }`}>
-                {(profile.summary[activeLanguage] || profile.summary.en || '').length}/{EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS}
-              </span>
-              <span className="text-[10px] text-sky-400 font-mono">Editing: {activeLanguage.toUpperCase()}</span>
-            </div>
+            <span className={`text-[10px] font-mono ${
+              (profile.summary[activeLanguage] || profile.summary.en || '').length >= EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS - 30
+                ? 'text-amber-400'
+                : 'text-slate-500'
+            }`}>
+              {(profile.summary[activeLanguage] || profile.summary.en || '').length}/{EDITOR_LIMITS.MAX_EXECUTIVE_SUMMARY_CHARS}
+            </span>
           </div>
           <textarea
             rows={3}
