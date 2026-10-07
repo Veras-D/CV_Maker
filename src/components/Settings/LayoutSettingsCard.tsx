@@ -1,6 +1,12 @@
 import React from 'react';
 import { useCV } from '../../context/CVContext';
 import { Layout, FolderOpen, Info, Check } from 'lucide-react';
+import { CustomSelect, SelectOption } from '../Common/CustomSelect';
+
+const PAGE_LIMIT_OPTIONS: SelectOption[] = [
+  { value: '1', label: '1 Page (Strict ATS Standard - Recommended)' },
+  { value: '2', label: '2 Pages (Extended Career History)' }
+];
 
 export const LayoutSettingsCard: React.FC = () => {
   const { 
@@ -57,14 +63,11 @@ export const LayoutSettingsCard: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-300 mb-1">
             Target Page Limit
           </label>
-          <select
-            value={targetMaxPages}
-            onChange={(e) => setTargetMaxPages(Number(e.target.value))}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 cursor-pointer"
-          >
-            <option value={1}>1 Page (Strict ATS Standard - Recommended)</option>
-            <option value={2}>2 Pages (Extended Career History)</option>
-          </select>
+          <CustomSelect
+            options={PAGE_LIMIT_OPTIONS}
+            value={String(targetMaxPages)}
+            onChange={(val) => setTargetMaxPages(Number(val))}
+          />
           <p className="text-[11px] text-slate-500 mt-1">
             Default is 1 page. The trimmer only activates if your content would spill over.
           </p>
