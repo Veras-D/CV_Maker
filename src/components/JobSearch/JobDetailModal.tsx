@@ -13,14 +13,12 @@ import {
   DollarSign, 
   Building,
   Clock,
-  Briefcase,
-  Eye
+  Briefcase
 } from 'lucide-react';
 
 export interface JobDetailModalProps {
   job: RemoteJob | null;
   kanbanRoles: KanbanRole[];
-  isClicked?: boolean;
   onClose: () => void;
   onApplyAndTailor: (job: RemoteJob) => void;
 }
@@ -141,7 +139,6 @@ const JobDetailFooter: React.FC<JobDetailFooterProps> = ({
 export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   job,
   kanbanRoles,
-  isClicked = false,
   onClose,
   onApplyAndTailor
 }) => {
@@ -193,20 +190,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   YC
                 </span>
               )}
-              {appliedInfo.isApplied ? (
+              {appliedInfo.isApplied && (
                 <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Applied {appliedInfo.dateApplied ? `(${appliedInfo.dateApplied})` : ''}</span>
                 </span>
-              ) : isClicked ? (
-                <span 
-                  className="bg-slate-800 text-slate-400 border border-slate-700/60 text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 font-medium select-none"
-                  title="Viewed role"
-                >
-                  <Eye className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Viewed</span>
-                </span>
-              ) : null}
+              )}
             </div>
 
             <button

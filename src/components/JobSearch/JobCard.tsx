@@ -52,7 +52,6 @@ export const JobCard: React.FC<JobCardProps> = ({
           job={job}
           sourceStyle={sourceStyle}
           appliedInfo={appliedInfo}
-          isClicked={isClicked}
         />
 
         <h3 

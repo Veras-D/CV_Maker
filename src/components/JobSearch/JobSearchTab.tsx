@@ -126,7 +126,6 @@ export const JobSearchTab: React.FC = () => {
       <JobDetailModal
         job={selectedJob}
         kanbanRoles={kanbanRoles}
-        isClicked={selectedJob ? clickedJobIds.has(selectedJob.id) : false}
         onClose={() => setSelectedJob(null)}
         onApplyAndTailor={handleApplyAndTailor}
       />

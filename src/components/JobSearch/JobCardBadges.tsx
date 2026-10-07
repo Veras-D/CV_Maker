@@ -1,16 +1,15 @@
 import React from 'react';
 import { RemoteJob } from '../../types/jobSearch';
 import { formatRelativeTime } from '../../utils/jobFilterEngine';
-import { CheckCircle2, Eye } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 interface JobCardBadgesProps {
   job: RemoteJob;
   sourceStyle: { bg: string; text: string; border: string };
   appliedInfo: { isApplied: boolean; dateApplied?: string };
-  isClicked?: boolean;
 }
 
-export const JobCardBadges: React.FC<JobCardBadgesProps> = ({ job, sourceStyle, appliedInfo, isClicked }) => {
+export const JobCardBadges: React.FC<JobCardBadgesProps> = ({ job, sourceStyle, appliedInfo }) => {
   const isContract = job.employmentType === 'contract' || job.employmentType === 'freelance' || Boolean(job.contractDuration);
 
   return (
@@ -40,20 +39,12 @@ export const JobCardBadges: React.FC<JobCardBadgesProps> = ({ job, sourceStyle, 
             Part-time
           </span>
         )}
-        {appliedInfo.isApplied ? (
+        {appliedInfo.isApplied && (
           <span className="bg-emerald-950 text-emerald-400 border border-emerald-700/80 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium">
             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
             <span>Applied {appliedInfo.dateApplied ? `(${appliedInfo.dateApplied})` : ''}</span>
           </span>
-        ) : isClicked ? (
-          <span 
-            className="bg-slate-800/90 text-slate-400 border border-slate-700/60 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 font-medium select-none"
-            title="Viewed role"
-          >
-            <Eye className="w-3 h-3 text-slate-400" />
-            <span>Viewed</span>
-          </span>
-        ) : null}
+        )}
       </div>
       <span className="text-[11px] text-slate-500 whitespace-nowrap">
         {formatRelativeTime(job.publishedAt)}
