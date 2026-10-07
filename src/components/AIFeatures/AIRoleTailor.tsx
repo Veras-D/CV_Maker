@@ -20,12 +20,14 @@ export const AIRoleTailor: React.FC = () => {
     coverLetterEditable,
     setCoverLetterEditable,
     summaryEditable,
+    summaryStyle,
     isPdfExporting,
     downloadFeedback,
     isProModalOpen,
     setIsProModalOpen,
     handleRunTailor,
     handleSummaryChange,
+    handleSelectSummaryStyle,
     handleResetSummaryToMaster,
     handleDownloadPDF,
     handleDownloadCoverLetter,
@@ -67,10 +69,12 @@ export const AIRoleTailor: React.FC = () => {
             activePreset={activePreset}
             coverLetterEditable={coverLetterEditable}
             summaryEditable={summaryEditable}
+            currentSummaryStyle={summaryStyle}
             isPdfExporting={isPdfExporting}
             downloadFeedback={downloadFeedback}
             onCoverLetterChange={setCoverLetterEditable}
             onSummaryChange={handleSummaryChange}
+            onSelectSummaryStyle={handleSelectSummaryStyle}
             onResetSummaryToMaster={handleResetSummaryToMaster}
             onDownloadCoverLetter={handleDownloadCoverLetter}
             onDownloadPDF={handleDownloadPDF}

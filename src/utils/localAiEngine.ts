@@ -1,11 +1,20 @@
 import { CVData, LanguageCode, CoverLetter, PDFMetadata } from '../types/cv';
 import { performHybridSemanticMatch, ATSMatchResult } from './semanticSearch';
-import { formatTechnologyName, getDomainLabel } from './skillOntology';
+import { formatTechnologyName } from './skillOntology';
+import { 
+  ExecutiveSummaryStyle,
+  cleanJobTitle,
+  estimateCareerYears,
+  getCandidateMatchedSkills,
+  synthesizeExecutiveSummary,
+  generateExecutiveSummaryVariants
+} from './summarySynthesizer';
 
 export interface LocalTailorOutput {
   matchResult: ATSMatchResult;
   coverLetter: CoverLetter;
   tailoredSummary: string;
+  summaryVariants?: Record<ExecutiveSummaryStyle, string>;
   tailoredMetadata: PDFMetadata;
   updatedData: CVData;
 }
@@ -16,8 +25,17 @@ import {
   SynthesizerExperience 
 } from './coverLetterSynthesizer';
 
-export type { CoverLetterTone, SynthesizerExperience };
-export { synthesizeCoverLetter };
+export type { CoverLetterTone, SynthesizerExperience, ExecutiveSummaryStyle };
+export { 
+  synthesizeCoverLetter,
+  cleanJobTitle, 
+  estimateCareerYears, 
+  getCandidateMatchedSkills, 
+  synthesizeExecutiveSummary, 
+  generateExecutiveSummaryVariants 
+};
+
+
 
 /**
  * Synthesize a professional, ATS-optimized Cover Letter locally with dynamic narrative prose
@@ -48,96 +66,6 @@ export function generateLocalCoverLetter(params: {
     seed: params.seed ?? 0,
     language: params.language
   });
-}
-
-/**
- * Extract distinct, non-redundant technology keywords, avoiding terms that duplicate the role title.
- */
-function extractDistinctKeywords(keywords: string[], primaryRole: string): string[] {
-  const roleTokens = new Set(primaryRole.toLowerCase().split(/[\s/,-]+/).filter(w => w.length > 2));
-  const genericTerms = new Set(['test', 'tester', 'testing', 'qa', 'quality', 'engineer', 'engineering', 'developer', 'development', 'software', 'lead']);
-  
-  const distinct: string[] = [];
-  const seen = new Set<string>();
-
-  for (const raw of keywords) {
-    const formatted = formatTechnologyName(raw).trim();
-    const lower = formatted.toLowerCase();
-    
-    if (seen.has(lower) || roleTokens.has(lower)) continue;
-    if (genericTerms.has(lower) && distinct.length >= 3) continue;
-
-    seen.add(lower);
-    distinct.push(formatted);
-    if (distinct.length >= 4) break;
-  }
-
-  return distinct;
-}
-
-/**
- * Format a list of items into natural language ("A, B, and C").
- */
-function formatNaturalList(items: string[]): string {
-  if (items.length === 0) return '';
-  if (items.length === 1) return items[0];
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
-}
-
-/**
- * Format domain labels into a natural phrase without chained ampersands.
- */
-function formatDomainFocus(matchedTags: string[]): string {
-  const validTags = matchedTags.slice(0, 2);
-  if (validTags.length === 0) return 'software engineering';
-  const labels = validTags.map(getDomainLabel);
-  if (labels.length === 1) return labels[0];
-  return `${labels[0]} and ${labels[1]}`;
-}
-
-/**
- * Synthesizes a natural, high-impact executive summary without ATS jargon or keyword stuffing.
- */
-export function synthesizeExecutiveSummary(params: {
-  cvData: CVData;
-  primaryRole: string;
-  matchedTags: string[];
-  matchedKeywords: string[];
-  language?: LanguageCode;
-}): string {
-  const { cvData, primaryRole, matchedTags, matchedKeywords, language = 'en' } = params;
-
-  // Retrieve existing master summary
-  const rawMaster = (cvData.profile.summary[language] || cvData.profile.summary.en || '').trim();
-  // If the stored summary was contaminated by the old robotic template, ignore it
-  const masterSummary = rawMaster.includes('aligned with ATS standards') ? '' : rawMaster;
-
-  // If candidate has a genuine master summary, preserve their authentic experience and align the title
-  if (masterSummary.length > 30) {
-    const roleRegex = /^(Results-driven|Results-oriented|Experienced|Dedicated|Passionate|Senior|Junior|Lead)?\s*(Software Engineer|Full-Stack Engineer|Developer|Backend Engineer|Frontend Engineer|DevOps Engineer|QA Engineer|Software Tester|Specialist|Vývojář|Inženýr)\b/i;
-    if (roleRegex.test(masterSummary)) {
-      return masterSummary.replace(roleRegex, (_m, prefix) => prefix ? `${prefix} ${primaryRole}` : primaryRole);
-    }
-    return masterSummary;
-  }
-
-  const distinctKws = extractDistinctKeywords(matchedKeywords, primaryRole);
-  const domainFocus = formatDomainFocus(matchedTags);
-  const kwList = distinctKws.length > 0 ? formatNaturalList(distinctKws) : '';
-
-  if (language === 'cs') {
-    if (kwList) {
-      return `${primaryRole} se specializací na ${domainFocus} a praktickými zkušenostmi s technologiemi ${kwList}. Zaměření na čistý kód, spolehlivost systémů a efektivní týmovou spolupráci.`;
-    }
-    return `${primaryRole} se specializací na ${domainFocus}. Prokazatelné výsledky při vývoji spolehlivých, škálovatelných aplikací a efektivní spolupráci v agilních týmech.`;
-  }
-
-  if (kwList) {
-    return `Results-driven ${primaryRole} with specialized focus in ${domainFocus} and hands-on experience in ${kwList}. Proven track record of delivering resilient, high-quality software solutions and driving continuous improvement across engineering teams.`;
-  }
-
-  return `Results-driven ${primaryRole} with specialized focus in ${domainFocus}. Proven track record of delivering resilient, high-quality software solutions and driving continuous improvement across engineering teams.`;
 }
 
 /**
@@ -204,13 +132,14 @@ export function runLocalAITailor(params: {
     cp_category: 'Curriculum Vitae / Resume'
   };
 
-  const tailoredSummary = synthesizeExecutiveSummary({
+  const summaryVariants = generateExecutiveSummaryVariants({
     cvData,
-    primaryRole,
+    jobTitle: primaryRole,
     matchedTags: matchResult.matchedTags,
     matchedKeywords: matchResult.matchedKeywords,
     language
   });
+  const tailoredSummary = summaryVariants.authentic;
 
   const tailoredHeadline = primaryRole;
   const updatedData: CVData = {
@@ -238,6 +167,7 @@ export function runLocalAITailor(params: {
     matchResult,
     coverLetter: newCoverLetter,
     tailoredSummary,
+    summaryVariants,
     tailoredMetadata,
     updatedData
   };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCV } from '../../context/CVContext';
-import { runLocalAITailor, LocalTailorOutput } from '../../utils/localAiEngine';
+import { runLocalAITailor, LocalTailorOutput, ExecutiveSummaryStyle } from '../../utils/localAiEngine';
 import { LanguageCode } from '../../types/cv';
 import { useTailorAutoApply } from './useTailorAutoApply';
 import { downloadTailoredPDF, downloadCoverLetterFile } from './tailorExportHelpers';
@@ -22,9 +22,11 @@ export function useAIRoleTailorState() {
   const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
   const [coverLetterEditable, setCoverLetterEditable] = useState('');
   const [summaryEditable, setSummaryEditable] = useState('');
+  const [summaryStyle, setSummaryStyle] = useState<ExecutiveSummaryStyle>('authentic');
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+
 
   useTailorAutoApply({
     setJobTitle,
@@ -52,6 +54,7 @@ export function useAIRoleTailorState() {
       setTailoredOutput(output);
       setCoverLetterEditable(output.coverLetter.content[activeLanguage] || output.coverLetter.content.en || '');
       setSummaryEditable(output.tailoredSummary);
+      setSummaryStyle('authentic');
       
       addKanbanRole({
         roleTitle: jobTitle || 'Software Engineer',
@@ -89,7 +92,15 @@ export function useAIRoleTailorState() {
     });
   };
 
+  const handleSelectSummaryStyle = (style: ExecutiveSummaryStyle) => {
+    setSummaryStyle(style);
+    if (!tailoredOutput) return;
+    const variantText = tailoredOutput.summaryVariants?.[style] ?? tailoredOutput.tailoredSummary;
+    handleSummaryChange(variantText);
+  };
+
   const handleResetSummaryToMaster = () => {
+    setSummaryStyle('authentic');
     const rawMaster = (cvData.profile.summary[activeLanguage] || cvData.profile.summary.en || '').trim();
     const cleanMaster = rawMaster.includes('aligned with ATS standards') ? '' : rawMaster;
     handleSummaryChange(cleanMaster);
@@ -131,11 +142,13 @@ export function useAIRoleTailorState() {
     tailoredOutput,
     coverLetterEditable, setCoverLetterEditable,
     summaryEditable,
+    summaryStyle,
     isPdfExporting,
     downloadFeedback,
     isProModalOpen, setIsProModalOpen,
     handleRunTailor,
     handleSummaryChange,
+    handleSelectSummaryStyle,
     handleResetSummaryToMaster,
     handleDownloadPDF,
     handleDownloadCoverLetter,
