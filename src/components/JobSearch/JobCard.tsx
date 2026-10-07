@@ -34,14 +34,14 @@ export const JobCard: React.FC<JobCardProps> = ({
 }) => {
   const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
   const sourceStyle = SOURCE_COLORS[job.source] || SOURCE_COLORS.greenhouse;
-  const isViewed = isClicked && !appliedInfo.isApplied;
+  const isViewed = isClicked || appliedInfo.isApplied;
 
   return (
     <div 
       onClick={() => onSelectJob(job)}
       className={`border rounded-xl p-4 transition-all flex flex-col justify-between gap-3 cursor-pointer group ${
         appliedInfo.isApplied 
-          ? 'border-emerald-900/60 bg-slate-900/90 hover:border-emerald-700/80 shadow-sm' 
+          ? 'border-emerald-900/60 bg-slate-950/60 opacity-80 hover:opacity-100 hover:border-emerald-700/80 hover:bg-slate-900/80 shadow-sm' 
           : isViewed
             ? 'border-slate-800/60 bg-slate-950/60 opacity-80 hover:opacity-100 hover:border-slate-700 hover:bg-slate-900/80'
             : 'border-slate-800 bg-slate-900 hover:border-slate-700'
@@ -56,11 +56,11 @@ export const JobCard: React.FC<JobCardProps> = ({
 
         <h3 
           className={`text-sm sm:text-base font-bold transition-colors line-clamp-2 ${
-            appliedInfo.isApplied
-              ? 'text-slate-100 group-hover:text-emerald-400'
-              : isViewed
-                ? 'text-slate-400 group-hover:text-slate-200'
-                : 'text-slate-100 group-hover:text-sky-400'
+            isViewed
+              ? appliedInfo.isApplied
+                ? 'text-slate-400 group-hover:text-emerald-300'
+                : 'text-slate-400 group-hover:text-slate-200'
+              : 'text-slate-100 group-hover:text-sky-400'
           }`}
         >
           {job.title}
