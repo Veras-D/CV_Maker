@@ -42,7 +42,7 @@ function getCollisionInfo(
     : null;
 
   const urlNotice = isExistingMatch && match
-    ? `Matches existing card "${match.company} - ${match.roleTitle}" (${formatStageLabel(match.status)}). Saving will update it and preserve its pipeline stage.`
+    ? `Matches existing card "${match.company} - ${match.roleTitle}" (${formatStageLabel(match.status)}). Saving will update it while preserving its pipeline stage, date applied, and notes.`
     : null;
 
   return { matchingRole: match, isDuplicateError, isExistingMatch, urlError, urlNotice };

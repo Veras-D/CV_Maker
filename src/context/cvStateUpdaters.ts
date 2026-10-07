@@ -265,10 +265,10 @@ export const addKanbanRoleState = (data: CVData, role: Omit<KanbanRole, 'id' | '
         location: role.location || existing.location,
         salary: role.salary !== undefined ? role.salary : existing.salary,
         roleUrl: role.roleUrl || existing.roleUrl,
-        notes: role.notes || existing.notes,
-        // PRESERVE the pipeline stage (status)!
+        // PRESERVE the pipeline stage (status), notes, and dateApplied as requested!
         status: existing.status,
-        dateApplied: existing.dateApplied || role.dateApplied,
+        dateApplied: existing.dateApplied?.trim() ? existing.dateApplied : (role.dateApplied || existing.dateApplied),
+        notes: existing.notes?.trim() ? existing.notes : (role.notes || existing.notes),
         updatedAt: new Date().toISOString()
       };
 

@@ -27,9 +27,10 @@ describe('kanbanUtils', () => {
           company: 'Acme',
           location: 'Remote',
           status: 'applied',
-          dateApplied: '2026-10-01',
+          dateApplied: '2026-09-15',
+          notes: 'Met founder at meetup',
           roleUrl: 'https://jobs.lever.co/acme/123/',
-          updatedAt: '2026-10-01T10:00:00Z'
+          updatedAt: '2026-09-15T10:00:00Z'
         },
         {
           id: 'card-2',
@@ -38,6 +39,7 @@ describe('kanbanUtils', () => {
           location: 'Remote',
           status: 'tech_interview',
           dateApplied: '2026-10-01',
+          notes: 'Generic imported note',
           roleUrl: 'https://jobs.lever.co/acme/123',
           updatedAt: '2026-10-02T10:00:00Z'
         }
@@ -47,6 +49,8 @@ describe('kanbanUtils', () => {
       expect(deduplicated).toHaveLength(1);
       expect(deduplicated[0].status).toBe('tech_interview');
       expect(deduplicated[0].roleTitle).toBe('Senior Frontend Engineer');
+      expect(deduplicated[0].dateApplied).toBe('2026-09-15');
+      expect(deduplicated[0].notes).toBe('Met founder at meetup');
     });
 
     it('keeps distinct roles untouched', () => {

@@ -44,8 +44,8 @@ function mergeTwoKanbanRoles(existing: KanbanRole, incoming: KanbanRole): Kanban
     id: existing.id,
     roleUrl: existing.roleUrl || incoming.roleUrl,
     status,
-    dateApplied: existing.dateApplied || incoming.dateApplied,
-    notes: incoming.notes || existing.notes,
+    dateApplied: existing.dateApplied?.trim() ? existing.dateApplied : (incoming.dateApplied || existing.dateApplied),
+    notes: existing.notes?.trim() ? existing.notes : (incoming.notes || existing.notes),
     updatedAt: new Date().toISOString()
   };
 }

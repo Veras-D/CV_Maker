@@ -57,7 +57,7 @@ describe('cvStateUpdaters', () => {
     expect(interviewing.kanbanRoles[0].status).toBe('hr_call');
   });
 
-  it('updates existing card and preserves pipeline stage when roleUrl matches', () => {
+  it('updates existing card and preserves pipeline stage, notes, and dateApplied when roleUrl matches', () => {
     const initial = createEmptyCVData();
     const created = addKanbanRoleState(initial, {
       roleTitle: 'Software Engineer',
@@ -65,11 +65,14 @@ describe('cvStateUpdaters', () => {
       status: 'tech_interview',
       location: 'Remote',
       dateApplied: '2026-10-01',
+      notes: 'Initial interview notes from recruiter',
       roleUrl: 'https://jobs.lever.co/field-ai/cce9d6c0-55c9-4513-b4f6-9508c2bc34d5'
     });
 
     expect(created.kanbanRoles).toHaveLength(1);
     expect(created.kanbanRoles[0].status).toBe('tech_interview');
+    expect(created.kanbanRoles[0].dateApplied).toBe('2026-10-01');
+    expect(created.kanbanRoles[0].notes).toBe('Initial interview notes from recruiter');
 
     // Attempt to add a new card with the same roleUrl (with different trailing slash and casing)
     const reAdded = addKanbanRoleState(created, {
@@ -77,14 +80,18 @@ describe('cvStateUpdaters', () => {
       company: 'Field AI Inc',
       status: 'applied', // New card defaults to applied
       location: 'San Francisco, CA',
-      dateApplied: '2026-10-07',
+      dateApplied: '2026-10-07', // New re-apply date
+      notes: 'Default AI tailoring notes', // Incoming default note
       roleUrl: 'https://JOBS.LEVER.CO/field-ai/cce9d6c0-55c9-4513-b4f6-9508c2bc34d5/'
     });
 
-    // Still only 1 card, but updated title and preserved tech_interview stage!
+    // Still only 1 card, updated title & company, but preserved tech_interview stage, original date applied, and original notes!
     expect(reAdded.kanbanRoles).toHaveLength(1);
     expect(reAdded.kanbanRoles[0].roleTitle).toBe('Senior Software Engineer (Updated)');
-    expect(reAdded.kanbanRoles[0].status).toBe('tech_interview');
+    expect(reAdded.kanbanRoles[0].company).toBe('Field AI Inc');
+    expect(reAdded.kanbanRoles[0].status).toBe('tech_interview'); // Preserved stage!
+    expect(reAdded.kanbanRoles[0].dateApplied).toBe('2026-10-01'); // Preserved original date applied!
+    expect(reAdded.kanbanRoles[0].notes).toBe('Initial interview notes from recruiter'); // Preserved original notes!
   });
 
   it('prevents assigning duplicate roleUrl when updating an existing card', () => {
