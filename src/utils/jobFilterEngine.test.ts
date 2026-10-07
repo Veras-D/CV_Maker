@@ -149,6 +149,7 @@ describe('jobFilterEngine - Remote Filtering', () => {
     },
     minSalary: 0,
     hideApplied: false,
+    hideClicked: false,
     employmentType: 'all',
     contractDuration: 'all'
   };
@@ -173,23 +174,44 @@ describe('jobFilterEngine - Remote Filtering', () => {
     expect(filtered[0].title).toBe('Full Stack Contractor');
   });
 
-  it('filters out applied jobs when hideApplied is true', () => {
-    const kanbanRoles: KanbanRole[] = [
-      {
-        id: 'role-1',
-        roleTitle: 'Senior TypeScript Engineer',
-        company: 'Stripe',
-        location: 'Remote - Worldwide',
-        status: 'applied',
-        dateApplied: '2026-10-01',
-        updatedAt: '2026-10-01'
-      }
-    ];
+  const appliedKanbanRoles: KanbanRole[] = [
+    {
+      id: 'role-1',
+      roleTitle: 'Senior TypeScript Engineer',
+      company: 'Stripe',
+      location: 'Remote - Worldwide',
+      status: 'applied',
+      dateApplied: '2026-10-01',
+      updatedAt: '2026-10-01'
+    }
+  ];
 
+  it('filters out applied jobs when hideApplied is true', () => {
     const filtered = filterRemoteJobs({
       jobs: mockJobs,
       filters: { ...defaultFilters, hideApplied: true },
-      kanbanRoles
+      kanbanRoles: appliedKanbanRoles
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].company).toBe('Acme Corp');
+  });
+
+  it('filters out clicked jobs when hideClicked is true', () => {
+    const filtered = filterRemoteJobs({
+      jobs: mockJobs,
+      filters: { ...defaultFilters, hideClicked: true },
+      kanbanRoles: [],
+      clickedJobIds: new Set(['job-1'])
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].id).toBe('job-2');
+  });
+
+  it('filters out applied jobs when hideClicked is true', () => {
+    const filtered = filterRemoteJobs({
+      jobs: mockJobs,
+      filters: { ...defaultFilters, hideClicked: true },
+      kanbanRoles: appliedKanbanRoles
     });
     expect(filtered).toHaveLength(1);
     expect(filtered[0].company).toBe('Acme Corp');

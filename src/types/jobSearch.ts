@@ -37,7 +37,8 @@ export interface JobSearchFiltersState {
   region: JobRegionFilter;
   sources: Record<JobSource, boolean>;
   minSalary: number;
-  hideApplied: boolean;
+  hideApplied?: boolean;
+  hideClicked?: boolean;
   employmentType: EmploymentType;
   contractDuration: ContractDuration;
 }

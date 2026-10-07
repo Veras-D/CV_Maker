@@ -50,6 +50,7 @@ export function useJobSearchData() {
     },
     minSalary: 0,
     hideApplied: false,
+    hideClicked: false,
     employmentType: 'all',
     contractDuration: 'all'
   });
@@ -135,11 +136,15 @@ export function useJobSearchData() {
   };
 
   const appliedCount = allJobs.filter(job => isJobAlreadyApplied(job, cvData.kanbanRoles).isApplied).length;
+  const clickedCount = allJobs.filter(
+    job => clickedJobIds.has(job.id) || isJobAlreadyApplied(job, cvData.kanbanRoles).isApplied
+  ).length;
 
   const filteredJobs = filterRemoteJobs({
     jobs: allJobs,
     filters,
-    kanbanRoles: cvData.kanbanRoles
+    kanbanRoles: cvData.kanbanRoles,
+    clickedJobIds
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
@@ -182,6 +187,7 @@ export function useJobSearchData() {
     handleApplyAndTailor,
     loadJobs,
     appliedCount,
+    clickedCount,
     kanbanRoles: cvData.kanbanRoles
   };
 }

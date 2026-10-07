@@ -1,5 +1,6 @@
 import { RemoteJob, JobSearchFiltersState, EmploymentType, ContractDuration } from '../types/jobSearch';
 import { KanbanRole } from '../types/cv';
+import { isJobClicked } from './clickedJobsService';
 
 const US_REGEX = /\b(?:united states|usa|u\.s\.a\.?|u\.s\.?|us|north america|san francisco|new york|austin|seattle|california|chicago|boston|los angeles|remote - us|remote u\.?s\.?|us only|usa only)\b/i;
 const EU_REGEX = /\b(?:europe|emea|eu|uk|united kingdom|germany|france|spain|poland|czech|portugal|netherlands|ireland|sweden|london|berlin|paris|amsterdam|madrid)\b/i;
@@ -201,19 +202,35 @@ function matchesSearchQuery(job: RemoteJob, tokens: string[]): boolean {
   return tokens.every(tok => combined.includes(tok));
 }
 
-function isJobAppliedOrHidden(job: RemoteJob, hideApplied: boolean, kanbanRoles: KanbanRole[]): boolean {
-  if (!hideApplied) return false;
-  return isJobAlreadyApplied(job, kanbanRoles).isApplied;
+function isJobClickedOrAppliedHidden(
+  job: RemoteJob,
+  filters: JobSearchFiltersState,
+  kanbanRoles: KanbanRole[],
+  clickedJobIds?: Set<string>
+): boolean {
+  const shouldHide = Boolean(filters.hideClicked || filters.hideApplied);
+  if (!shouldHide) return false;
+
+  const applied = isJobAlreadyApplied(job, kanbanRoles).isApplied;
+  if (applied) return true;
+
+  if (filters.hideClicked) {
+    const clicked = clickedJobIds ? clickedJobIds.has(job.id) : isJobClicked(job.id);
+    if (clicked) return true;
+  }
+
+  return false;
 }
 
-interface FilterJobParams {
+export interface FilterJobParams {
   jobs: RemoteJob[];
   filters: JobSearchFiltersState;
   kanbanRoles: KanbanRole[];
+  clickedJobIds?: Set<string>;
 }
 
 export function filterRemoteJobs(params: FilterJobParams): RemoteJob[] {
-  const { jobs, filters, kanbanRoles } = params;
+  const { jobs, filters, kanbanRoles, clickedJobIds } = params;
   const queryTokens = filters.query.toLowerCase().trim().split(/\s+/).filter(Boolean);
 
   return jobs.filter(job => {
@@ -223,7 +240,7 @@ export function filterRemoteJobs(params: FilterJobParams): RemoteJob[] {
     if (!matchesSalary(job, filters.minSalary)) return false;
     if (!matchesEmploymentType(job, filters.employmentType)) return false;
     if (!matchesContractDuration(job, filters.contractDuration)) return false;
-    if (isJobAppliedOrHidden(job, filters.hideApplied, kanbanRoles)) return false;
+    if (isJobClickedOrAppliedHidden(job, filters, kanbanRoles, clickedJobIds)) return false;
     return matchesSearchQuery(job, queryTokens);
   });
 }

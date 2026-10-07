@@ -27,6 +27,7 @@ export const JobSearchTab: React.FC = () => {
     handleApplyAndTailor,
     loadJobs,
     appliedCount,
+    clickedCount,
     kanbanRoles,
     allJobs
   } = useJobSearchData();
@@ -67,6 +68,7 @@ export const JobSearchTab: React.FC = () => {
         totalFound={filteredJobs.length}
         jobs={allJobs}
         appliedCount={appliedCount}
+        clickedCount={clickedCount}
         isLoading={isLoading}
         onOpenCompaniesModal={() => setIsCompaniesModalOpen(true)}
       />
