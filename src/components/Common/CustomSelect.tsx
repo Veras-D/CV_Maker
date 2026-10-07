@@ -7,13 +7,14 @@ export interface SelectOption {
   isPro?: boolean;
 }
 
-interface CustomSelectProps {
+export interface CustomSelectProps {
   options: SelectOption[];
   value: string;
   onChange: (value: string) => void;
   onProClick?: (value: string) => void;
   placeholder?: string;
   className?: string;
+  buttonClassName?: string;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -22,7 +23,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   onChange,
   onProClick,
   placeholder = "Select...",
-  className = ""
+  className = "",
+  buttonClassName = ""
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
@@ -61,7 +63,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={handleToggle}
-        className="w-full bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium flex items-center justify-between gap-1 shadow-sm focus:outline-none focus:border-sky-500 transition-colors"
+        className={`w-full h-9 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 rounded-lg px-2.5 text-xs font-medium flex items-center justify-between gap-1 shadow-sm focus:outline-none focus:border-sky-500 transition-colors ${buttonClassName}`}
       >
         <span className="truncate flex items-center gap-1">
           {selectedOption ? selectedOption.label : placeholder}

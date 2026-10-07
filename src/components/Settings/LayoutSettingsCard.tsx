@@ -58,19 +58,25 @@ export const LayoutSettingsCard: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">
             Download Destination Directory
           </label>
-          <div className="relative flex items-center">
-            <button
-              type="button"
-              onClick={handleSelectFolder}
-              className="w-full bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 hover:border-slate-600 rounded-lg pl-3 pr-20 py-1.5 text-xs font-medium flex items-center gap-2 shadow-sm focus:outline-none focus:border-sky-500 transition-colors cursor-pointer text-left overflow-hidden h-[34px]"
-              title={exportDirectory || 'Default System Downloads'}
-            >
-              <FolderOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              <span className={`truncate text-xs ${exportDirectory ? 'text-slate-100' : 'text-slate-400'}`}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleSelectFolder}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelectFolder();
+              }
+            }}
+            className="w-full h-9 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 text-xs font-medium flex items-center justify-between gap-1 shadow-sm focus:outline-none focus:border-sky-500 transition-colors cursor-pointer"
+            title={exportDirectory || 'Default System Downloads Folder'}
+          >
+            <span className="truncate flex items-center gap-1.5 min-w-0">
+              <span className={`truncate ${exportDirectory ? 'text-slate-100' : 'text-slate-400'}`}>
                 {exportDirectory || 'Default System Downloads'}
               </span>
-            </button>
-            <div className="absolute right-1.5 flex items-center gap-1">
+            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
               {exportDirectory && (
                 <button
                   type="button"
@@ -79,18 +85,12 @@ export const LayoutSettingsCard: React.FC = () => {
                     setExportDirectory('');
                   }}
                   title="Reset to default downloads folder"
-                  className="p-1 text-slate-400 hover:text-red-400 rounded transition-colors cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-red-400 rounded cursor-pointer transition-colors"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleSelectFolder}
-                className="bg-slate-700 hover:bg-slate-650 text-sky-400 hover:text-sky-300 px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer"
-              >
-                Browse
-              </button>
+              <FolderOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </div>
           </div>
         </div>
