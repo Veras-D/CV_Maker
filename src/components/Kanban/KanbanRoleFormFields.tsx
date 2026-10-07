@@ -30,6 +30,8 @@ export interface KanbanRoleFormFieldsProps {
   onDateAppliedChange: (v: string) => void;
   onRoleUrlChange: (v: string) => void;
   onNotesChange: (v: string) => void;
+  urlError?: string | null;
+  urlNotice?: string | null;
 }
 
 export const KanbanRoleFormFields: React.FC<KanbanRoleFormFieldsProps> = ({
@@ -48,7 +50,9 @@ export const KanbanRoleFormFields: React.FC<KanbanRoleFormFieldsProps> = ({
   onStatusChange,
   onDateAppliedChange,
   onRoleUrlChange,
-  onNotesChange
+  onNotesChange,
+  urlError,
+  urlNotice
 }) => {
   return (
     <div className="space-y-3">
@@ -120,14 +124,42 @@ export const KanbanRoleFormFields: React.FC<KanbanRoleFormFieldsProps> = ({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-300 mb-1 font-medium">Role Link (Optional)</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-xs text-slate-300 font-medium">Role Link (Optional)</label>
+          {urlNotice && (
+            <span className="text-[11px] text-amber-400 font-medium">
+              Existing Card Detected
+            </span>
+          )}
+          {urlError && (
+            <span className="text-[11px] text-rose-400 font-medium">
+              Duplicate Link
+            </span>
+          )}
+        </div>
         <input
           type="url"
           placeholder="https://..."
           value={roleUrl}
           onChange={(e) => onRoleUrlChange(e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500"
+          className={`w-full bg-slate-800 border rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none transition-colors ${
+            urlError 
+              ? 'border-rose-500/80 focus:border-rose-400' 
+              : urlNotice 
+                ? 'border-amber-500/80 focus:border-amber-400' 
+                : 'border-slate-700 focus:border-sky-500'
+          }`}
         />
+        {urlError && (
+          <p className="mt-1 text-[11px] text-rose-400 leading-tight">
+            {urlError}
+          </p>
+        )}
+        {urlNotice && (
+          <p className="mt-1 text-[11px] text-amber-300/90 leading-tight bg-amber-950/30 border border-amber-800/40 rounded px-2 py-1">
+            {urlNotice}
+          </p>
+        )}
       </div>
 
       <div>

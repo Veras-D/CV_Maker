@@ -19,6 +19,7 @@ import * as updaters from './cvStateUpdaters';
 import { openExternalUrl } from '../utils/urlHelper';
 import { fetchAllRemoteJobs, getCachedJobs } from '../utils/jobSearchApi';
 import { fetchLiveYcDirectory } from '../utils/dynamicYcService';
+import { deduplicateKanbanRoles } from '../utils/kanbanUtils';
 
 const STORAGE_KEY = 'cv_maker_data_v3';
 
@@ -121,7 +122,13 @@ function loadInitialCVData(): CVData {
     localStorage.removeItem('cv_maker_data_v1');
     localStorage.removeItem('cv_maker_data_v2');
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.kanbanRoles)) {
+        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
+      }
+      return parsed;
+    }
   } catch (e) {
     console.error("Failed to parse saved CV data:", e);
   }
@@ -239,6 +246,9 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const importDataJSON = (jsonString: string): boolean => {
     const parsed = parseCVDataJSON(jsonString);
     if (parsed) {
+      if (Array.isArray(parsed.kanbanRoles)) {
+        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
+      }
       setCvData(parsed);
       return true;
     }

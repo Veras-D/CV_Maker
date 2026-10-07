@@ -11,6 +11,7 @@ import {
   PDFMetadata,
   UserProfile
 } from '../types/cv';
+import { normalizeRoleUrl } from '../utils/kanbanUtils';
 
 export const updateProfileState = (data: CVData, updated: Partial<UserProfile>): CVData => ({
   ...data,
@@ -248,9 +249,38 @@ export const updateMetadataState = (data: CVData, metadata: Partial<PDFMetadata>
 });
 
 export const addKanbanRoleState = (data: CVData, role: Omit<KanbanRole, 'id' | 'updatedAt'>): CVData => {
+  const normUrl = normalizeRoleUrl(role.roleUrl);
+
+  if (normUrl) {
+    const existingIndex = data.kanbanRoles.findIndex(
+      r => normalizeRoleUrl(r.roleUrl) === normUrl
+    );
+
+    if (existingIndex !== -1) {
+      const existing = data.kanbanRoles[existingIndex];
+      const updatedRole: KanbanRole = {
+        ...existing,
+        roleTitle: role.roleTitle.trim() || existing.roleTitle,
+        company: role.company.trim() || existing.company,
+        location: role.location || existing.location,
+        salary: role.salary !== undefined ? role.salary : existing.salary,
+        roleUrl: role.roleUrl || existing.roleUrl,
+        notes: role.notes || existing.notes,
+        // PRESERVE the pipeline stage (status)!
+        status: existing.status,
+        dateApplied: existing.dateApplied || role.dateApplied,
+        updatedAt: new Date().toISOString()
+      };
+
+      const updatedKanbanRoles = [...data.kanbanRoles];
+      updatedKanbanRoles[existingIndex] = updatedRole;
+      return { ...data, kanbanRoles: updatedKanbanRoles };
+    }
+  }
+
   const newRole: KanbanRole = {
     ...role,
-    id: `kanban-${Date.now()}`,
+    id: `kanban-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     updatedAt: new Date().toISOString()
   };
   return { ...data, kanbanRoles: [newRole, ...data.kanbanRoles] };
@@ -263,12 +293,31 @@ export const updateKanbanRoleStatusState = (data: CVData, id: string, status: Ka
   )
 });
 
-export const updateKanbanRoleState = (data: CVData, id: string, updated: Partial<KanbanRole>): CVData => ({
-  ...data,
-  kanbanRoles: data.kanbanRoles.map(r => 
-    r.id === id ? { ...r, ...updated, updatedAt: new Date().toISOString() } : r
-  )
-});
+export const updateKanbanRoleState = (data: CVData, id: string, updated: Partial<KanbanRole>): CVData => {
+  const normUrl = normalizeRoleUrl(updated.roleUrl);
+
+  if (normUrl) {
+    const isDuplicate = data.kanbanRoles.some(
+      r => r.id !== id && normalizeRoleUrl(r.roleUrl) === normUrl
+    );
+    if (isDuplicate) {
+      const { roleUrl: _ignored, ...safeUpdated } = updated;
+      return {
+        ...data,
+        kanbanRoles: data.kanbanRoles.map(r => 
+          r.id === id ? { ...r, ...safeUpdated, updatedAt: new Date().toISOString() } : r
+        )
+      };
+    }
+  }
+
+  return {
+    ...data,
+    kanbanRoles: data.kanbanRoles.map(r => 
+      r.id === id ? { ...r, ...updated, updatedAt: new Date().toISOString() } : r
+    )
+  };
+};
 
 export const deleteKanbanRoleState = (data: CVData, id: string): CVData => ({
   ...data,

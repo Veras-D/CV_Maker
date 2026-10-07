@@ -160,8 +160,12 @@ export const KanbanBoard: React.FC = () => {
       <KanbanRoleModal
         isOpen={showAddModal}
         editingRole={editingRole}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingRole(null);
+        }}
         onSave={handleSaveRole}
+        allRoles={allRoles}
       />
 
       <DeleteConfirmationModal

@@ -1,6 +1,7 @@
 import { RemoteJob, JobSearchFiltersState, EmploymentType, ContractDuration } from '../types/jobSearch';
 import { KanbanRole } from '../types/cv';
 import { isJobClicked } from './clickedJobsService';
+import { normalizeRoleUrl } from './kanbanUtils';
 
 const US_REGEX = /\b(?:united states|usa|u\.s\.a\.?|u\.s\.?|us|north america|san francisco|new york|austin|seattle|california|chicago|boston|los angeles|remote - us|remote u\.?s\.?|us only|usa only)\b/i;
 const EU_REGEX = /\b(?:europe|emea|eu|uk|united kingdom|germany|france|spain|poland|czech|portugal|netherlands|ireland|sweden|london|berlin|paris|amsterdam|madrid)\b/i;
@@ -64,12 +65,12 @@ export function isJobAlreadyApplied(
 ): { isApplied: boolean; dateApplied?: string; status?: string } {
   if (!kanbanRoles || kanbanRoles.length === 0) return { isApplied: false };
 
-  const jobUrl = job.url.trim().toLowerCase();
+  const jobUrl = normalizeRoleUrl(job.url);
   const jobComp = job.company.trim().toLowerCase();
   const jobTitle = job.title.trim().toLowerCase();
 
   const match = kanbanRoles.find(k => {
-    if (k.roleUrl && jobUrl && k.roleUrl.trim().toLowerCase() === jobUrl) return true;
+    if (k.roleUrl && jobUrl && normalizeRoleUrl(k.roleUrl) === jobUrl) return true;
     const sameComp = k.company.trim().toLowerCase() === jobComp;
     const sameTitle = k.roleTitle.trim().toLowerCase() === jobTitle;
     return sameComp && sameTitle;
