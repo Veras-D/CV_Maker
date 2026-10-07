@@ -180,6 +180,7 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
           onShuffleVariation={handleShuffleVariation}
           words={words}
           minutes={minutes}
+          activeLanguage={activeLanguage}
         />
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-x-auto">
