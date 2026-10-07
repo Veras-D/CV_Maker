@@ -6,6 +6,7 @@ import { CVData, LanguageCode, RolePreset } from '../../types/cv';
 import { ATSScoreCard } from './ATSScoreCard';
 import { CoverLetterCard } from './CoverLetterCard';
 import { TailoredSummaryCard } from './TailoredSummaryCard';
+import { PageBudgetAuditBanner } from './PageBudgetAuditBanner';
 import { 
   CoverLetterTone, 
   synthesizeCoverLetterProse, 
@@ -122,6 +123,8 @@ export const TailoredOutputView: React.FC<TailoredOutputViewProps> = ({
         )}
 
         <ATSScoreCard output={tailoredOutput} />
+
+        <PageBudgetAuditBanner audit={tailoredOutput.pageBudgetAudit} />
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">

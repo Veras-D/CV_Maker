@@ -11,7 +11,9 @@ export function useAIRoleTailorState() {
     activeLanguage, 
     addKanbanRole, 
     activePreset, 
-    openIngestionModal 
+    openIngestionModal,
+    targetMaxPages,
+    exportDirectory
   } = useCV();
   
   const [jobTitle, setJobTitle] = useState('');
@@ -49,7 +51,8 @@ export function useAIRoleTailorState() {
         companyName,
         jobDescription,
         cvData,
-        language: activeLanguage as LanguageCode
+        language: activeLanguage as LanguageCode,
+        maxPages: targetMaxPages
       });
       setTailoredOutput(output);
       setCoverLetterEditable(output.coverLetter.content[activeLanguage] || output.coverLetter.content.en || '');
@@ -114,9 +117,11 @@ export function useAIRoleTailorState() {
         activeLanguage,
         tailoredOutput,
         activePreset,
-        cvData
+        cvData,
+        exportDirectory
       });
-      setDownloadFeedback(`Tailored PDF downloaded: "${filename}"`);
+      const destText = exportDirectory ? `saved to "${exportDirectory}"` : 'downloaded';
+      setDownloadFeedback(`Tailored PDF ${destText}: "${filename}"`);
       setTimeout(() => setDownloadFeedback(null), 5000);
     } catch (e) {
       console.error("PDF export failed", e);
@@ -125,11 +130,13 @@ export function useAIRoleTailorState() {
     }
   };
 
-  const handleDownloadCoverLetter = () => {
-    const filename = downloadCoverLetterFile(companyName, coverLetterEditable);
-    setDownloadFeedback(`Cover Letter downloaded: "${filename}"`);
+  const handleDownloadCoverLetter = async () => {
+    const filename = await downloadCoverLetterFile(companyName, coverLetterEditable, exportDirectory);
+    const destText = exportDirectory ? `saved to "${exportDirectory}"` : 'downloaded';
+    setDownloadFeedback(`Cover Letter ${destText}: "${filename}"`);
     setTimeout(() => setDownloadFeedback(null), 5000);
   };
+
 
   const isMasterEmpty = !cvData.profile.name?.trim() && cvData.experiences.length === 0;
 

@@ -11,6 +11,7 @@ import {
   PAGE_WIDTH,
   PAGE_HEIGHT
 } from './pdfDrawSections';
+import { saveToCustomDirectoryIfTauri } from './tauriFileExport';
 
 export interface PDFExportParams {
   elementId?: string;
@@ -19,10 +20,11 @@ export interface PDFExportParams {
   data?: CVData;
   language?: LanguageCode;
   selectedTags?: string[];
+  exportDirectory?: string;
 }
 
 export async function exportCVToPDF(params: PDFExportParams): Promise<void> {
-  const { filename, metadata, data, language = 'en', selectedTags = [] } = params;
+  const { filename, metadata, data, language = 'en', selectedTags = [], exportDirectory } = params;
 
   if (!data) {
     throw new Error('No CV data provided for PDF export');
@@ -56,12 +58,16 @@ export async function exportCVToPDF(params: PDFExportParams): Promise<void> {
 
   const rawBytes = doc.output('arraybuffer');
   const enrichedBytes = await injectPDFMetadata(new Uint8Array(rawBytes), metadata);
+  const actualFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+
+  const savedDirectly = await saveToCustomDirectoryIfTauri(exportDirectory, actualFilename, enrichedBytes);
+  if (savedDirectly) return;
 
   const blob = new Blob([enrichedBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  link.download = actualFilename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

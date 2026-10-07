@@ -2,12 +2,15 @@ import { exportCVToPDF } from '../../utils/pdfExport';
 import { LocalTailorOutput } from '../../utils/localAiEngine';
 import { RolePreset, CVData, LanguageCode } from '../../types/cv';
 
+import { saveToCustomDirectoryIfTauri } from '../../utils/tauriFileExport';
+
 interface ExportPdfParams {
   companyName: string;
   activeLanguage: string;
   tailoredOutput: LocalTailorOutput | null;
   activePreset: RolePreset;
   cvData: CVData;
+  exportDirectory?: string;
 }
 
 export async function downloadTailoredPDF(params: ExportPdfParams): Promise<string> {
@@ -18,15 +21,26 @@ export async function downloadTailoredPDF(params: ExportPdfParams): Promise<stri
     metadata: params.tailoredOutput?.tailoredMetadata || params.activePreset.metadata,
     data: params.tailoredOutput?.updatedData || params.cvData,
     language: params.activeLanguage as LanguageCode,
-    selectedTags: []
+    selectedTags: [],
+    exportDirectory: params.exportDirectory
   });
   return filename;
 }
 
-export function downloadCoverLetterFile(companyName: string, text: string): string {
+export async function downloadCoverLetterFile(
+  companyName: string, 
+  text: string, 
+  exportDirectory?: string
+): Promise<string> {
   const filename = `Cover_Letter_${(companyName || 'Job').replace(/\s+/g, '_')}.txt`;
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(text);
+
+  const savedDirectly = await saveToCustomDirectoryIfTauri(exportDirectory, filename, bytes);
+  if (savedDirectly) return filename;
+
   const file = new Blob([text], { type: 'text/plain' });
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = URL.createObjectURL(file);
   link.download = filename;
   document.body.appendChild(link);
@@ -35,3 +49,4 @@ export function downloadCoverLetterFile(companyName: string, text: string): stri
   URL.revokeObjectURL(link.href);
   return filename;
 }
+

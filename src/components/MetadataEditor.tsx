@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCV } from '../context/CVContext';
 import { FileCheck, ShieldCheck, Info } from 'lucide-react';
+import { LayoutSettingsCard } from './Settings/LayoutSettingsCard';
 
 export const MetadataEditor: React.FC = () => {
   const { activePreset, updateMetadata } = useCV();
@@ -8,7 +9,10 @@ export const MetadataEditor: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <LayoutSettingsCard />
+
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
             <FileCheck className="w-6 h-6" />

@@ -14,7 +14,8 @@ export const Navbar: React.FC = () => {
     activeTab, 
     setActiveTab, 
     exportDataJSON,
-    importDataJSON
+    importDataJSON,
+    exportDirectory
   } = useCV();
 
   const [isExporting, setIsExporting] = useState(false);
@@ -30,10 +31,12 @@ export const Navbar: React.FC = () => {
         metadata: activePreset.metadata,
         data: cvData,
         language: activeLanguage,
-        selectedTags
+        selectedTags,
+        exportDirectory
       });
       const filename = `${cvData.profile.name.replace(/\s+/g, '_')}_CV_${activeLanguage.toUpperCase()}.pdf`;
-      setFeedbackNotification(`PDF downloaded: "${filename}" saved to your Downloads folder.`);
+      const destText = exportDirectory ? `saved to "${exportDirectory}"` : 'saved to your Downloads folder';
+      setFeedbackNotification(`PDF downloaded: "${filename}" ${destText}.`);
       setTimeout(() => setFeedbackNotification(null), 5000);
     } catch (e) {
       console.error("PDF Export error:", e);

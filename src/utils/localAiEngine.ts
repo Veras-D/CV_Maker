@@ -9,6 +9,7 @@ import {
   synthesizeExecutiveSummary,
   generateExecutiveSummaryVariants
 } from './summarySynthesizer';
+import { PageBudgetAudit, optimizeCVPageBudget } from './cvPageBudgetOptimizer';
 
 export interface LocalTailorOutput {
   matchResult: ATSMatchResult;
@@ -17,7 +18,9 @@ export interface LocalTailorOutput {
   summaryVariants?: Record<ExecutiveSummaryStyle, string>;
   tailoredMetadata: PDFMetadata;
   updatedData: CVData;
+  pageBudgetAudit?: PageBudgetAudit;
 }
+
 
 import { 
   synthesizeCoverLetter, 
@@ -77,8 +80,9 @@ export function runLocalAITailor(params: {
   jobDescription: string;
   cvData: CVData;
   language?: LanguageCode;
+  maxPages?: number;
 }): LocalTailorOutput {
-  const { jobTitle, companyName, jobDescription, cvData, language = 'en' } = params;
+  const { jobTitle, companyName, jobDescription, cvData, language = 'en', maxPages = 1 } = params;
 
   // 1. Stage 2: Semantic Hybrid RAG Match
   const matchResult = performHybridSemanticMatch({
@@ -142,7 +146,7 @@ export function runLocalAITailor(params: {
   const tailoredSummary = summaryVariants.authentic;
 
   const tailoredHeadline = primaryRole;
-  const updatedData: CVData = {
+  const candidateData: CVData = {
     ...cvData,
     profile: {
       ...cvData.profile,
@@ -163,12 +167,24 @@ export function runLocalAITailor(params: {
     coverLetters: [newCoverLetter, ...cvData.coverLetters]
   };
 
+  const { optimizedData, audit } = optimizeCVPageBudget({
+    cvData: candidateData,
+    jobTitle: primaryRole,
+    companyName: primaryCompany,
+    jobDescription,
+    matchedKeywords: matchResult.matchedKeywords,
+    matchedTags: matchResult.matchedTags,
+    maxPages,
+    language
+  });
+
   return {
     matchResult,
     coverLetter: newCoverLetter,
     tailoredSummary,
     summaryVariants,
     tailoredMetadata,
-    updatedData
+    updatedData: optimizedData,
+    pageBudgetAudit: audit
   };
 }

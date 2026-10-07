@@ -109,11 +109,18 @@ interface CVContextType {
   openIngestionModal: () => void;
   applyIngestionResult: (result: IngestionResult) => void;
 
+  // Settings & Preferences
+  targetMaxPages: number;
+  setTargetMaxPages: (pages: number) => void;
+  exportDirectory: string;
+  setExportDirectory: (dir: string) => void;
+
   // Data Persistence & Reset
   exportDataJSON: () => string;
   importDataJSON: (jsonString: string) => boolean;
   resetToDefaultData: () => void;
 }
+
 
 const CVContext = createContext<CVContextType | undefined>(undefined);
 
@@ -166,6 +173,68 @@ function parseCVDataJSON(jsonString: string): CVData | null {
   return null;
 }
 
+function useAppSettingsState() {
+  const [targetMaxPages, setTargetMaxPagesState] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('cv_target_max_pages');
+      return saved ? parseInt(saved, 10) || 1 : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  const [exportDirectory, setExportDirectoryState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cv_export_directory') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const setTargetMaxPages = (pages: number) => {
+    setTargetMaxPagesState(pages);
+    try {
+      localStorage.setItem('cv_target_max_pages', String(pages));
+    } catch {
+      // Storage access error ignored
+    }
+  };
+
+  const setExportDirectory = (dir: string) => {
+    setExportDirectoryState(dir);
+    try {
+      localStorage.setItem('cv_export_directory', dir);
+    } catch {
+      // Storage access error ignored
+    }
+  };
+
+  return { targetMaxPages, setTargetMaxPages, exportDirectory, setExportDirectory };
+}
+
+function useDataPersistence(cvData: CVData, setCvData: React.Dispatch<React.SetStateAction<CVData>>) {
+  const exportDataJSON = (): string => downloadCVDataJSON(cvData);
+
+  const importDataJSON = (jsonString: string): boolean => {
+    const parsed = parseCVDataJSON(jsonString);
+    if (parsed) {
+      if (Array.isArray(parsed.kanbanRoles)) {
+        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
+      }
+      setCvData(parsed);
+      return true;
+    }
+    return false;
+  };
+
+  const resetToDefaultData = () => {
+    setCvData(createEmptyCVData());
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  return { exportDataJSON, importDataJSON, resetToDefaultData };
+}
+
 export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cvData, setCvData] = useState<CVData>(loadInitialCVData);
   const [activeTab, setActiveTab] = useState<'tailor' | 'editor' | 'kanban' | 'metadata' | 'jobs'>('tailor');
@@ -174,6 +243,10 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [showArchivedKanban, setShowArchivedKanban] = useState(false);
   const [isIngestionModalOpen, setIsIngestionModalOpen] = useState(false);
   const [pendingTailorJob, setPendingTailorJob] = useState<PendingTailorJob | null>(null);
+
+  const { targetMaxPages, setTargetMaxPages, exportDirectory, setExportDirectory } = useAppSettingsState();
+  const { exportDataJSON, importDataJSON, resetToDefaultData } = useDataPersistence(cvData, setCvData);
+
 
   const applyAndTailorJob = (job: PendingTailorJob) => {
     setCvData(prev => updaters.addKanbanRoleState(prev, {
@@ -241,27 +314,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const clearTagFilters = () => setSelectedTags([]);
 
-  const exportDataJSON = (): string => downloadCVDataJSON(cvData);
-
-  const importDataJSON = (jsonString: string): boolean => {
-    const parsed = parseCVDataJSON(jsonString);
-    if (parsed) {
-      if (Array.isArray(parsed.kanbanRoles)) {
-        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
-      }
-      setCvData(parsed);
-      return true;
-    }
-    return false;
-  };
-
   const applyIngestionResult = (result: IngestionResult) => {
     setCvData(prev => mergeIngestionIntoCVData(prev, result));
-  };
-
-  const resetToDefaultData = () => {
-    setCvData(createEmptyCVData());
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   return (
@@ -323,7 +377,11 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       isIngestionModalOpen,
       setIsIngestionModalOpen,
       openIngestionModal,
-      applyIngestionResult
+      applyIngestionResult,
+      targetMaxPages,
+      setTargetMaxPages,
+      exportDirectory,
+      setExportDirectory
     }}>
       {children}
     </CVContext.Provider>
