@@ -23,3 +23,37 @@ export async function saveToCustomDirectoryIfTauri(
   }
   return false;
 }
+
+export async function pickDirectoryFromSystem(): Promise<string | null> {
+  const tauriWindow = window as unknown as {
+    __TAURI_INTERNALS__?: {
+      invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+    };
+    showDirectoryPicker?: () => Promise<{ name: string }>;
+  };
+
+  if (tauriWindow.__TAURI_INTERNALS__?.invoke) {
+    try {
+      const selected = await tauriWindow.__TAURI_INTERNALS__.invoke('pick_directory');
+      if (typeof selected === 'string' && selected.trim()) {
+        return selected.trim();
+      }
+      return null;
+    } catch (e) {
+      console.warn('Tauri pick_directory failed:', e);
+    }
+  }
+
+  if (typeof tauriWindow.showDirectoryPicker === 'function') {
+    try {
+      const dirHandle = await tauriWindow.showDirectoryPicker();
+      if (dirHandle && dirHandle.name) {
+        return dirHandle.name;
+      }
+    } catch {
+      // User cancelled picker
+    }
+  }
+
+  return null;
+}

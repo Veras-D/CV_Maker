@@ -1,7 +1,8 @@
 import React from 'react';
 import { useCV } from '../../context/CVContext';
-import { Layout, FolderOpen, Info, Check } from 'lucide-react';
+import { Layout, FolderOpen, Info, Check, X } from 'lucide-react';
 import { CustomSelect, SelectOption } from '../Common/CustomSelect';
+import { pickDirectoryFromSystem } from '../../utils/tauriFileExport';
 
 const PAGE_LIMIT_OPTIONS: SelectOption[] = [
   { value: '1', label: '1 Page (Strict ATS Standard - Recommended)' },
@@ -18,19 +19,12 @@ export const LayoutSettingsCard: React.FC = () => {
 
   const handleSelectFolder = async () => {
     try {
-      const windowObj = window as unknown as {
-        showDirectoryPicker?: () => Promise<{ name: string }>;
-      };
-      if (typeof windowObj.showDirectoryPicker === 'function') {
-        const dirHandle = await windowObj.showDirectoryPicker();
-        if (dirHandle && dirHandle.name) {
-          setExportDirectory(dirHandle.name);
-        }
-      } else {
-        alert('Directory picker is not supported in this browser. Please type or paste your folder path directly.');
+      const selected = await pickDirectoryFromSystem();
+      if (selected) {
+        setExportDirectory(selected);
       }
     } catch {
-      // User cancelled picker
+      // User cancelled
     }
   };
 
@@ -76,30 +70,43 @@ export const LayoutSettingsCard: React.FC = () => {
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
             <span>Download Destination Directory</span>
-            <span className="text-[10px] text-slate-400">Optional</span>
+            <span className="text-[10px] text-slate-400">Auto-Save Target</span>
           </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="e.g. /home/user/Documents/CVs or C:\Resumes"
-              value={exportDirectory}
-              onChange={(e) => setExportDirectory(e.target.value)}
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-purple-500 font-mono text-xs"
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono flex items-center justify-between overflow-hidden min-h-[38px]">
+              {exportDirectory ? (
+                <span className="text-slate-100 truncate" title={exportDirectory}>
+                  {exportDirectory}
+                </span>
+              ) : (
+                <span className="text-slate-500 italic">
+                  Default System Downloads Folder
+                </span>
+              )}
+              {exportDirectory && (
+                <button
+                  type="button"
+                  onClick={() => setExportDirectory('')}
+                  title="Reset to default downloads folder"
+                  className="text-slate-400 hover:text-red-400 p-0.5 ml-2 shrink-0 cursor-pointer transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleSelectFolder}
-              title="Browse for folder"
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-purple-500 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-sm"
             >
               <FolderOpen className="w-4 h-4 text-purple-400" />
-              <span>Browse</span>
+              <span>{exportDirectory ? 'Change' : 'Browse'}</span>
             </button>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
             {exportDirectory 
-              ? `Files will be saved to: "${exportDirectory}"` 
-              : 'Leave empty to save into your default browser/system Downloads folder.'}
+              ? 'Exported CV and cover letters will automatically be saved to this folder.' 
+              : 'No custom folder selected. Files will download through your default system downloads folder.'}
           </p>
         </div>
       </div>
