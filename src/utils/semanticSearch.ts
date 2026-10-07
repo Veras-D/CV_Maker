@@ -169,7 +169,9 @@ function evaluateProjectRelevance(
 }
 
 /**
- * Filter and rank work experiences, guaranteeing at least 2 bullets for any included role
+ * Rank work experiences and their bullets against the job description.
+ * Ensures ALL career experiences appear (never dropping past roles)
+ * and guarantees at least 2 bullets are enabled for each role.
  */
 function rankExperiences(
   experiences: WorkExperience[],
@@ -177,40 +179,37 @@ function rankExperiences(
   matchedKeywords: string[],
   matchedTags: string[]
 ): WorkExperience[] {
-  const ranked = experiences.map(exp => {
-    const scoredBullets = exp.bullets.map(bullet => {
+  return experiences.map(exp => {
+    const scoredBullets = exp.bullets.map((bullet, originalIndex) => {
       const { isRelevant, score } = scoreBulletRelevance(bullet, jdTF, matchedKeywords, matchedTags);
-      return { bullet, isRelevant, score };
+      return { bullet, originalIndex, isRelevant, score };
     });
 
+    // Sort descending by score to prioritize top matching bullets
     scoredBullets.sort((a, b) => b.score - a.score);
     const relevantCount = scoredBullets.filter(s => s.isRelevant).length;
-    const expTags = exp.tags || [];
-    const roleMatchesDomain = expTags.some(t => matchedTags.includes(t));
-    const isExpEnabled = relevantCount > 0 || roleMatchesDomain;
 
-    if (!isExpEnabled) {
-      return { ...exp, enabled: false, bullets: scoredBullets.map(s => ({ ...s.bullet, enabled: false })) };
-    }
-
+    // Guarantee at least 2 bullets for every experience (or all bullets if role has <= 2)
     const countToEnable = Math.min(exp.bullets.length, Math.max(2, relevantCount));
-    const updatedBullets = scoredBullets.map((s, idx) => ({
-      ...s.bullet,
-      enabled: idx < countToEnable
+
+    // Select top-scoring bullets to enable
+    const enabledIndices = new Set(
+      scoredBullets.slice(0, countToEnable).map(s => s.originalIndex)
+    );
+
+    // Maintain original narrative order of bullets within the role
+    const updatedBullets = exp.bullets.map((bullet, idx) => ({
+      ...bullet,
+      enabled: enabledIndices.has(idx)
     }));
 
-    return { ...exp, enabled: true, bullets: updatedBullets };
-  });
-
-  if (ranked.every(e => !e.enabled) && experiences.length > 0) {
-    return experiences.map(e => ({
-      ...e,
+    // All career experiences must appear to prevent cutting the user's career chronology
+    return {
+      ...exp,
       enabled: true,
-      bullets: e.bullets.map((b, idx) => ({ ...b, enabled: idx < 2 }))
-    }));
-  }
-
-  return ranked;
+      bullets: updatedBullets
+    };
+  });
 }
 
 /**

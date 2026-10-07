@@ -93,14 +93,25 @@ export async function processAiJobTailoring(params: TailorJobParams): Promise<AI
   const matchedTags = extractMatchedTags(`${jobTitle} ${companyName} ${jobDescription}`);
 
   // Update experiences, skills, and projects
-  const updatedExperiences = cvData.experiences.map(exp => ({
-    ...exp,
-    enabled: exp.tags.some(t => matchedTags.includes(t)) || matchedTags.includes('fullstack'),
-    bullets: exp.bullets.map(b => ({
-      ...b,
-      enabled: b.tags.some(t => matchedTags.includes(t)) || matchedTags.length === 0
-    }))
-  }));
+  const updatedExperiences = cvData.experiences.map(exp => {
+    const scoredBullets = exp.bullets.map((bullet, originalIndex) => {
+      const isRelevant = bullet.tags.some(t => matchedTags.includes(t));
+      return { bullet, originalIndex, isRelevant };
+    });
+    const relevantCount = scoredBullets.filter(s => s.isRelevant).length;
+    const countToEnable = Math.min(exp.bullets.length, Math.max(2, relevantCount));
+    const sorted = [...scoredBullets].sort((a, b) => (b.isRelevant ? 1 : 0) - (a.isRelevant ? 1 : 0));
+    const enabledIndices = new Set(sorted.slice(0, countToEnable).map(s => s.originalIndex));
+
+    return {
+      ...exp,
+      enabled: true,
+      bullets: exp.bullets.map((b, idx) => ({
+        ...b,
+        enabled: enabledIndices.has(idx)
+      }))
+    };
+  });
 
   const updatedSkills = cvData.skillCategories.map(cat => ({
     ...cat,
