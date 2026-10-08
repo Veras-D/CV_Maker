@@ -15,6 +15,7 @@ import {
 } from '../../utils/companyWatchlistService';
 import { fetchLiveYcDirectory, isDynamicYcBusiness } from '../../utils/dynamicYcService';
 import { CompanySearchAutocomplete } from './CompanySearchAutocomplete';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 
 export interface TrackedCompaniesModalProps {
   isOpen: boolean;
@@ -201,11 +202,21 @@ const CompanyItemRow: React.FC<{
   </div>
 );
 
+function filterWatchlistCompanies(companies: TrackedCompany[], searchQuery: string): TrackedCompany[] {
+  const q = searchQuery.toLowerCase().trim();
+  if (!q) return companies;
+  if (q === 'yc' || q === 'ycombinator') return companies.filter(c => c.isYc);
+  return companies.filter(c => 
+    c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q) || c.ats.toLowerCase().includes(q)
+  );
+}
+
 export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
   isOpen,
   onClose,
   onCompaniesChanged
 }) => {
+  useBodyScrollLock(isOpen);
   const [companies, setCompanies] = useState<TrackedCompany[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newSlug, setNewSlug] = useState('');
@@ -229,14 +240,10 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
     }
   }, [isOpen]);
 
-  const filteredCompanies = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return companies;
-    if (q === 'yc' || q === 'ycombinator') return companies.filter(c => c.isYc);
-    return companies.filter(c => 
-      c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q) || c.ats.toLowerCase().includes(q)
-    );
-  }, [companies, searchQuery]);
+  const filteredCompanies = useMemo(
+    () => filterWatchlistCompanies(companies, searchQuery),
+    [companies, searchQuery]
+  );
 
   const ycCompanies = useMemo(() => companies.filter(c => c.isYc), [companies]);
   const allYcEnabled = useMemo(() => ycCompanies.length > 0 && ycCompanies.every(c => c.enabled), [ycCompanies]);
@@ -291,7 +298,7 @@ export const TrackedCompaniesModal: React.FC<TrackedCompaniesModalProps> = ({
 
   return ReactDOM.createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-hidden"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-hidden overscroll-contain"
       role="dialog"
       aria-modal="true"
     >

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Lock, Sparkles, CheckCircle2, X } from 'lucide-react';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 
 interface ProModalProps {
   isOpen: boolean;
@@ -9,11 +10,17 @@ interface ProModalProps {
 }
 
 export const ProModal: React.FC<ProModalProps> = ({ isOpen, onClose, featureName = "Multi-Language Generation" }) => {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overscroll-contain my-auto">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-slate-400 hover:text-white p-1"

@@ -4,6 +4,7 @@ import { RemoteJob } from '../../types/jobSearch';
 import { KanbanRole } from '../../types/cv';
 import { formatRelativeTime, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 import { openExternalUrl } from '../../utils/urlHelper';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 import { 
   X, 
   ExternalLink, 
@@ -142,6 +143,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   onClose,
   onApplyAndTailor
 }) => {
+  useBodyScrollLock(Boolean(job));
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -158,7 +161,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
   return ReactDOM.createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex justify-end overflow-hidden"
+      className="fixed inset-0 z-[9999] flex justify-end overflow-hidden overscroll-contain"
       role="dialog"
       aria-modal="true"
     >

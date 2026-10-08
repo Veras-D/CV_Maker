@@ -4,6 +4,7 @@ import { KanbanRole, KanbanStatus } from '../../types/cv';
 import { KanbanRoleFormFields } from './KanbanRoleFormFields';
 import { normalizeRoleUrl, formatStageLabel, extractMinSalaryFromJob } from '../../utils/kanbanUtils';
 import { getCachedJobs } from '../../utils/jobSearchApi';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 
 export interface AddEditModalProps {
   isOpen: boolean;
@@ -81,6 +82,7 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
   onSave,
   allRoles = []
 }) => {
+  useBodyScrollLock(isOpen);
   const [roleTitle, setRoleTitle] = useState('');
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('');
@@ -151,8 +153,12 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
   };
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-5 shadow-2xl">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-5 shadow-2xl overscroll-contain my-auto">
         <h3 className="text-base font-bold text-white mb-3">
           {modalHeading}
         </h3>

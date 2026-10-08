@@ -12,8 +12,10 @@ import {
   TextTabContent, 
   PreviewCard 
 } from './IngestionTabPanels';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 
 export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  useBodyScrollLock(isOpen);
   const { applyIngestionResult, resetToDefaultData } = useCV();
   const state = useIngestionState();
 
@@ -32,8 +34,12 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
   };
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto overscroll-contain my-auto">
         
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>

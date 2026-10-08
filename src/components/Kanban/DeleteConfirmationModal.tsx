@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { KanbanRole } from '../../types/cv';
 import { Trash2, Building, X } from 'lucide-react';
+import { useBodyScrollLock } from '../../utils/useBodyScrollLock';
 
 export interface DeleteModalProps {
   role: KanbanRole | null;
@@ -10,11 +11,17 @@ export interface DeleteModalProps {
 }
 
 export const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ role, onClose, onConfirm }) => {
+  useBodyScrollLock(Boolean(role));
+
   if (!role) return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150 overscroll-contain my-auto">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"
