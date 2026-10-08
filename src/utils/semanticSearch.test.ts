@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { performHybridSemanticMatch } from './semanticSearch';
+import { isValidKeyword } from './textProcessing';
 import { CVData, WorkExperience, createEmptyCVData } from '../types/cv';
 
 function createMockCV(): CVData {
@@ -135,5 +136,76 @@ describe('performHybridSemanticMatch - Experience Ranking', () => {
     const resultIds = expMid.bullets.map(b => b.id);
 
     expect(resultIds).toEqual(originalIds);
+  });
+});
+
+describe('Keyword Validation & ATS Keyword Partitioning', () => {
+  it('rejects numbers, year ranges, stop words, and general corporate terms', () => {
+    // Numbers & years
+    expect(isValidKeyword('11')).toBe(false);
+    expect(isValidKeyword('70')).toBe(false);
+    expect(isValidKeyword('2023')).toBe(false);
+    expect(isValidKeyword('100')).toBe(false);
+    expect(isValidKeyword('1st')).toBe(false);
+    expect(isValidKeyword('10k')).toBe(false);
+
+    // Stop words & non-technical corporate vocabulary
+    expect(isValidKeyword('about')).toBe(false);
+    expect(isValidKeyword('ABOUT')).toBe(false);
+    expect(isValidKeyword('iconiq')).toBe(false);
+    expect(isValidKeyword('role')).toBe(false);
+    expect(isValidKeyword('team')).toBe(false);
+    expect(isValidKeyword('work')).toBe(false);
+    expect(isValidKeyword('years')).toBe(false);
+    expect(isValidKeyword('company')).toBe(false);
+
+    // Genuine technical keywords
+    expect(isValidKeyword('frontend')).toBe(true);
+    expect(isValidKeyword('backend')).toBe(true);
+    expect(isValidKeyword('websockets')).toBe(true);
+    expect(isValidKeyword('react')).toBe(true);
+    expect(isValidKeyword('k8s')).toBe(true);
+    expect(isValidKeyword('aws')).toBe(true);
+    expect(isValidKeyword('ai')).toBe(true);
+    expect(isValidKeyword('end-to-end')).toBe(true);
+  });
+
+  it('excludes numbers and stop words from matched and missing keywords with zero overlap', () => {
+    const cvData = createMockCV();
+    const result = performHybridSemanticMatch({
+      jobTitle: 'Senior Fullstack Engineer',
+      companyName: 'Acme Corp',
+      jobDescription: `
+        ABOUT US: We are a series B company backed by ICONIQ with 70 engineers founded in 2023.
+        We have 11 open positions for full-stack developers.
+        ABOUT THE ROLE: Looking for frontend and backend engineers proficient in React, TypeScript, Docker, and Kubernetes.
+      `,
+      cvData
+    });
+
+    const allExtractedKeywords = [...result.matchedKeywords, ...result.missingKeywords];
+
+    // Numbers and non-technical words must NEVER appear
+    expect(allExtractedKeywords).not.toContain('11');
+    expect(allExtractedKeywords).not.toContain('70');
+    expect(allExtractedKeywords).not.toContain('2023');
+    expect(allExtractedKeywords).not.toContain('about');
+    expect(allExtractedKeywords).not.toContain('iconiq');
+
+    // Matched and missing lists must be strictly mutually exclusive (0 overlap)
+    const matchedSet = new Set(result.matchedKeywords.map(k => k.toLowerCase()));
+    result.missingKeywords.forEach(missing => {
+      expect(matchedSet.has(missing.toLowerCase())).toBe(false);
+    });
+
+    // Candidate has React and Docker -> should be in matchedKeywords
+    expect(result.matchedKeywords).toEqual(
+      expect.arrayContaining([expect.stringMatching(/react|docker|typescript/i)])
+    );
+
+    // Candidate lacks Kubernetes in mock CV -> should be in missingKeywords
+    expect(result.missingKeywords).toEqual(
+      expect.arrayContaining([expect.stringMatching(/kubernetes/i)])
+    );
   });
 });

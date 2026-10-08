@@ -1,5 +1,6 @@
 import { CVData } from '../types/cv';
 import { COMPREHENSIVE_BASE_SEEDS } from './knowledgeBaseSeeds';
+import { isValidKeyword } from './textProcessing';
 
 export interface KnowledgeDomainNode {
   id: string;
@@ -15,6 +16,22 @@ export interface KnowledgeGraphStore {
 }
 
 const STORAGE_KEY = 'cv_maker_knowledge_graph_v1';
+
+/**
+ * Clean existing store of invalid non-technical words, pure numbers, and stop words
+ */
+function sanitizeKnowledgeGraph(store: KnowledgeGraphStore): boolean {
+  let changed = false;
+  Object.values(store.domains).forEach(domain => {
+    Object.keys(domain.keywords).forEach(kw => {
+      if (!isValidKeyword(kw)) {
+        delete domain.keywords[kw];
+        changed = true;
+      }
+    });
+  });
+  return changed;
+}
 
 /**
  * Initialize base domain nodes from comprehensive multi-industry seed dictionary
@@ -51,12 +68,20 @@ function loadStoreFromLocalStorage(): KnowledgeGraphStore | null {
  * Retrieve active knowledge graph from localStorage or in-memory fallback
  */
 export function getKnowledgeGraph(): KnowledgeGraphStore {
-  if (memoryStore) return memoryStore;
+  if (memoryStore) {
+    if (sanitizeKnowledgeGraph(memoryStore)) {
+      saveKnowledgeGraph(memoryStore);
+    }
+    return memoryStore;
+  }
 
   try {
     const loaded = loadStoreFromLocalStorage();
     if (loaded) {
       memoryStore = loaded;
+      if (sanitizeKnowledgeGraph(memoryStore)) {
+        saveKnowledgeGraph(memoryStore);
+      }
       return memoryStore;
     }
   } catch (err) {
@@ -64,6 +89,7 @@ export function getKnowledgeGraph(): KnowledgeGraphStore {
   }
 
   memoryStore = createInitialStore();
+  sanitizeKnowledgeGraph(memoryStore);
   return memoryStore;
 }
 
@@ -146,7 +172,7 @@ export function bootstrapKnowledgeGraphFromCV(cvData: CVData): KnowledgeGraphSto
     const domain = store.domains[domainKey];
     cat.skills.forEach(s => {
       const lower = s.name.trim().toLowerCase();
-      if (lower && (!domain.keywords[lower] || domain.keywords[lower] < 10)) {
+      if (lower && isValidKeyword(lower) && (!domain.keywords[lower] || domain.keywords[lower] < 10)) {
         domain.keywords[lower] = 10;
         changed = true;
       }
@@ -163,13 +189,13 @@ export function bootstrapKnowledgeGraphFromCV(cvData: CVData): KnowledgeGraphSto
  * Extract emerging acronyms and compound industry terms from text
  */
 function extractDiscoveredTerms(jdText: string): string[] {
-  const acronyms = jdText.match(/\b[A-Z0-9]{2,6}\b/g) || [];
-  const commonStopWords = new Set(['THE', 'AND', 'FOR', 'WITH', 'ARE', 'YOU', 'OUR', 'NOT', 'ALL', 'CAN', 'HAS', 'HAVE', 'WAS', 'ITS']);
-
+  const acronyms = jdText.match(/\b[A-Za-z][A-Za-z0-9+#.-]{1,9}\b/g) || [];
   const discovered = new Set<string>();
+
   acronyms.forEach(acronym => {
-    if (!commonStopWords.has(acronym)) {
-      discovered.add(acronym.toLowerCase());
+    const lower = acronym.toLowerCase();
+    if (isValidKeyword(lower)) {
+      discovered.add(lower);
     }
   });
 
@@ -195,6 +221,7 @@ export function learnFromJobPosting(
     if (!domain) return;
 
     discoveredTerms.forEach(term => {
+      if (!isValidKeyword(term)) return;
       const currentWeight = domain.keywords[term] || 0;
       domain.keywords[term] = currentWeight + 2;
       changed = true;
@@ -224,6 +251,7 @@ export function reinforceSkillRelevance(
 
     enabledSkills.forEach(skill => {
       const lower = skill.trim().toLowerCase();
+      if (!isValidKeyword(lower)) return;
       domain.keywords[lower] = (domain.keywords[lower] || 0) + 1;
       changed = true;
     });
@@ -245,7 +273,7 @@ export function getDynamicDomains(): Record<string, { id: string; label: string;
     result[id] = {
       id,
       label: node.label,
-      keywords: Object.keys(node.keywords)
+      keywords: Object.keys(node.keywords).filter(isValidKeyword)
     };
   });
 

@@ -12,7 +12,8 @@ import {
   getTermFrequency,
   calculateCosineSimilarity,
   buildProximityMap,
-  getProximityWeight
+  getProximityWeight,
+  isValidKeyword
 } from './textProcessing';
 
 export interface ATSMatchResult {
@@ -49,6 +50,7 @@ function calculateDomainScores(
   Object.entries(activeDomains).forEach(([domainId, domainDef]) => {
     let score = domainScores[domainId] || 0;
     domainDef.keywords.forEach(kw => {
+      if (!isValidKeyword(kw)) return;
       const inTitle = kw.includes(' ') ? titleLower.includes(kw) : titleTokens.has(kw);
       if (inTitle) {
         score += 15;
@@ -97,7 +99,7 @@ export function analyzeJobDescription(
 
   return {
     matchedTags: matchedTags.length > 0 ? matchedTags : [sorted[0][0]],
-    keywords: Array.from(foundKeywords)
+    keywords: Array.from(foundKeywords).filter(isValidKeyword)
   };
 }
 
@@ -257,34 +259,60 @@ function rankSkills(
   return ranked;
 }
 
+function collectCandidateInventory(cvData: CVData): { skills: Set<string>; text: string } {
+  const skills = new Set<string>();
+  cvData.skillCategories?.forEach(c => c.skills?.forEach(s => s.name.trim() && skills.add(s.name.trim().toLowerCase())));
+  cvData.projects?.forEach(p => {
+    p.techStack?.forEach(ts => ts.trim() && skills.add(ts.trim().toLowerCase()));
+    p.tags?.forEach(t => t.trim() && skills.add(t.trim().toLowerCase()));
+  });
+  cvData.experiences?.forEach(e => {
+    e.tags?.forEach(t => t.trim() && skills.add(t.trim().toLowerCase()));
+    const r = (e.roleTitle.en || e.roleTitle.cs || '').trim().toLowerCase();
+    if (r) skills.add(r);
+  });
+  const text = [
+    cvData.profile?.headline?.en, cvData.profile?.headline?.cs,
+    cvData.profile?.summary?.en, cvData.profile?.summary?.cs,
+    ...cvData.experiences.flatMap(e => e.bullets.map(b => `${b.text.en || ''} ${b.text.cs || ''}`))
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return { skills, text };
+}
+
 /**
- * Calculate ATS Match Score (0 to 100%) and missing keywords
+ * Calculate ATS Match Score (0 to 100%), verified matching keywords, and missing keywords.
+ * Strictly guarantees that matched and missing keyword lists are mutually exclusive.
  */
 function calculateAtsScore(
-  matchedKeywords: string[],
-  skillCategories: SkillCategory[],
+  jobKeywords: string[],
+  cvData: CVData,
   matchedTags: string[]
-): { atsScore: number; missingKeywords: string[]; candidateSkills: Set<string> } {
-  const candidateSkills = new Set(
-    skillCategories.flatMap(c => c.skills.map(s => s.name.toLowerCase()))
-  );
+): { atsScore: number; matchedKeywords: string[]; missingKeywords: string[] } {
+  const { skills: candidateSkills, text: candidateText } = collectCandidateInventory(cvData);
+  const candidateSkillsArray = Array.from(candidateSkills);
 
-  let matchCount = 0;
+  const matchedKeywords: string[] = [];
   const missingKeywords: string[] = [];
+  const validJobKeywords = Array.from(new Set(jobKeywords.filter(isValidKeyword)));
 
-  matchedKeywords.forEach(kw => {
-    const matched = Array.from(candidateSkills).some(cs => cs.includes(kw) || kw.includes(cs));
-    if (matched) {
-      matchCount++;
+  validJobKeywords.forEach(kw => {
+    const kwLower = kw.toLowerCase();
+    const isDirectMatch = candidateSkillsArray.some(cs => cs === kwLower || cs.includes(kwLower) || kwLower.includes(cs));
+    const isTextMatch = isDirectMatch || candidateText.includes(kwLower);
+
+    if (isTextMatch) {
+      matchedKeywords.push(kw);
     } else {
       missingKeywords.push(kw);
     }
   });
 
-  const baseRatio = matchedKeywords.length > 0 ? (matchCount / matchedKeywords.length) : 0.8;
-  const atsScore = Math.min(99, Math.max(40, Math.round(baseRatio * 75 + (matchedTags.length > 0 ? 20 : 0))));
+  const total = validJobKeywords.length;
+  const baseRatio = total > 0 ? (matchedKeywords.length / total) : 0.8;
+  const atsScore = Math.min(99, Math.max(35, Math.round(baseRatio * 75 + (matchedTags.length > 0 ? 20 : 0))));
 
-  return { atsScore, missingKeywords, candidateSkills };
+  return { atsScore, matchedKeywords, missingKeywords };
 }
 
 /**
@@ -304,27 +332,27 @@ export function performHybridSemanticMatch(params: {
   const fullJD = `${jobTitle} ${companyName} ${jobDescription}`;
   const jdTokens = tokenizeClean(fullJD);
   const jdTF = getTermFrequency(jdTokens);
-  const { matchedTags, keywords: matchedKeywords } = analyzeJobDescription(jobDescription, jobTitle);
+  const { matchedTags, keywords: jobKeywords } = analyzeJobDescription(jobDescription, jobTitle);
 
   // Learn new terms from the job posting
   learnFromJobPosting(jobTitle, jobDescription, matchedTags);
 
-  const rankedExperiences = rankExperiences(cvData.experiences, jdTF, matchedKeywords, matchedTags);
-  const rankedSkills = rankSkills(cvData.skillCategories, matchedKeywords, matchedTags);
+  const { atsScore, matchedKeywords, missingKeywords } = calculateAtsScore(
+    jobKeywords,
+    cvData,
+    matchedTags
+  );
+
+  const rankedExperiences = rankExperiences(cvData.experiences, jdTF, jobKeywords, matchedTags);
+  const rankedSkills = rankSkills(cvData.skillCategories, jobKeywords, matchedTags);
 
   const scoredProjects = cvData.projects.map(p => {
-    const { isRelevant, score } = evaluateProjectRelevance(p, jdTF, matchedTags, matchedKeywords);
+    const { isRelevant, score } = evaluateProjectRelevance(p, jdTF, matchedTags, jobKeywords);
     return { project: { ...p, enabled: isRelevant }, score };
   });
 
   scoredProjects.sort((a, b) => b.score - a.score);
   const rankedProjects = scoredProjects.map(sp => sp.project);
-
-  const { atsScore, missingKeywords } = calculateAtsScore(
-    matchedKeywords,
-    cvData.skillCategories,
-    matchedTags
-  );
 
   return {
     atsScore,

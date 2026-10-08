@@ -2,7 +2,7 @@
  * Text processing and tokenization utilities with multilingual stop-word filtering
  */
 
-const STOP_WORDS = new Set([
+export const STOP_WORDS = new Set([
   // English common words
   'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
   'from', 'up', 'about', 'into', 'over', 'after', 'is', 'are', 'was', 'were', 'be', 'been',
@@ -24,6 +24,60 @@ const STOP_WORDS = new Set([
   'však', 'aby', 'když', 'pak', 'už', 'až', 'co', 'kdo', 'kde', 'kam', 'odkud', 'proč',
   'zkušenosti', 'tým', 'práce', 'pozice', 'role', 'společnost', 'požadavky', 'nabízíme'
 ]);
+
+export const NON_TECHNICAL_TERMS = new Set([
+  'about', 'role', 'roles', 'team', 'teams', 'work', 'works', 'working',
+  'company', 'companies', 'business', 'job', 'jobs', 'position', 'positions',
+  'candidate', 'candidates', 'applicant', 'applicants', 'opportunity', 'opportunities',
+  'department', 'organization', 'group', 'groups', 'mission', 'vision', 'values',
+  'culture', 'people', 'office', 'offices', 'remote', 'hybrid', 'onsite', 'on-site',
+  'headquarters', 'hq', 'branch', 'location', 'locations', 'city', 'state', 'country',
+  'full', 'part', 'time', 'full-time', 'part-time', 'contract', 'freelance', 'permanent',
+  'temporary', 'intern', 'interns', 'internship', 'junior', 'mid', 'senior', 'lead',
+  'principal', 'staff', 'director', 'manager', 'head', 'vp', 'svp', 'evp',
+  'ceo', 'cto', 'cfo', 'coo', 'cpo', 'hire', 'hiring', 'joined', 'joining', 'join',
+  'apply', 'applying', 'application', 'status', 'level', 'levels', 'experience', 'experiences',
+  'years', 'year', 'month', 'months', 'week', 'weeks', 'day', 'days', 'hour', 'hours',
+  'salary', 'salaries', 'compensation', 'pay', 'bonus', 'bonuses', 'equity', 'stock',
+  'options', 'shares', 'benefits', 'perks', 'insurance', 'health', 'dental', 'vision',
+  'life', 'disability', '401k', 'pension', 'pto', 'vacation', 'holiday', 'holidays',
+  'leave', 'paid', 'unpaid', 'stipend', 'allowance', 'policy', 'policies',
+  'equal', 'opportunity', 'employer', 'eeo', 'affirmative', 'action', 'diversity',
+  'inclusion', 'race', 'gender', 'religion', 'disability', 'veteran',
+  'funding', 'funded', 'investor', 'investors', 'investment', 'investments', 'venture',
+  'capital', 'series', 'seed', 'angel', 'round', 'rounds', 'ipo', 'valuation',
+  'iconiq', 'sequoia', 'accel', 'andreessen', 'bessemer', 'benchmark', 'index',
+  'usd', 'eur', 'gbp', 'cad', 'aud', 'chf', 'czk',
+  'est', 'pst', 'cst', 'mst', 'utc', 'gmt', 'cet', 'eet', 'bst', 'pdt', 'edt',
+  'usa', 'us', 'uk', 'eu', 'nyc', 'sf', 'la',
+  'help', 'helps', 'helping', 'helped', 'build', 'builds', 'building', 'built',
+  'drive', 'drives', 'driving', 'driven', 'scale', 'scales', 'scaling', 'scaled',
+  'own', 'owns', 'owning', 'owned', 'deliver', 'delivers', 'delivering', 'delivered',
+  'grow', 'grows', 'growing', 'growth', 'create', 'creates', 'creating', 'created',
+  'solve', 'solves', 'solving', 'solved', 'support', 'supporting', 'supports',
+  'ensure', 'ensures', 'ensuring', 'maintain', 'maintains', 'maintaining',
+  'fast', 'pace', 'paced', 'dynamic', 'passionate', 'excited', 'exciting',
+  'world', 'class', 'global', 'proven', 'strong', 'solid', 'excellent',
+  'great', 'good', 'best', 'better', 'nice', 'new', 'next', 'high', 'quality',
+  'impact', 'meaningful', 'success', 'successful', 'innovative', 'modern',
+  'first', 'second', 'third', 'top', 'bottom', 'daily', 'weekly', 'monthly'
+]);
+
+/**
+ * Validates whether a token represents a genuine technical skill or keyword
+ * and rejects pure numbers, years, stop words, and general corporate vocabulary.
+ */
+export function isValidKeyword(term: string): boolean {
+  if (!term || typeof term !== 'string') return false;
+  const lower = term.trim().toLowerCase();
+  if (lower.length < 2 || lower.length > 35) return false;
+  if (/^\d+$/.test(lower)) return false;
+  if (/^\d+(?:st|nd|rd|th|k|m|\+)$/i.test(lower)) return false;
+  if (!/[a-z]/i.test(lower)) return false;
+  if (STOP_WORDS.has(lower)) return false;
+  if (NON_TECHNICAL_TERMS.has(lower)) return false;
+  return true;
+}
 
 const HIGH_PRIORITY_TRIGGERS = /(?:requirements?|qualifications?|must[- ]have|skills?|responsibilities|what you(?:\x27ll| will) do|your role|experience (?:with|in)|proficient in|looking for)/gi;
 const LOW_PRIORITY_TRIGGERS = /(?:about (?:us|the company)|who we are|our company|our product|benefits|we offer|perks)/gi;
