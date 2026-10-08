@@ -284,7 +284,7 @@ chmod +x ./build_desktop_docker.sh
 
 The script automatically cleans previous test caches and generates the executable in the root folder:
 ```bash
-./CV_Maker_1.5.1_amd64.AppImage
+./CV_Maker_1.5.2_amd64.AppImage
 ```
 
 ---

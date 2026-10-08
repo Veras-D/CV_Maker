@@ -22,7 +22,7 @@ jobs:
           - platform: 'macos-latest'
             args: ''
 
-          # Windows: Produces .msi installer and .exe (NSIS)
+          # Windows: Produces .exe (NSIS Installer)
           - platform: 'windows-latest'
             args: ''
 
@@ -77,7 +77,7 @@ jobs:
             Multi-platform desktop binaries are ready to download:
             - **Linux**: `.AppImage` (portable standalone) and `.deb` (Debian/Ubuntu)
             - **macOS**: `.dmg` (Apple Silicon & Intel)
-            - **Windows**: `.msi` and `.exe` (NSIS Installer)
+            - **Windows**: `.exe` (NSIS Installer)
             
             ### ✨ Features Included:
             - ATS-Optimized Pure Vector Resume & PDF Export
