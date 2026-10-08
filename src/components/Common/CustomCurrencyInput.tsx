@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign } from 'lucide-react';
 import { CustomSelect, SelectOption } from './CustomSelect';
+import { extractMinSalary } from '../../utils/kanbanUtils';
 
 interface CurrencyInputProps {
   value: string; // e.g. "145,000 USD / yr"
@@ -20,7 +21,8 @@ const CURRENCY_OPTIONS: SelectOption[] = [
 // Parse value into formatted amount and currency unit
 const parseCurrencyValue = (val: string) => {
   if (!val) return { amount: '', currency: 'USD / yr' };
-  const clean = val.trim();
+  const extracted = extractMinSalary(val);
+  const clean = (extracted || val).trim();
   const digitsOnly = clean.replace(/[^\d]/g, '');
   const numPart = digitsOnly ? Number(digitsOnly.slice(0, 9)).toLocaleString('en-US') : '';
   

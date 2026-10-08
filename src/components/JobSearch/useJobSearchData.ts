@@ -5,6 +5,7 @@ import { fetchAllRemoteJobs, getCachedJobs } from '../../utils/jobSearchApi';
 import { filterRemoteJobs, isJobAlreadyApplied } from '../../utils/jobFilterEngine';
 import { isDynamicYcBusiness, YC_DIRECTORY_UPDATED_EVENT } from '../../utils/dynamicYcService';
 import { getClickedJobIds, markJobAsClicked, CLICKED_JOBS_UPDATED_EVENT } from '../../utils/clickedJobsService';
+import { extractMinSalaryFromJob } from '../../utils/kanbanUtils';
 
 export const PAGE_SIZE = 12;
 
@@ -163,6 +164,8 @@ export function useJobSearchData() {
     applyAndTailorJob({
       jobTitle: job.title,
       companyName: job.company,
+      location: job.location || 'Remote',
+      salary: extractMinSalaryFromJob(job),
       roleUrl: job.url,
       jobDescription: job.descriptionPlain
     });

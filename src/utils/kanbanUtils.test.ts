@@ -4,7 +4,10 @@ import {
   deduplicateKanbanRoles, 
   formatStageLabel, 
   isKanbanCardStale, 
-  formatInactivityBadge 
+  formatInactivityBadge,
+  extractMinSalary,
+  extractMinSalaryFromJob,
+  backfillRoleSalaryFromCache
 } from './kanbanUtils';
 import { KanbanRole } from '../types/cv';
 
@@ -109,6 +112,119 @@ describe('kanbanUtils', () => {
       expect(isKanbanCardStale(staleRole, now)).toBe(true);
       expect(formatInactivityBadge(75)).toBe('2mo inactive');
       expect(formatInactivityBadge(35)).toBe('35d inactive');
+    });
+  });
+});
+
+describe('kanbanUtils salary helpers', () => {
+  describe('extractMinSalary', () => {
+    it('extracts minimum value from USD annual salary range', () => {
+      expect(extractMinSalary('$115,600 - $170,000 / yr')).toBe('115,600 USD / yr');
+      expect(extractMinSalary('$115,600 - $170,000/yr')).toBe('115,600 USD / yr');
+      expect(extractMinSalary('$ $115,600 - $170,000 / yr')).toBe('115,600 USD / yr');
+    });
+
+    it('extracts minimum value from abbreviated k/m ranges', () => {
+      expect(extractMinSalary('$115k - $170k / yr')).toBe('115,000 USD / yr');
+      expect(extractMinSalary('$115.5k - $170k')).toBe('115,500 USD / yr');
+      expect(extractMinSalary('$1.2m - $1.5m / yr')).toBe('1,200,000 USD / yr');
+    });
+
+    it('handles foreign currencies and monthly periods', () => {
+      expect(extractMinSalary('€60,000 - €80,000 / yr')).toBe('60,000 EUR / yr');
+      expect(extractMinSalary('£50,000 - £70,000 / yr')).toBe('50,000 GBP / yr');
+      expect(extractMinSalary('$5,000 - $8,000 / mo')).toBe('5,000 USD / mo');
+      expect(extractMinSalary('$5,000 - $8,000 / month')).toBe('5,000 USD / mo');
+      expect(extractMinSalary('100,000 CZK / mo')).toBe('100,000 CZK / mo');
+    });
+
+    it('handles single salary numbers and pre-formatted values', () => {
+      expect(extractMinSalary('$120,000')).toBe('120,000 USD / yr');
+      expect(extractMinSalary('From $115,600 / yr')).toBe('115,600 USD / yr');
+      expect(extractMinSalary('Up to $170,000 / yr')).toBe('170,000 USD / yr');
+      expect(extractMinSalary('145,000 USD / yr')).toBe('145,000 USD / yr');
+    });
+
+    it('returns undefined for missing or text-only salaries', () => {
+      expect(extractMinSalary(undefined)).toBeUndefined();
+      expect(extractMinSalary('')).toBeUndefined();
+      expect(extractMinSalary('Competitive')).toBeUndefined();
+      expect(extractMinSalary('DOE')).toBeUndefined();
+    });
+  });
+
+  describe('extractMinSalaryFromJob', () => {
+    it('prioritizes salarySummary range over plain number', () => {
+      const res = extractMinSalaryFromJob({
+        salarySummary: '$115,600 - $170,000 / yr',
+        minSalary: 115600,
+        maxSalary: 170000,
+        currency: 'USD'
+      });
+      expect(res).toBe('115,600 USD / yr');
+    });
+
+    it('falls back to numeric minSalary when salarySummary is absent', () => {
+      const res = extractMinSalaryFromJob({
+        minSalary: 95000,
+        currency: 'EUR'
+      });
+      expect(res).toBe('95,000 EUR / yr');
+    });
+
+    it('returns undefined when no salary info is present', () => {
+      expect(extractMinSalaryFromJob({})).toBeUndefined();
+    });
+  });
+
+  describe('backfillRoleSalaryFromCache', () => {
+    it('backfills missing salary when roleUrl matches cached job', () => {
+      const role: KanbanRole = {
+        id: 'role-1',
+        roleTitle: 'SDET',
+        company: 'Flex',
+        location: 'Remote',
+        status: 'applied',
+        dateApplied: '2026-10-08',
+        roleUrl: 'https://jobicy.com/jobs/92645-sdet',
+        updatedAt: '2026-10-08T00:00:00Z'
+      };
+
+      const cachedJobs = [
+        {
+          url: 'https://jobicy.com/jobs/92645-sdet',
+          company: 'Flex',
+          title: 'SDET',
+          salarySummary: '$115,600 - $170,000 / yr'
+        }
+      ];
+
+      const updated = backfillRoleSalaryFromCache(role, cachedJobs);
+      expect(updated.salary).toBe('115,600 USD / yr');
+    });
+
+    it('preserves existing salary without overwriting', () => {
+      const role: KanbanRole = {
+        id: 'role-2',
+        roleTitle: 'SDET',
+        company: 'Flex',
+        location: 'Remote',
+        salary: '130,000 USD / yr',
+        status: 'applied',
+        dateApplied: '2026-10-08',
+        roleUrl: 'https://jobicy.com/jobs/92645-sdet',
+        updatedAt: '2026-10-08T00:00:00Z'
+      };
+
+      const cachedJobs = [
+        {
+          url: 'https://jobicy.com/jobs/92645-sdet',
+          salarySummary: '$115,600 - $170,000 / yr'
+        }
+      ];
+
+      const updated = backfillRoleSalaryFromCache(role, cachedJobs);
+      expect(updated.salary).toBe('130,000 USD / yr');
     });
   });
 });

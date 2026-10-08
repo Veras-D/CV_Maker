@@ -2,7 +2,7 @@ import React from 'react';
 import { KanbanRole } from '../../types/cv';
 import { Building, MapPin, Calendar, ExternalLink, Trash2, Edit3, GripVertical, AlertTriangle } from 'lucide-react';
 import { openExternalUrl } from '../../utils/urlHelper';
-import { isKanbanCardStale, getKanbanInactivityDays, formatInactivityBadge } from '../../utils/kanbanUtils';
+import { isKanbanCardStale, getKanbanInactivityDays, formatInactivityBadge, extractMinSalary } from '../../utils/kanbanUtils';
 
 export interface KanbanCardItemProps {
   role: KanbanRole;
@@ -72,10 +72,10 @@ export const KanbanCardItem: React.FC<KanbanCardItemProps> = ({
         </span>
         {role.salary && (
           <span 
-            className="text-[10px] text-emerald-400 font-mono shrink-0 truncate max-w-[110px]"
+            className="text-[10px] text-emerald-400 font-mono shrink-0 truncate max-w-[120px]"
             title={role.salary}
           >
-            {role.salary}
+            {extractMinSalary(role.salary) || role.salary}
           </span>
         )}
       </div>

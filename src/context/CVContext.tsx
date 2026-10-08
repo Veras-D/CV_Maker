@@ -27,6 +27,8 @@ export interface PendingTailorJob {
   jobTitle: string;
   companyName: string;
   roleUrl?: string;
+  location?: string;
+  salary?: string;
   jobDescription: string;
 }
 
@@ -132,7 +134,7 @@ function loadInitialCVData(): CVData {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && Array.isArray(parsed.kanbanRoles)) {
-        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
+        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles, getCachedJobs());
       }
       return parsed;
     }
@@ -219,7 +221,7 @@ function useDataPersistence(cvData: CVData, setCvData: React.Dispatch<React.SetS
     const parsed = parseCVDataJSON(jsonString);
     if (parsed) {
       if (Array.isArray(parsed.kanbanRoles)) {
-        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles);
+        parsed.kanbanRoles = deduplicateKanbanRoles(parsed.kanbanRoles, getCachedJobs());
       }
       setCvData(parsed);
       return true;
@@ -252,7 +254,8 @@ export const CVProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setCvData(prev => updaters.addKanbanRoleState(prev, {
       roleTitle: job.jobTitle || 'Target Role',
       company: job.companyName || 'Target Company',
-      location: 'Remote',
+      location: job.location || 'Remote',
+      salary: job.salary,
       status: 'applied',
       dateApplied: new Date().toISOString().slice(0, 10),
       roleUrl: job.roleUrl,

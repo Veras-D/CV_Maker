@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { KanbanRole, KanbanStatus } from '../../types/cv';
 import { KanbanRoleFormFields } from './KanbanRoleFormFields';
-import { normalizeRoleUrl, formatStageLabel } from '../../utils/kanbanUtils';
+import { normalizeRoleUrl, formatStageLabel, extractMinSalaryFromJob } from '../../utils/kanbanUtils';
+import { getCachedJobs } from '../../utils/jobSearchApi';
 
 export interface AddEditModalProps {
   isOpen: boolean;
@@ -94,7 +95,16 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
       setRoleTitle(editingRole.roleTitle);
       setCompany(editingRole.company);
       setLocation(editingRole.location || '');
-      setSalary(editingRole.salary || '');
+      let initialSalary = editingRole.salary || '';
+      if (!initialSalary && editingRole.roleUrl) {
+        const cached = getCachedJobs();
+        const normUrl = normalizeRoleUrl(editingRole.roleUrl);
+        const match = cached?.find(j => normalizeRoleUrl(j.url) === normUrl);
+        if (match) {
+          initialSalary = extractMinSalaryFromJob(match) || '';
+        }
+      }
+      setSalary(initialSalary);
       setStatus(editingRole.status);
       setDateApplied(editingRole.dateApplied);
       setRoleUrl(editingRole.roleUrl || '');

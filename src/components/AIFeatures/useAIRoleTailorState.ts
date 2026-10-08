@@ -19,6 +19,7 @@ export function useAIRoleTailorState() {
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [roleUrl, setRoleUrl] = useState('');
+  const [salary, setSalary] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [tailoredOutput, setTailoredOutput] = useState<LocalTailorOutput | null>(null);
@@ -35,6 +36,7 @@ export function useAIRoleTailorState() {
     setCompanyName,
     setRoleUrl,
     setJobDescription,
+    setSalary,
     setTailoredOutput,
     setCoverLetterEditable,
     setSummaryEditable
@@ -63,6 +65,7 @@ export function useAIRoleTailorState() {
         roleTitle: jobTitle || 'Software Engineer',
         company: companyName || 'Target Company',
         location: 'Remote / Hybrid',
+        salary: salary.trim() || undefined,
         status: 'applied',
         dateApplied: new Date().toISOString().slice(0, 10),
         roleUrl: roleUrl.trim() || undefined,
