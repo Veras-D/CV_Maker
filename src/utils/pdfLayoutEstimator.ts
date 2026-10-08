@@ -16,7 +16,8 @@ import {
 } from './pdfHeaderUtils';
 import { sanitizePdfText } from './pdfSanitizer';
 
-export const USABLE_PAGE_HEIGHT_MM = 262; // 278 (MAX_PAGE_Y) - 16 (TOP_MARGIN)
+export const USABLE_PAGE_HEIGHT_MM = 260; // 278 (MAX_PAGE_Y) - 16 (TOP_MARGIN) with 2mm safety margin
+export const SECTION_HEADER_HEIGHT_MM = 5.7; // 1.5 line offset + 4.2 text/padding
 
 let measurementDoc: jsPDF | null = null;
 
@@ -40,10 +41,12 @@ export function estimateHeaderHeightMm(profile: CVData['profile']): number {
     return 18;
   }
 
-  let h = 18;
-  if (name) h += 8.5;
-  if (headline) h += 4.5;
-  if (contactItems.length > 0) h += 5.5;
+  // Content starts at TOP_MARGIN = 16mm.
+  // drawHeader starts at 18mm: name (+6.2), headline (+5.0), contacts (+3.8), divider (+5.5)
+  let h = 2; // Offset from TOP_MARGIN (18 - 16)
+  if (name) h += 6.2;
+  if (headline) h += 5.0;
+  if (contactItems.length > 0) h += 3.8;
   return h + 5.5; // Divider line and padding
 }
 
@@ -54,12 +57,12 @@ export function estimateSummaryHeightMm(summaryText: string): number {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.2);
   const lines = doc.splitTextToSize(clean, CONTENT_WIDTH);
-  return 12 + (lines.length * 4.2) + 2.0; // Section header + lines + padding
+  return SECTION_HEADER_HEIGHT_MM + (lines.length * 4.2) + 2.0; // Section header + lines + padding
 }
 
 export function estimateExperienceItemHeightMm(exp: WorkExperience, lang: LanguageCode): number {
   if (!exp.enabled) return 0;
-  let h = 7.8; // Role title row + company row
+  let h = 7.8; // Role title row (4.0) + company row (3.8)
 
   const rawSummary = exp.summary ? (exp.summary[lang] || exp.summary.en || '') : '';
   const cleanSummary = sanitizePdfText(rawSummary);
@@ -92,7 +95,7 @@ export function estimateExperienceItemHeightMm(exp: WorkExperience, lang: Langua
 export function estimateExperiencesHeightMm(experiences: WorkExperience[], lang: LanguageCode): number {
   const active = experiences.filter(e => e.enabled);
   if (active.length === 0) return 0;
-  let total = 12; // Section header
+  let total = SECTION_HEADER_HEIGHT_MM;
   active.forEach(exp => {
     total += estimateExperienceItemHeightMm(exp, lang);
   });
@@ -103,7 +106,7 @@ export function estimateSkillsHeightMm(categories: SkillCategory[], _lang?: Lang
   const activeCategories = categories.filter(c => c.skills.some(s => s.enabled));
   if (activeCategories.length === 0) return 0;
 
-  let total = 12; // Section header
+  let total = SECTION_HEADER_HEIGHT_MM;
   const doc = getMeasurementDoc();
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.8);
@@ -156,7 +159,7 @@ export function estimateSingleProjectHeightMm(project: ProjectItem, lang: Langua
 export function estimateProjectsHeightMm(projects: ProjectItem[], lang: LanguageCode): number {
   const active = projects.filter(p => p.enabled);
   if (active.length === 0) return 0;
-  let total = 12; // Section header
+  let total = SECTION_HEADER_HEIGHT_MM;
   active.forEach(p => {
     total += estimateSingleProjectHeightMm(p, lang);
   });
@@ -178,10 +181,10 @@ export function estimateEducationAndLanguagesHeightMm(
 
   let langH = 0;
   if (activeLang.length > 0) {
-    langH = 5.3 + (activeLang.length * 9.7); // Header line + items (3.2 + 6.5)
+    langH = 5.3 + (activeLang.length * 6.5); // Header line + items
   }
 
-  return Math.max(eduH, langH) + 6.0;
+  return Math.max(eduH, langH) + 2.0;
 }
 
 export function calculateCvTotalHeightMm(cvData: CVData, language: LanguageCode = 'en'): number {

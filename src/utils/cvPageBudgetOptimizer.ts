@@ -38,7 +38,11 @@ export interface OptimizePageBudgetParams {
 import { 
   optimizeEducation, 
   optimizeCompetencies, 
-  pruneSecondaryProjects 
+  pruneSecondaryProjects,
+  backfillProjects,
+  backfillBullets,
+  backfillEducation,
+  backfillSkills
 } from './cvSectionOptimizers';
 
 /**
@@ -256,9 +260,11 @@ function compressAndPruneExperiences(
   return { data: current, trimmedBullets, omittedExp, omittedProjectFallback };
 }
 
+
 /**
  * Main Page Budget Optimizer:
- * Orchestrates multi-tier pruning cascade to guarantee strict single-page (or target-page) ATS layout.
+ * Orchestrates multi-tier pruning cascade to guarantee strict single-page (or target-page) ATS layout,
+ * followed by opportunistic recovery to maximize information density without leaving empty space.
  */
 export function optimizeCVPageBudget(params: OptimizePageBudgetParams): {
   optimizedData: CVData;
@@ -270,7 +276,6 @@ export function optimizeCVPageBudget(params: OptimizePageBudgetParams): {
 
   let currentData: CVData = { ...cvData };
   const auditNotes: string[] = [];
-  let omittedProjectsTotal = 0;
 
   // If already fits naturally, return without modifications
   if (originalHeightMm <= maxAllowedHeightMm) {
@@ -293,40 +298,63 @@ export function optimizeCVPageBudget(params: OptimizePageBudgetParams): {
     };
   }
 
-  // Step 1: Competencies (Filter categories with < 3 skills)
-  const skillsRes = optimizeCompetencies(currentData.skillCategories, params.matchedKeywords, params.matchedTags);
-  currentData = { ...currentData, skillCategories: skillsRes.optimized };
-  const omittedSkillCatsTotal = skillsRes.omittedCategoriesCount;
-  if (omittedSkillCatsTotal > 0) {
-    auditNotes.push(`Omitted ${omittedSkillCatsTotal} skill categories with fewer than 3 relevant skills.`);
+  // Track originally enabled IDs so recovery never enables user-disabled items
+  const originallyEnabledSkills = new Set(
+    cvData.skillCategories.flatMap(c => c.skills.filter(s => s.enabled).map(s => s.id))
+  );
+  const originallyEnabledProjects = new Set(
+    cvData.projects.filter(p => p.enabled).map(p => p.id)
+  );
+  const originallyEnabledEducation = new Set(
+    cvData.education.filter(e => e.enabled).map(e => e.id)
+  );
+  const originallyEnabledBullets = new Set(
+    cvData.experiences.flatMap(e => e.bullets.filter(b => b.enabled).map(b => b.id))
+  );
+
+  // PHASE 1: Progressive Pruning (only prune what is necessary to fit)
+  if (calculateCvTotalHeightMm(currentData, language) > maxAllowedHeightMm) {
+    const skillsRes = optimizeCompetencies(currentData.skillCategories, params.matchedKeywords, params.matchedTags);
+    currentData = { ...currentData, skillCategories: skillsRes.optimized };
   }
 
-  // Step 2: Education (Keep top 2: longest duration + most relevant)
-  const eduRes = optimizeEducation(currentData.education, params.matchedKeywords, params.jobTitle);
-  currentData = { ...currentData, education: eduRes.optimized };
-  const omittedEduTotal = eduRes.omittedCount;
-  if (omittedEduTotal > 0) {
-    auditNotes.push(`Prioritized top 2 academic credentials; omitted ${omittedEduTotal} secondary education entry.`);
+  if (calculateCvTotalHeightMm(currentData, language) > maxAllowedHeightMm) {
+    const eduRes = optimizeEducation(currentData.education, params.matchedKeywords, params.jobTitle);
+    currentData = { ...currentData, education: eduRes.optimized };
   }
 
-  // Step 3: Projects (Keep at least 1 project; trim secondary projects)
   if (calculateCvTotalHeightMm(currentData, language) > maxAllowedHeightMm) {
     const projRes = pruneSecondaryProjects(currentData.projects);
     currentData = { ...currentData, projects: projRes.projects };
-    omittedProjectsTotal = projRes.omittedProjectsCount;
-    if (omittedProjectsTotal > 0) {
-      auditNotes.push(`Preserved #1 best-matched project and trimmed ${omittedProjectsTotal} secondary projects.`);
-    }
   }
 
-  // Steps 4-7: Bullets and Experiences pruning
-  const expResults = compressAndPruneExperiences(currentData, maxAllowedHeightMm, params, auditNotes);
-  currentData = expResults.data;
-  const trimmedBulletsTotal = expResults.trimmedBullets;
-  const omittedExpList = expResults.omittedExp;
-  omittedProjectsTotal += expResults.omittedProjectFallback;
+  let omittedExpList: string[] = [];
+  if (calculateCvTotalHeightMm(currentData, language) > maxAllowedHeightMm) {
+    const expResults = compressAndPruneExperiences(currentData, maxAllowedHeightMm, params, auditNotes);
+    currentData = expResults.data;
+    omittedExpList = expResults.omittedExp;
+  }
+
+  // PHASE 2: Space Maximization / Backfilling (fill leftover space efficiently!)
+  currentData = backfillProjects(currentData, originallyEnabledProjects, maxAllowedHeightMm, language);
+  currentData = backfillBullets(currentData, originallyEnabledBullets, maxAllowedHeightMm, language);
+  currentData = backfillEducation(currentData, originallyEnabledEducation, maxAllowedHeightMm, language);
+  currentData = backfillSkills(currentData, originallyEnabledSkills, maxAllowedHeightMm, language);
 
   const optimizedHeightMm = Math.round(calculateCvTotalHeightMm(currentData, language));
+
+  const omittedProjectsTotal = cvData.projects.filter(p => p.enabled).length -
+    currentData.projects.filter(p => p.enabled).length;
+
+  const originalBulletsCount = cvData.experiences.flatMap(e => e.bullets).filter(b => b.enabled).length;
+  const currentBulletsCount = currentData.experiences.flatMap(e => e.bullets).filter(b => b.enabled).length;
+  const trimmedBulletsTotal = Math.max(0, originalBulletsCount - currentBulletsCount);
+
+  const omittedEduTotal = cvData.education.filter(e => e.enabled).length -
+    currentData.education.filter(e => e.enabled).length;
+
+  const omittedSkillCatsTotal = cvData.skillCategories.filter(c => c.skills.some(s => s.enabled)).length -
+    currentData.skillCategories.filter(c => c.skills.some(s => s.enabled)).length;
 
   return {
     optimizedData: currentData,
@@ -339,9 +367,9 @@ export function optimizeCVPageBudget(params: OptimizePageBudgetParams): {
       omittedExperiencesCount: omittedExpList.length,
       omittedExperiences: omittedExpList,
       trimmedBulletsCount: trimmedBulletsTotal,
-      omittedProjectsCount: omittedProjectsTotal,
-      omittedSkillCategoriesCount: omittedSkillCatsTotal,
-      omittedEducationCount: omittedEduTotal,
+      omittedProjectsCount: Math.max(0, omittedProjectsTotal),
+      omittedSkillCategoriesCount: Math.max(0, omittedSkillCatsTotal),
+      omittedEducationCount: Math.max(0, omittedEduTotal),
       auditNotes
     }
   };

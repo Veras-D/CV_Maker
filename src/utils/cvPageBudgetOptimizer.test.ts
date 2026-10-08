@@ -167,7 +167,7 @@ describe('cvPageBudgetOptimizer', () => {
   });
 
   it('keeps at least 1 project if possible when secondary projects are pruned', () => {
-    const data = createMockCVData(4);
+    const data = createMockCVData(7);
     const { optimizedData, audit } = optimizeCVPageBudget({
       cvData: data,
       jobTitle: 'Kubernetes Engineer',
@@ -240,10 +240,10 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
   });
 
   it('cuts unrelated older jobs beyond top 4 first before cutting a relevant older job', () => {
-    const data = createMockCVData(4);
-    // Add Job 4: Unrelated Barista role
+    const data = createMockCVData(6);
+    // Add Job 6: Unrelated Barista role
     data.experiences.push({
-      id: 'exp-4',
+      id: 'exp-6',
       roleTitle: { en: 'Barista & Coffee Roaster', cs: '' },
       company: 'Coffee House',
       location: 'Prague',
@@ -253,14 +253,14 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       enabled: true,
       tags: [],
       bullets: [
-        { id: 'b41', text: { en: 'Served 200 espressos daily', cs: '' }, enabled: true, tags: [] },
-        { id: 'b42', text: { en: 'Managed inventory and cash register', cs: '' }, enabled: true, tags: [] },
-        { id: 'b43', text: { en: 'Cleaned espresso machines', cs: '' }, enabled: true, tags: [] }
+        { id: 'b61', text: { en: 'Served 200 espressos daily', cs: '' }, enabled: true, tags: [] },
+        { id: 'b62', text: { en: 'Managed inventory and cash register', cs: '' }, enabled: true, tags: [] },
+        { id: 'b63', text: { en: 'Cleaned espresso machines', cs: '' }, enabled: true, tags: [] }
       ]
     });
-    // Add Job 5: Relevant React Native Developer role
+    // Add Job 7: Relevant React Native Developer role
     data.experiences.push({
-      id: 'exp-5',
+      id: 'exp-7',
       roleTitle: { en: 'React Native Mobile Developer', cs: '' },
       company: 'App Studio',
       location: 'Remote',
@@ -270,8 +270,8 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       enabled: true,
       tags: [],
       bullets: [
-        { id: 'b51', text: { en: 'Developed React Native iOS and Android apps with TypeScript', cs: '' }, enabled: true, tags: [] },
-        { id: 'b52', text: { en: 'Published cross-platform features to App Store', cs: '' }, enabled: true, tags: [] }
+        { id: 'b71', text: { en: 'Developed React Native iOS and Android apps with TypeScript', cs: '' }, enabled: true, tags: [] },
+        { id: 'b72', text: { en: 'Published cross-platform features to App Store', cs: '' }, enabled: true, tags: [] }
       ]
     });
 
@@ -285,10 +285,10 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       maxPages: 1
     });
 
-    // If space required pruning beyond 4 jobs, exp-4 (Barista) should be cut before exp-5 (React Native)!
+    // If space required pruning beyond 4 jobs, exp-6 (Barista) should be cut before exp-7 (React Native)!
     expect(audit.omittedExperiencesCount).toBeGreaterThanOrEqual(1);
     expect(audit.omittedExperiences[0]).toContain('Barista');
-    expect(optimizedData.experiences.find(e => e.id === 'exp-4')?.enabled).toBe(false);
+    expect(optimizedData.experiences.find(e => e.id === 'exp-6')?.enabled).toBe(false);
   });
 
   it('respects 2-page budget limit when maxPages is 2', () => {
@@ -305,5 +305,27 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
 
     expect(audit.targetPages).toBe(2);
     expect(audit.maxAllowedHeightMm).toBe(2 * USABLE_PAGE_HEIGHT_MM);
+  });
+
+  it('maximizes information density by preserving secondary projects and bullets when page budget allows', () => {
+    const data = createMockCVData(4);
+    const { optimizedData, audit } = optimizeCVPageBudget({
+      cvData: data,
+      jobTitle: 'Software Engineer',
+      companyName: 'Acme',
+      jobDescription: 'Software engineer vacancy',
+      matchedKeywords: ['typescript', 'cloud'],
+      matchedTags: ['backend'],
+      maxPages: 1
+    });
+
+    // All 4 experiences preserved
+    expect(optimizedData.experiences.filter(e => e.enabled).length).toBe(4);
+    // Both projects preserved because space allowed it!
+    expect(optimizedData.projects.filter(p => p.enabled).length).toBe(2);
+    expect(audit.omittedProjectsCount).toBe(0);
+    // Bullets preserved across jobs (at least 3 bullets per job)
+    const totalBullets = optimizedData.experiences.flatMap(e => e.bullets).filter(b => b.enabled).length;
+    expect(totalBullets).toBeGreaterThanOrEqual(12);
   });
 });

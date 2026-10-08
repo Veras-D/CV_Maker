@@ -1,4 +1,5 @@
-import { EducationItem, ProjectItem, SkillCategory } from '../types/cv';
+import { CVData, EducationItem, LanguageCode, ProjectItem, SkillCategory } from '../types/cv';
+import { calculateCvTotalHeightMm } from './pdfLayoutEstimator';
 
 /**
  * Parses duration in years from dates string and evaluates college/degree seniority
@@ -117,4 +118,123 @@ export function pruneSecondaryProjects(
   });
 
   return { projects: updated, omittedProjectsCount };
+}
+
+/**
+ * Opportunistically re-enables projects if space allows on the target page
+ */
+export function backfillProjects(
+  currentData: CVData,
+  originallyEnabledProjectIds: Set<string>,
+  maxAllowedHeightMm: number,
+  language: LanguageCode
+): CVData {
+  let updated = currentData;
+  for (let i = 0; i < updated.projects.length; i++) {
+    const p = updated.projects[i];
+    if (!p.enabled && originallyEnabledProjectIds.has(p.id)) {
+      const candidateProjects = updated.projects.map((proj, idx) =>
+        idx === i ? { ...proj, enabled: true } : proj
+      );
+      const testCv: CVData = { ...updated, projects: candidateProjects };
+      if (calculateCvTotalHeightMm(testCv, language) <= maxAllowedHeightMm) {
+        updated = testCv;
+      }
+    }
+  }
+  return updated;
+}
+
+function tryRestoreBullet(
+  data: CVData,
+  target: { eIdx: number; bIdx: number },
+  maxAllowedHeightMm: number,
+  language: LanguageCode
+): CVData {
+  const { eIdx, bIdx } = target;
+  const exp = data.experiences[eIdx];
+  const candidateBullets = exp.bullets.map((bullet, idx) =>
+    idx === bIdx ? { ...bullet, enabled: true } : bullet
+  );
+  const candidateExps = data.experiences.map((e, idx) =>
+    idx === eIdx ? { ...e, bullets: candidateBullets } : e
+  );
+  const testCv: CVData = { ...data, experiences: candidateExps };
+  return calculateCvTotalHeightMm(testCv, language) <= maxAllowedHeightMm ? testCv : data;
+}
+
+/**
+ * Opportunistically re-enables bullet points on experiences if space allows on the target page
+ */
+export function backfillBullets(
+  currentData: CVData,
+  originallyEnabledBulletIds: Set<string>,
+  maxAllowedHeightMm: number,
+  language: LanguageCode
+): CVData {
+  let updated = currentData;
+  for (let eIdx = 0; eIdx < updated.experiences.length; eIdx++) {
+    const exp = updated.experiences[eIdx];
+    if (!exp.enabled) continue;
+
+    for (let bIdx = 0; bIdx < exp.bullets.length; bIdx++) {
+      const b = exp.bullets[bIdx];
+      if (b.enabled || !originallyEnabledBulletIds.has(b.id)) continue;
+      updated = tryRestoreBullet(updated, { eIdx, bIdx }, maxAllowedHeightMm, language);
+    }
+  }
+  return updated;
+}
+
+/**
+ * Opportunistically re-enables education entries if space allows on the target page
+ */
+export function backfillEducation(
+  currentData: CVData,
+  originallyEnabledEducationIds: Set<string>,
+  maxAllowedHeightMm: number,
+  language: LanguageCode
+): CVData {
+  let updated = currentData;
+  for (let eduIdx = 0; eduIdx < updated.education.length; eduIdx++) {
+    const edu = updated.education[eduIdx];
+    if (!edu.enabled && originallyEnabledEducationIds.has(edu.id)) {
+      const candidateEdu = updated.education.map((e, idx) =>
+        idx === eduIdx ? { ...e, enabled: true } : e
+      );
+      const testCv: CVData = { ...updated, education: candidateEdu };
+      if (calculateCvTotalHeightMm(testCv, language) <= maxAllowedHeightMm) {
+        updated = testCv;
+      }
+    }
+  }
+  return updated;
+}
+
+/**
+ * Opportunistically re-enables skill categories if space allows on the target page
+ */
+export function backfillSkills(
+  currentData: CVData,
+  originallyEnabledSkillIds: Set<string>,
+  maxAllowedHeightMm: number,
+  language: LanguageCode
+): CVData {
+  let updated = currentData;
+  for (let cIdx = 0; cIdx < updated.skillCategories.length; cIdx++) {
+    const cat = updated.skillCategories[cIdx];
+    const anyDisabled = cat.skills.some(s => !s.enabled && originallyEnabledSkillIds.has(s.id));
+    if (anyDisabled) {
+      const candidateCats = updated.skillCategories.map((c, idx) =>
+        idx === cIdx
+          ? { ...c, skills: c.skills.map(s => originallyEnabledSkillIds.has(s.id) ? { ...s, enabled: true } : s) }
+          : c
+      );
+      const testCv: CVData = { ...updated, skillCategories: candidateCats };
+      if (calculateCvTotalHeightMm(testCv, language) <= maxAllowedHeightMm) {
+        updated = testCv;
+      }
+    }
+  }
+  return updated;
 }
