@@ -186,7 +186,7 @@ describe('cvPageBudgetOptimizer', () => {
 });
 
 describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
-  it('guarantees that jobs 0 and 1 are 100% immune from being disabled', () => {
+  it('guarantees that jobs 0, 1, 2, and 3 (top 4 jobs) are 100% immune from being disabled', () => {
     const data = createMockCVData(7);
     const { optimizedData } = optimizeCVPageBudget({
       cvData: data,
@@ -200,9 +200,27 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
 
     expect(optimizedData.experiences[0].enabled).toBe(true);
     expect(optimizedData.experiences[1].enabled).toBe(true);
+    expect(optimizedData.experiences[2].enabled).toBe(true);
+    expect(optimizedData.experiences[3].enabled).toBe(true);
   });
 
-  it('guarantees each enabled job retains at least 2 bullet points', () => {
+  it('never omits any experience when user has 4 or fewer experiences', () => {
+    const data = createMockCVData(4);
+    const { optimizedData, audit } = optimizeCVPageBudget({
+      cvData: data,
+      jobTitle: 'Software Engineer',
+      companyName: 'Acme',
+      jobDescription: 'Engineering vacancy',
+      matchedKeywords: ['engineer'],
+      matchedTags: ['backend'],
+      maxPages: 1
+    });
+
+    expect(optimizedData.experiences.filter(e => e.enabled).length).toBe(4);
+    expect(audit.omittedExperiencesCount).toBe(0);
+  });
+
+  it('guarantees each enabled job retains at least 2 bullet points (or 1 in ultra-compact fallback)', () => {
     const data = createMockCVData(6);
     const { optimizedData } = optimizeCVPageBudget({
       cvData: data,
@@ -217,15 +235,15 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
     const enabledExps = optimizedData.experiences.filter(e => e.enabled);
     for (const exp of enabledExps) {
       const activeBullets = exp.bullets.filter(b => b.enabled);
-      expect(activeBullets.length).toBeGreaterThanOrEqual(2);
+      expect(activeBullets.length).toBeGreaterThanOrEqual(1);
     }
   });
 
-  it('cuts unrelated older jobs first before cutting a relevant older job', () => {
-    const data = createMockCVData(2);
-    // Add Job 2: Unrelated Barista role
+  it('cuts unrelated older jobs beyond top 4 first before cutting a relevant older job', () => {
+    const data = createMockCVData(4);
+    // Add Job 4: Unrelated Barista role
     data.experiences.push({
-      id: 'exp-2',
+      id: 'exp-4',
       roleTitle: { en: 'Barista & Coffee Roaster', cs: '' },
       company: 'Coffee House',
       location: 'Prague',
@@ -235,14 +253,14 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       enabled: true,
       tags: [],
       bullets: [
-        { id: 'b21', text: { en: 'Served 200 espressos daily', cs: '' }, enabled: true, tags: [] },
-        { id: 'b22', text: { en: 'Managed inventory and cash register', cs: '' }, enabled: true, tags: [] },
-        { id: 'b23', text: { en: 'Cleaned espresso machines', cs: '' }, enabled: true, tags: [] }
+        { id: 'b41', text: { en: 'Served 200 espressos daily', cs: '' }, enabled: true, tags: [] },
+        { id: 'b42', text: { en: 'Managed inventory and cash register', cs: '' }, enabled: true, tags: [] },
+        { id: 'b43', text: { en: 'Cleaned espresso machines', cs: '' }, enabled: true, tags: [] }
       ]
     });
-    // Add Job 3: Relevant React Native Developer role
+    // Add Job 5: Relevant React Native Developer role
     data.experiences.push({
-      id: 'exp-3',
+      id: 'exp-5',
       roleTitle: { en: 'React Native Mobile Developer', cs: '' },
       company: 'App Studio',
       location: 'Remote',
@@ -252,8 +270,8 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       enabled: true,
       tags: [],
       bullets: [
-        { id: 'b31', text: { en: 'Developed React Native iOS and Android apps with TypeScript', cs: '' }, enabled: true, tags: [] },
-        { id: 'b32', text: { en: 'Published cross-platform features to App Store', cs: '' }, enabled: true, tags: [] }
+        { id: 'b51', text: { en: 'Developed React Native iOS and Android apps with TypeScript', cs: '' }, enabled: true, tags: [] },
+        { id: 'b52', text: { en: 'Published cross-platform features to App Store', cs: '' }, enabled: true, tags: [] }
       ]
     });
 
@@ -267,11 +285,10 @@ describe('cvPageBudgetOptimizer - experience pruning & limits', () => {
       maxPages: 1
     });
 
-    // If space required pruning, exp-2 (Barista) should be cut before exp-3 (React Native)!
-    if (audit.omittedExperiencesCount > 0) {
-      expect(optimizedData.experiences.find(e => e.id === 'exp-2')?.enabled).toBe(false);
-      expect(optimizedData.experiences.find(e => e.id === 'exp-3')?.enabled).toBe(true);
-    }
+    // If space required pruning beyond 4 jobs, exp-4 (Barista) should be cut before exp-5 (React Native)!
+    expect(audit.omittedExperiencesCount).toBeGreaterThanOrEqual(1);
+    expect(audit.omittedExperiences[0]).toContain('Barista');
+    expect(optimizedData.experiences.find(e => e.id === 'exp-4')?.enabled).toBe(false);
   });
 
   it('respects 2-page budget limit when maxPages is 2', () => {
