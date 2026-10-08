@@ -68,14 +68,15 @@ export const LayoutSettingsCard: React.FC = () => {
                 handleSelectFolder();
               }
             }}
-            className="w-full h-9 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 text-xs font-medium flex items-center justify-between gap-1 shadow-sm focus:outline-none focus:border-sky-500 transition-colors cursor-pointer"
+            className="group w-full h-9 bg-slate-800 hover:bg-slate-750 text-slate-100 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 text-xs font-medium flex items-center justify-between gap-2 shadow-sm focus:outline-none focus:border-sky-500 transition-colors cursor-pointer"
             title={exportDirectory || 'Default System Downloads Folder'}
           >
-            <span className="truncate flex items-center gap-1.5 min-w-0">
-              <span className={`truncate ${exportDirectory ? 'text-slate-100' : 'text-slate-400'}`}>
+            <div className="flex items-center gap-2 min-w-0 truncate">
+              <FolderOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className={`truncate ${exportDirectory ? 'text-slate-100 font-medium' : 'text-slate-400'}`}>
                 {exportDirectory || 'Default System Downloads'}
               </span>
-            </span>
+            </div>
             <div className="flex items-center gap-1.5 shrink-0">
               {exportDirectory && (
                 <button
@@ -90,7 +91,9 @@ export const LayoutSettingsCard: React.FC = () => {
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-              <FolderOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="bg-slate-700 group-hover:bg-slate-650 active:bg-slate-600 text-sky-400 group-hover:text-sky-300 px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors border border-slate-600/40">
+                Browse
+              </span>
             </div>
           </div>
         </div>
