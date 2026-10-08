@@ -34,18 +34,29 @@ export const JobCard: React.FC<JobCardProps> = ({
 }) => {
   const appliedInfo = isJobAlreadyApplied(job, kanbanRoles);
   const sourceStyle = SOURCE_COLORS[job.source] || SOURCE_COLORS.greenhouse;
-  const isViewed = isClicked || appliedInfo.isApplied;
+  const isApplied = appliedInfo.isApplied;
+  const isViewedOnly = isClicked && !isApplied;
+
+  const cardClasses = isApplied
+    ? 'border-emerald-900/60 bg-emerald-950/15 opacity-80 hover:opacity-100 hover:border-emerald-600/80 hover:bg-emerald-950/35 hover:shadow-md hover:shadow-emerald-950/40 shadow-sm'
+    : isViewedOnly
+      ? 'border-slate-800/50 bg-slate-950/75 opacity-65 hover:opacity-85 hover:border-slate-700/70 hover:bg-slate-900/50 hover:shadow-sm'
+      : 'border-slate-800 bg-slate-900 hover:border-sky-500/60 hover:bg-slate-850 hover:shadow-lg hover:shadow-sky-950/30';
+
+  const titleClasses = isApplied
+    ? 'text-slate-300 group-hover:text-emerald-400'
+    : isViewedOnly
+      ? 'text-slate-400 group-hover:text-slate-200'
+      : 'text-slate-100 group-hover:text-sky-400';
+
+  const descriptionClasses = isViewedOnly
+    ? 'text-slate-500 group-hover:text-slate-400'
+    : 'text-slate-400 group-hover:text-slate-300';
 
   return (
     <div 
       onClick={() => onSelectJob(job)}
-      className={`border rounded-xl p-4 transition-all flex flex-col justify-between gap-3 cursor-pointer group ${
-        appliedInfo.isApplied 
-          ? 'border-emerald-900/60 bg-slate-950/60 opacity-80 hover:opacity-100 hover:border-emerald-700/80 hover:bg-slate-900/80 shadow-sm' 
-          : isViewed
-            ? 'border-slate-800/60 bg-slate-950/60 opacity-80 hover:opacity-100 hover:border-slate-700 hover:bg-slate-900/80'
-            : 'border-slate-800 bg-slate-900 hover:border-slate-700'
-      }`}
+      className={`border rounded-xl p-4 transition-all flex flex-col justify-between gap-3 cursor-pointer group ${cardClasses}`}
     >
       <div className="space-y-2">
         <JobCardBadges
@@ -55,13 +66,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         />
 
         <h3 
-          className={`text-sm sm:text-base font-bold transition-colors line-clamp-2 ${
-            isViewed
-              ? appliedInfo.isApplied
-                ? 'text-slate-400 group-hover:text-emerald-300'
-                : 'text-slate-400 group-hover:text-slate-200'
-              : 'text-slate-100 group-hover:text-sky-400'
-          }`}
+          className={`text-sm sm:text-base font-bold transition-colors line-clamp-2 ${titleClasses}`}
         >
           {job.title}
         </h3>
@@ -80,14 +85,14 @@ export const JobCard: React.FC<JobCardProps> = ({
           )}
         </div>
 
-        <p className={`text-xs line-clamp-2 leading-relaxed ${isViewed ? 'text-slate-500' : 'text-slate-400'}`}>
+        <p className={`text-xs line-clamp-2 leading-relaxed ${descriptionClasses}`}>
           {job.descriptionPlain || 'No description provided.'}
         </p>
       </div>
 
       <JobCardFooter
         job={job}
-        isApplied={appliedInfo.isApplied}
+        isApplied={isApplied}
         onSelectJob={onSelectJob}
         onApplyAndTailor={onApplyAndTailor}
         onMarkClicked={onMarkClicked}
