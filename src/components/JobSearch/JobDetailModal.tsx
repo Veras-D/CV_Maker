@@ -164,6 +164,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
       className="fixed inset-0 z-[9999] flex justify-end overflow-hidden overscroll-contain"
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       {/* Backdrop overlay */}
       <div 
@@ -173,7 +176,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
       />
 
       {/* Slide-over Right Drawer */}
-      <div className="relative w-full max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl h-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col z-10 animate-slide-in-right overflow-hidden">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl h-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col z-10 animate-slide-in-right overflow-hidden"
+      >
         {/* Drawer Header */}
         <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-950/50 shrink-0 space-y-4">
           <div className="flex items-center justify-between gap-3">

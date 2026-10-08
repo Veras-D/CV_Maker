@@ -25,7 +25,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "appimage", "deb", "dmg", "rpm"],
+    "targets": ["nsis", "msi", "appimage", "deb", "dmg", "rpm"],
     "windows": {
       "nsis": {
         "installMode": "currentUser"

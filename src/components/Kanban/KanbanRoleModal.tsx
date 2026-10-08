@@ -132,6 +132,15 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
   const buttonProps = getSubmitButtonProps(isDuplicateError, isExistingMatch, Boolean(editingRole));
   const modalHeading = getModalHeading(Boolean(editingRole), isExistingMatch);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -157,8 +166,14 @@ export const KanbanRoleModal: React.FC<AddEditModalProps> = ({
       className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-5 shadow-2xl overscroll-contain my-auto">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-5 shadow-2xl overscroll-contain my-auto"
+      >
         <h3 className="text-base font-bold text-white mb-3">
           {modalHeading}
         </h3>

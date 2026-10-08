@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { KanbanRole } from '../../types/cv';
 import { Trash2, Building, X } from 'lucide-react';
@@ -13,6 +13,15 @@ export interface DeleteModalProps {
 export const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ role, onClose, onConfirm }) => {
   useBodyScrollLock(Boolean(role));
 
+  useEffect(() => {
+    if (!role) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [role, onClose]);
+
   if (!role) return null;
 
   return ReactDOM.createPortal(
@@ -20,8 +29,14 @@ export const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ role, onCl
       className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150 overscroll-contain my-auto">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150 overscroll-contain my-auto"
+      >
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useCV } from '../../context/CVContext';
 import { AlertCircle, X } from 'lucide-react';
@@ -19,6 +19,15 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
   const { applyIngestionResult, resetToDefaultData } = useCV();
   const state = useIngestionState();
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleApplyToCV = () => {
@@ -38,8 +47,14 @@ export const AIIngestionModal: React.FC<{ isOpen: boolean; onClose: () => void }
       className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto overscroll-contain my-auto">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto overscroll-contain my-auto"
+      >
         
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
